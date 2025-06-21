@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MoreHorizontal, PlusCircle, FileDown, Camera, CheckCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { staff, type Staff } from '@/lib/data';
+import { type Staff } from '@/lib/data';
 import { generateSalaryCsv } from '@/lib/actions';
 import { FaceScanModal } from '@/components/face-scan-modal';
 import { AddStaffModal } from '@/components/add-staff-modal';
@@ -16,7 +16,7 @@ export default function ClientDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
-  const [staffList, setStaffList] = useState<Staff[]>(staff);
+  const [staffList, setStaffList] = useState<Staff[]>([]);
 
   const handleGenerateCsv = async () => {
     const csvData = await generateSalaryCsv(staffList);
@@ -38,8 +38,8 @@ export default function ClientDashboard() {
     setIsModalOpen(true);
   };
   
-  const handleAddStaff = (newStaff: Omit<Staff, 'id' | 'salary' | 'attendanceStatus'> & { salary: number }) => {
-    const newIdNumber = Math.max(0, ...staffList.map(s => parseInt(s.id.split('-')[1], 10))) + 1;
+  const handleAddStaff = (newStaff: Omit<Staff, 'id' | 'attendanceStatus'>) => {
+    const newIdNumber = staffList.length > 0 ? Math.max(0, ...staffList.map(s => parseInt(s.id.split('-')[1], 10))) + 1 : 1;
     const newId = `KM-${String(newIdNumber).padStart(3, '0')}`;
     setStaffList(prev => [...prev, { ...newStaff, id: newId, attendanceStatus: null }]);
   };
@@ -70,7 +70,7 @@ export default function ClientDashboard() {
           <p className="text-muted-foreground">Manage your staff and their attendance.</p>
         </div>
         <div className="flex gap-2">
-           <Button variant="outline" onClick={handleGenerateCsv}>
+           <Button variant="outline" onClick={handleGenerateCsv} disabled={staffList.length === 0}>
             <FileDown className="mr-2 h-4 w-4" />
             Salary Report
           </Button>
@@ -100,46 +100,54 @@ export default function ClientDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {staffList.map((employee) => (
-                <TableRow key={employee.id}>
-                  <TableCell className="font-medium">{employee.id}</TableCell>
-                  <TableCell>{employee.name}</TableCell>
-                  <TableCell>{employee.department}</TableCell>
-                  <TableCell>{employee.role}</TableCell>
-                   <TableCell>
-                     {employee.attendanceStatus ? (
-                        <Badge variant="default" className="bg-green-600 hover:bg-green-700 whitespace-nowrap">
-                            <CheckCircle className="mr-1 h-3 w-3" />
-                            Logged at {employee.attendanceStatus.time}
-                        </Badge>
-                     ) : (
-                        <Badge variant="secondary" className="whitespace-nowrap">Not Logged</Badge>
-                     )}
-                  </TableCell>
-                  <TableCell className="text-right">{employee.salary.toLocaleString('en-IN')}</TableCell>
-                  <TableCell className="text-center">
-                     <Button variant="ghost" size="icon" onClick={() => openFaceScan(employee)}>
-                       <Camera className="h-4 w-4" />
-                       <span className="sr-only">Log Attendance</span>
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {staffList.length > 0 ? (
+                staffList.map((employee) => (
+                  <TableRow key={employee.id}>
+                    <TableCell className="font-medium">{employee.id}</TableCell>
+                    <TableCell>{employee.name}</TableCell>
+                    <TableCell>{employee.department}</TableCell>
+                    <TableCell>{employee.role}</TableCell>
+                    <TableCell>
+                      {employee.attendanceStatus ? (
+                          <Badge variant="default" className="bg-green-600 hover:bg-green-700 whitespace-nowrap">
+                              <CheckCircle className="mr-1 h-3 w-3" />
+                              Logged at {employee.attendanceStatus.time}
+                          </Badge>
+                      ) : (
+                          <Badge variant="secondary" className="whitespace-nowrap">Not Logged</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">{employee.salary.toLocaleString('en-IN')}</TableCell>
+                    <TableCell className="text-center">
+                      <Button variant="ghost" size="icon" onClick={() => openFaceScan(employee)}>
+                        <Camera className="h-4 w-4" />
+                        <span className="sr-only">Log Attendance</span>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center h-24">
+                    No staff members added yet. Click "Add Staff" to begin.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

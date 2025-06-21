@@ -37,6 +37,7 @@ const staffFormSchema = z.object({
   department: z.string().min(2, { message: 'Department is required.' }),
   role: z.string().min(2, { message: 'Role is required.' }),
   salary: z.coerce.number().min(0, { message: 'Salary must be a positive number.' }),
+  photoUrl: z.string().url({ message: 'Please enter a valid photo URL.' }),
 });
 
 export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffModalProps) {
@@ -50,6 +51,7 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
       department: '',
       role: '',
       salary: 0,
+      photoUrl: '',
     },
   });
 
@@ -142,6 +144,19 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
                   <FormLabel>Salary (INR)</FormLabel>
                   <FormControl>
                     <Input type="number" placeholder="e.g. 75000" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="photoUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Photo URL</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://placehold.co/400x400.png" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
