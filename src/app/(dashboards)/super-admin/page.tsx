@@ -68,6 +68,7 @@ export default function SuperAdminDashboard() {
               <TableRow>
                 <TableHead>Client ID</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Plan</TableHead>
                 <TableHead>Staff Count</TableHead>
                 <TableHead className="text-right">Status</TableHead>
@@ -78,6 +79,7 @@ export default function SuperAdminDashboard() {
                 <TableRow key={client.id}>
                   <TableCell className="font-medium">{client.id}</TableCell>
                   <TableCell>{client.name}</TableCell>
+                  <TableCell>{client.email}</TableCell>
                   <TableCell>{getPlanBadge(client.plan)}</TableCell>
                   <TableCell>{client.staffCount}</TableCell>
                   <TableCell className="text-right">{getStatusBadge(client.status)}</TableCell>

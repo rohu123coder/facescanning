@@ -16,6 +16,9 @@ export type Staff = {
 export type Client = {
   id: string;
   name: string;
+  email: string;
+  mobile: string;
+  whatsapp: string;
   plan: 'Basic' | 'Premium' | 'Enterprise';
   status: 'Active' | 'Inactive';
   staffCount: number;
@@ -26,19 +29,13 @@ export type Attendance = {
     status: 'Present' | 'Absent' | 'Leave';
 }
 
-export const staff: Staff[] = [
-  { id: 'KM-001', name: 'Aarav Sharma', department: 'Engineering', role: 'Frontend Developer', salary: 75000, photoUrl: 'https://placehold.co/400x400.png', attendanceStatus: null },
-  { id: 'KM-002', name: 'Diya Patel', department: 'Design', role: 'UI/UX Designer', salary: 72000, photoUrl: 'https://placehold.co/400x400.png', attendanceStatus: null },
-  { id: 'KM-003', name: 'Rohan Mehta', department: 'Engineering', role: 'Backend Developer', salary: 80000, photoUrl: 'https://placehold.co/400x400.png', attendanceStatus: null },
-  { id: 'KM-004', name: 'Priya Singh', department: 'Product', role: 'Product Manager', salary: 95000, photoUrl: 'https://placehold.co/400x400.png', attendanceStatus: null },
-  { id: 'KM-005', name: 'Aditya Kumar', department: 'QA', role: 'QA Engineer', salary: 65000, photoUrl: 'https://placehold.co/400x400.png', attendanceStatus: null },
-];
+export const staff: Staff[] = [];
 
 export const clients: Client[] = [
-    { id: 'C-101', name: 'Innovatech Solutions', plan: 'Premium', status: 'Active', staffCount: 45 },
-    { id: 'C-102', name: 'Creative Minds Inc.', plan: 'Basic', status: 'Active', staffCount: 12 },
-    { id: 'C-103', name: 'TechForward', plan: 'Enterprise', status: 'Active', staffCount: 150 },
-    { id: 'C-104', name: 'NextGen Systems', plan: 'Premium', status: 'Inactive', staffCount: 30 },
+    { id: 'C-101', name: 'Innovatech Solutions', email: 'contact@innovatech.com', mobile: '+919876543210', whatsapp: '+919876543210', plan: 'Premium', status: 'Active', staffCount: 45 },
+    { id: 'C-102', name: 'Creative Minds Inc.', email: 'hello@creativeminds.co', mobile: '+919876543211', whatsapp: '+919876543211', plan: 'Basic', status: 'Active', staffCount: 12 },
+    { id: 'C-103', name: 'TechForward', email: 'support@techforward.io', mobile: '+919876543212', whatsapp: '+919876543212', plan: 'Enterprise', status: 'Active', staffCount: 150 },
+    { id: 'C-104', name: 'NextGen Systems', email: 'admin@nextgen.com', mobile: '+919876543213', whatsapp: '+919876543213', plan: 'Premium', status: 'Inactive', staffCount: 30 },
 ]
 
 export const attendance: Attendance[] = [

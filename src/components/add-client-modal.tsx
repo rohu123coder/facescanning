@@ -35,6 +35,9 @@ interface AddClientModalProps {
 
 const clientFormSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  mobile: z.string().min(10, { message: 'Mobile number must be at least 10 digits.' }),
+  whatsapp: z.string().min(10, { message: 'WhatsApp number must be at least 10 digits.' }),
   plan: z.enum(['Basic', 'Premium', 'Enterprise'], { required_error: 'Please select a plan.' }),
 });
 
@@ -46,6 +49,9 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
     resolver: zodResolver(clientFormSchema),
     defaultValues: {
       name: '',
+      email: '',
+      mobile: '',
+      whatsapp: '',
     },
   });
 
@@ -81,7 +87,7 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-headline">Add New Client</DialogTitle>
           <DialogDescription>
@@ -103,6 +109,47 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
                 </FormItem>
               )}
             />
+             <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="e.g. contact@innovatech.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+               <FormField
+                control={form.control}
+                name="mobile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mobile Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. +919876543210" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="whatsapp"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>WhatsApp Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. +919876543210" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="plan"
