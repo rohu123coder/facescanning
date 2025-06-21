@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -32,7 +33,7 @@ export default function AttendanceKiosk() {
   const lastScanTimesRef = useRef(new Map<string, number>());
   const scanCooldown = 1000 * 60 * 5; // 5 minutes cooldown per person
 
-  const addLog = (message: string, staffName: string, staffPhotoUrl: string) => {
+  const addLog = useCallback((message: string, staffName: string, staffPhotoUrl: string) => {
     const newLog: LogEntry = {
       id: Date.now(),
       message,
@@ -41,7 +42,7 @@ export default function AttendanceKiosk() {
       timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
     };
     setScanLogs(prev => [newLog, ...prev]);
-  };
+  }, []);
 
   const stopScanning = useCallback(() => {
     if (intervalRef.current) {
@@ -91,7 +92,7 @@ export default function AttendanceKiosk() {
         console.error(`Face scan API error for ${staff.name}:`, error);
       }
     }
-  }, [staffList, isInitialized, updateStaffAttendance, toast, scanCooldown]);
+  }, [staffList, isInitialized, updateStaffAttendance, toast, scanCooldown, addLog]);
 
 
   const startScanning = useCallback(() => {
@@ -182,7 +183,7 @@ export default function AttendanceKiosk() {
           <CardHeader>
             <CardTitle>Activity Log</CardTitle>
             <CardDescription>Real-time log of attendance events.</CardDescription>
-          </Header>
+          </CardHeader>
           <CardContent className="flex-grow overflow-hidden">
              <ScrollArea className="h-full">
                 {scanLogs.length === 0 ? (
