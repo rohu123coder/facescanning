@@ -9,6 +9,7 @@ import { AlertCircle, Video, VideoOff, UserCheck } from 'lucide-react';
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type LogEntry = {
   id: number;
@@ -31,13 +32,6 @@ export default function AttendanceKiosk() {
   const lastScanTimesRef = useRef(new Map<string, number>());
   const scanCooldown = 1000 * 60 * 5; // 5 minutes cooldown per person
 
-  const stopCameraStream = useCallback(() => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-  }, []);
-
   const addLog = (message: string, staffName: string, staffPhotoUrl: string) => {
     const newLog: LogEntry = {
       id: Date.now(),
@@ -48,6 +42,14 @@ export default function AttendanceKiosk() {
     };
     setScanLogs(prev => [newLog, ...prev]);
   };
+
+  const stopScanning = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setIsScanning(false);
+  }, []);
 
   const handleScanFrame = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || !isInitialized || staffList.length === 0) return;
@@ -98,19 +100,12 @@ export default function AttendanceKiosk() {
     intervalRef.current = setInterval(handleScanFrame, 2500); // Scan every 2.5 seconds
   }, [handleScanFrame]);
 
-  const stopScanning = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setIsScanning(false);
-  }, []);
-
-
   useEffect(() => {
+    let stream: MediaStream | null = null;
     const getCameraPermission = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream = cameraStream;
         setHasCameraPermission(true);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -118,17 +113,28 @@ export default function AttendanceKiosk() {
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
-        toast({ variant: 'destructive', title: 'Camera Access Denied', description: 'Please enable camera permissions in your browser settings.' });
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings.',
+        });
       }
     };
 
     getCameraPermission();
 
     return () => {
-      stopCameraStream();
       stopScanning();
+      if (videoRef.current && videoRef.current.srcObject) {
+        const streamFromRef = videoRef.current.srcObject as MediaStream;
+        streamFromRef.getTracks().forEach((track) => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
     };
-  }, [stopCameraStream, stopScanning, toast]);
+  }, [stopScanning, toast]);
 
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-8rem)] gap-8 p-1">
@@ -142,9 +148,13 @@ export default function AttendanceKiosk() {
               <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
               {hasCameraPermission === false && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90 p-4 text-center z-10">
-                    <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-                    <p className="font-bold">Camera Access Denied</p>
-                    <p className="text-sm">Please enable camera permissions.</p>
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Camera Access Denied</AlertTitle>
+                      <AlertDescription>
+                        Please enable camera permissions in your browser settings.
+                      </AlertDescription>
+                    </Alert>
                 </div>
               )}
               {isScanning && (
@@ -172,7 +182,7 @@ export default function AttendanceKiosk() {
           <CardHeader>
             <CardTitle>Activity Log</CardTitle>
             <CardDescription>Real-time log of attendance events.</CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent className="flex-grow overflow-hidden">
              <ScrollArea className="h-full">
                 {scanLogs.length === 0 ? (
