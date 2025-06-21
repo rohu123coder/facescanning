@@ -15,7 +15,8 @@ export type Staff = {
 
 export type Client = {
   id: string;
-  name: string;
+  organizationName: string;
+  contactName: string;
   email: string;
   mobile: string;
   whatsapp: string;
@@ -32,10 +33,10 @@ export type Attendance = {
 export const staff: Staff[] = [];
 
 export const clients: Client[] = [
-    { id: 'C-101', name: 'Innovatech Solutions', email: 'contact@innovatech.com', mobile: '+919876543210', whatsapp: '+919876543210', plan: 'Premium', status: 'Active', staffCount: 45 },
-    { id: 'C-102', name: 'Creative Minds Inc.', email: 'hello@creativeminds.co', mobile: '+919876543211', whatsapp: '+919876543211', plan: 'Basic', status: 'Active', staffCount: 12 },
-    { id: 'C-103', name: 'TechForward', email: 'support@techforward.io', mobile: '+919876543212', whatsapp: '+919876543212', plan: 'Enterprise', status: 'Active', staffCount: 150 },
-    { id: 'C-104', name: 'NextGen Systems', email: 'admin@nextgen.com', mobile: '+919876543213', whatsapp: '+919876543213', plan: 'Premium', status: 'Inactive', staffCount: 30 },
+    { id: 'C-101', organizationName: 'Innovatech Solutions', contactName: 'Rohan Mehra', email: 'contact@innovatech.com', mobile: '+919876543210', whatsapp: '+919876543210', plan: 'Premium', status: 'Active', staffCount: 45 },
+    { id: 'C-102', organizationName: 'Creative Minds Inc.', contactName: 'Priya Sharma', email: 'hello@creativeminds.co', mobile: '+919876543211', whatsapp: '+919876543211', plan: 'Basic', status: 'Active', staffCount: 12 },
+    { id: 'C-103', organizationName: 'TechForward', contactName: 'Amit Singh', email: 'support@techforward.io', mobile: '+919876543212', whatsapp: '+919876543212', plan: 'Enterprise', status: 'Active', staffCount: 150 },
+    { id: 'C-104', organizationName: 'NextGen Systems', contactName: 'Sunita Patil', email: 'admin@nextgen.com', mobile: '+919876543213', whatsapp: '+919876543213', plan: 'Premium', status: 'Inactive', staffCount: 30 },
 ]
 
 export const attendance: Attendance[] = [

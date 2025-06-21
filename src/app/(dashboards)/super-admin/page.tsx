@@ -67,7 +67,8 @@ export default function SuperAdminDashboard() {
             <TableHeader>
               <TableRow>
                 <TableHead>Client ID</TableHead>
-                <TableHead>Name</TableHead>
+                <TableHead>Organization Name</TableHead>
+                <TableHead>Contact Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Plan</TableHead>
                 <TableHead>Staff Count</TableHead>
@@ -78,7 +79,8 @@ export default function SuperAdminDashboard() {
               {clients.map((client) => (
                 <TableRow key={client.id}>
                   <TableCell className="font-medium">{client.id}</TableCell>
-                  <TableCell>{client.name}</TableCell>
+                  <TableCell>{client.organizationName}</TableCell>
+                  <TableCell>{client.contactName}</TableCell>
                   <TableCell>{client.email}</TableCell>
                   <TableCell>{getPlanBadge(client.plan)}</TableCell>
                   <TableCell>{client.staffCount}</TableCell>

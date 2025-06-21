@@ -34,7 +34,8 @@ interface AddClientModalProps {
 }
 
 const clientFormSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  organizationName: z.string().min(2, { message: 'Organization name must be at least 2 characters.' }),
+  contactName: z.string().min(2, { message: 'Contact name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   mobile: z.string().min(10, { message: 'Mobile number must be at least 10 digits.' }),
   whatsapp: z.string().min(10, { message: 'WhatsApp number must be at least 10 digits.' }),
@@ -48,7 +49,8 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
   const form = useForm<z.infer<typeof clientFormSchema>>({
     resolver: zodResolver(clientFormSchema),
     defaultValues: {
-      name: '',
+      organizationName: '',
+      contactName: '',
       email: '',
       mobile: '',
       whatsapp: '',
@@ -64,7 +66,7 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
       onClientAdded(values);
       toast({
         title: 'Client Added',
-        description: `${values.name} has been successfully added. Credentials have been sent.`,
+        description: `${values.organizationName} has been successfully added. Credentials have been sent.`,
       });
       form.reset();
       onOpenChange(false);
@@ -98,12 +100,25 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="name"
+              name="organizationName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Organization Name</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g. Innovatech Solutions" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="contactName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Person Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Rohan Mehra" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
