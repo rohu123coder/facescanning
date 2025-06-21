@@ -6,8 +6,10 @@ export type Staff = {
   salary: number;
   photoUrl: string;
   attendanceStatus?: {
-      time: string;
       date: string;
+      inTime: string | null;
+      outTime: string | null;
+      totalHours: string | null;
   } | null;
 };
 
