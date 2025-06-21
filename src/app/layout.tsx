@@ -30,11 +30,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={cn(
+      <body
+        className={cn(
           "font-body antialiased",
           ptSans.variable,
           playfair.variable
-        )}>
+        )}
+        suppressHydrationWarning={true}
+      >
         {children}
         <Toaster />
       </body>
