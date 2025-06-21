@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, FileDown, Camera } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, FileDown, Camera, CheckCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { staff, type Staff } from '@/lib/data';
 import { generateSalaryCsv } from '@/lib/actions';
 import { FaceScanModal } from '@/components/face-scan-modal';
 import { AddStaffModal } from '@/components/add-staff-modal';
+import { Badge } from '@/components/ui/badge';
 
 export default function ClientDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,11 +38,29 @@ export default function ClientDashboard() {
     setIsModalOpen(true);
   };
   
-  const handleAddStaff = (newStaff: Omit<Staff, 'id' | 'salary'> & { salary: number }) => {
+  const handleAddStaff = (newStaff: Omit<Staff, 'id' | 'salary' | 'attendanceStatus'> & { salary: number }) => {
     const newIdNumber = Math.max(0, ...staffList.map(s => parseInt(s.id.split('-')[1], 10))) + 1;
     const newId = `KM-${String(newIdNumber).padStart(3, '0')}`;
-    setStaffList(prev => [...prev, { ...newStaff, id: newId }]);
+    setStaffList(prev => [...prev, { ...newStaff, id: newId, attendanceStatus: null }]);
   };
+
+  const handleAttendanceSuccess = (staffId: string) => {
+    const now = new Date();
+    setStaffList(prevStaffList =>
+      prevStaffList.map(s =>
+        s.id === staffId
+          ? {
+              ...s,
+              attendanceStatus: {
+                time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                date: now.toLocaleDateString('en-GB'),
+              },
+            }
+          : s
+      )
+    );
+  };
+
 
   return (
     <div className="space-y-8">
@@ -75,6 +94,7 @@ export default function ClientDashboard() {
                 <TableHead>Name</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Attendance</TableHead>
                 <TableHead className="text-right">Salary (INR)</TableHead>
                 <TableHead className="text-center">Actions</TableHead>
               </TableRow>
@@ -86,6 +106,16 @@ export default function ClientDashboard() {
                   <TableCell>{employee.name}</TableCell>
                   <TableCell>{employee.department}</TableCell>
                   <TableCell>{employee.role}</TableCell>
+                   <TableCell>
+                     {employee.attendanceStatus ? (
+                        <Badge variant="default" className="bg-green-600 hover:bg-green-700 whitespace-nowrap">
+                            <CheckCircle className="mr-1 h-3 w-3" />
+                            Logged at {employee.attendanceStatus.time}
+                        </Badge>
+                     ) : (
+                        <Badge variant="secondary" className="whitespace-nowrap">Not Logged</Badge>
+                     )}
+                  </TableCell>
                   <TableCell className="text-right">{employee.salary.toLocaleString('en-IN')}</TableCell>
                   <TableCell className="text-center">
                      <Button variant="ghost" size="icon" onClick={() => openFaceScan(employee)}>
@@ -120,6 +150,7 @@ export default function ClientDashboard() {
           isOpen={isModalOpen}
           onOpenChange={setIsModalOpen}
           staffMember={selectedStaff}
+          onAttendanceSuccess={handleAttendanceSuccess}
         />
       )}
 

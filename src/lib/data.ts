@@ -4,6 +4,10 @@ export type Staff = {
   department: string;
   role: string;
   salary: number;
+  attendanceStatus?: {
+      time: string;
+      date: string;
+  } | null;
 };
 
 export type Client = {
@@ -20,11 +24,11 @@ export type Attendance = {
 }
 
 export const staff: Staff[] = [
-  { id: 'KM-001', name: 'Aarav Sharma', department: 'Engineering', role: 'Frontend Developer', salary: 75000 },
-  { id: 'KM-002', name: 'Diya Patel', department: 'Design', role: 'UI/UX Designer', salary: 72000 },
-  { id: 'KM-003', name: 'Rohan Mehta', department: 'Engineering', role: 'Backend Developer', salary: 80000 },
-  { id: 'KM-004', name: 'Priya Singh', department: 'Product', role: 'Product Manager', salary: 95000 },
-  { id: 'KM-005', name: 'Aditya Kumar', department: 'QA', role: 'QA Engineer', salary: 65000 },
+  { id: 'KM-001', name: 'Aarav Sharma', department: 'Engineering', role: 'Frontend Developer', salary: 75000, attendanceStatus: null },
+  { id: 'KM-002', name: 'Diya Patel', department: 'Design', role: 'UI/UX Designer', salary: 72000, attendanceStatus: null },
+  { id: 'KM-003', name: 'Rohan Mehta', department: 'Engineering', role: 'Backend Developer', salary: 80000, attendanceStatus: null },
+  { id: 'KM-004', name: 'Priya Singh', department: 'Product', role: 'Product Manager', salary: 95000, attendanceStatus: null },
+  { id: 'KM-005', name: 'Aditya Kumar', department: 'QA', role: 'QA Engineer', salary: 65000, attendanceStatus: null },
 ];
 
 export const clients: Client[] = [

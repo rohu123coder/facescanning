@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,34 +10,61 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { faceScanAttendance } from '@/ai/flows/face-scan-attendance';
 import type { Staff } from '@/lib/data';
-import { Loader2, Camera, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, Camera, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 
 interface FaceScanModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   staffMember: Staff | null;
+  onAttendanceSuccess: (staffId: string) => void;
 }
 
-export function FaceScanModal({ isOpen, onOpenChange, staffMember }: FaceScanModalProps) {
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+export function FaceScanModal({ isOpen, onOpenChange, staffMember, onAttendanceSuccess }: FaceScanModalProps) {
+  const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'failure' | 'no-permission'>('idle');
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const { toast } = useToast();
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const attemptsRef = useRef(0);
+  const maxAttempts = 5;
+
+  const stopScanning = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    attemptsRef.current = 0;
+  }, []);
+
+  const handleClose = useCallback(() => {
+    stopScanning();
+    setScanStatus('idle');
+    onOpenChange(false);
+  }, [onOpenChange, stopScanning]);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
     
-    const getCameraPermission = async () => {
-      if (!isOpen) return;
+    const cleanup = () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      stopScanning();
+    };
 
-      setPhotoPreview(null);
+    const getCameraPermission = async () => {
+      if (!isOpen) {
+        cleanup();
+        return;
+      }
+
+      setScanStatus('idle');
       setHasCameraPermission(null);
 
       try {
@@ -51,128 +77,168 @@ export function FaceScanModal({ isOpen, onOpenChange, staffMember }: FaceScanMod
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings.',
-        });
+        setScanStatus('no-permission');
       }
     };
 
     getCameraPermission();
 
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [isOpen, toast]);
+    return cleanup;
+  }, [isOpen, stopScanning]);
 
-  const handleCapture = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+  useEffect(() => {
+    if (isOpen && hasCameraPermission && scanStatus === 'idle') {
+      intervalRef.current = setInterval(async () => {
+        if (!videoRef.current || !canvasRef.current || !staffMember) {
+            return;
+        }
+        
+        if (scanStatus !== 'idle' && scanStatus !== 'scanning') {
+            stopScanning();
+            return;
+        }
 
-      const context = canvas.getContext('2d');
-      if (context) {
+        if (attemptsRef.current >= maxAttempts) {
+            setScanStatus('failure');
+            stopScanning();
+            return;
+        }
+
+        setScanStatus('scanning');
+        attemptsRef.current += 1;
+        
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        if (!context) return;
+        
         context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         const dataUri = canvas.toDataURL('image/jpeg');
-        setPhotoPreview(dataUri);
-      }
+
+        try {
+            const result = await faceScanAttendance({
+                photoDataUri: dataUri,
+                staffId: staffMember.id,
+            });
+
+            if (result.isRecognized) {
+                setScanStatus('success');
+                stopScanning();
+                onAttendanceSuccess(staffMember.id);
+                toast({
+                    title: 'Attendance Logged',
+                    description: `${staffMember.name}'s attendance logged at ${new Date().toLocaleTimeString()}.`,
+                });
+                setTimeout(() => handleClose(), 2000);
+            } else {
+                if (attemptsRef.current < maxAttempts) {
+                    setScanStatus('idle'); 
+                }
+            }
+        } catch (error) {
+            console.error("Face scan API error:", error);
+            if (attemptsRef.current < maxAttempts) {
+                setScanStatus('idle');
+            } else {
+                setScanStatus('failure');
+                stopScanning();
+            }
+        }
+      }, 2500);
     }
-  };
 
-  const handleSubmit = async () => {
-    if (!photoPreview || !staffMember) return;
+    return () => {
+      stopScanning();
+    };
+  }, [isOpen, hasCameraPermission, staffMember, onAttendanceSuccess, toast, stopScanning, handleClose, scanStatus]);
 
-    setIsLoading(true);
-
-    try {
-      const result = await faceScanAttendance({
-        photoDataUri: photoPreview,
-        staffId: staffMember.id,
-      });
-
-      if (result.isRecognized) {
-        toast({
-          title: 'Attendance Logged',
-          description: `${staffMember.name}'s attendance has been successfully logged.`,
-        });
-      } else {
-        toast({
-          title: 'Recognition Failed',
-          description: result.message || `Could not recognize ${staffMember.name}. Please try again.`,
-          variant: 'destructive',
-        });
-      }
-      onOpenChange(false);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred during face scan.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
+  const getStatusOverlay = () => {
+     switch(scanStatus) {
+        case 'scanning':
+            return (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white p-4 text-center z-10">
+                    <Loader2 className="h-12 w-12 animate-spin mb-4" />
+                    <p className="font-bold text-lg">Scanning...</p>
+                    <p className="text-sm">Attempt {attemptsRef.current} of {maxAttempts}. Please hold still.</p>
+                </div>
+            )
+        case 'success':
+            return (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-600/90 text-white p-4 text-center z-10">
+                    <CheckCircle className="h-16 w-16 mb-4" />
+                    <p className="font-bold text-xl">Welcome, {staffMember?.name}!</p>
+                    <p>Attendance logged successfully.</p>
+                </div>
+            )
+        case 'failure':
+            return (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/90 text-white p-4 text-center z-10">
+                    <XCircle className="h-16 w-16 mb-4" />
+                    <p className="font-bold text-xl">Recognition Failed</p>
+                    <p className="text-sm">Could not verify identity. Closing now.</p>
+                </div>
+            )
+        case 'no-permission':
+            return (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90 p-4 text-center z-10">
+                    <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                    <AlertTitle className="font-bold">Camera Access Denied</AlertTitle>
+                    <AlertDescription className="text-sm">
+                        Please enable camera permissions in your browser settings to use this feature.
+                    </AlertDescription>
+                </div>
+            )
+        case 'idle':
+             if (hasCameraPermission === null) {
+                 return (
+                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted z-10">
+                        <Camera className="h-16 w-16 text-muted-foreground" />
+                        <p className="mt-2 text-sm text-muted-foreground">Initializing Camera...</p>
+                    </div>
+                 )
+             } else if (hasCameraPermission === true) {
+                 return (
+                    <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 z-10">
+                        <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                        Ready to scan
+                    </div>
+                 )
+             }
+             return null;
+        default:
+            return null;
     }
-  };
-
-  const handleClose = () => {
-    onOpenChange(false);
-  };
-  
-  const handleRetake = () => {
-    setPhotoPreview(null);
   }
 
+  useEffect(() => {
+    if (scanStatus === 'failure') {
+      setTimeout(() => handleClose(), 2500);
+    }
+  }, [scanStatus, handleClose]);
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="font-headline">Face Scan Attendance</DialogTitle>
+          <DialogTitle className="font-headline">Real-time Attendance Scan</DialogTitle>
           <DialogDescription>
-            Center {staffMember?.name}'s face in the frame and capture a photo.
+            The system will automatically scan for {staffMember?.name}'s face.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="relative flex items-center justify-center w-full aspect-video rounded-md bg-muted overflow-hidden border">
-            {photoPreview ? (
-              <Image
-                src={photoPreview}
-                alt="Face preview"
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <>
-                <video 
-                  ref={videoRef} 
-                  className="w-full h-full object-cover" 
-                  autoPlay 
-                  muted 
-                  playsInline 
-                  data-testid="video-feed"
-                />
-                {hasCameraPermission === false && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-4 text-center">
-                        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-                        <AlertTitle className="font-bold">Camera Access Denied</AlertTitle>
-                        <AlertDescription className="text-sm">
-                            Please enable camera permissions in your browser settings to use this feature.
-                        </AlertDescription>
-                    </div>
-                )}
-                 {hasCameraPermission === null && (
-                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
-                        <Camera className="h-16 w-16 text-muted-foreground" />
-                        <p className="mt-2 text-sm text-muted-foreground">Requesting camera...</p>
-                    </div>
-                 )}
-              </>
-            )}
+             <video 
+                ref={videoRef} 
+                className="w-full h-full object-cover" 
+                autoPlay 
+                muted 
+                playsInline 
+                data-testid="video-feed"
+             />
+             {getStatusOverlay()}
           </div>
           <canvas ref={canvasRef} className="hidden" />
         </div>
@@ -180,29 +246,6 @@ export function FaceScanModal({ isOpen, onOpenChange, staffMember }: FaceScanMod
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          {photoPreview ? (
-            <>
-              <Button variant="secondary" onClick={handleRetake} disabled={isLoading}>
-                <RefreshCw className="mr-2" />
-                Retake
-              </Button>
-              <Button onClick={handleSubmit} disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  'Log Attendance'
-                )}
-              </Button>
-            </>
-          ) : (
-            <Button onClick={handleCapture} disabled={!hasCameraPermission || isLoading}>
-              <Camera className="mr-2" />
-              Capture Photo
-            </Button>
-          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

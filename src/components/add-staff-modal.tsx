@@ -29,7 +29,7 @@ import { Loader2 } from 'lucide-react';
 interface AddStaffModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onStaffAdded: (staff: Omit<Staff, 'id'>) => void;
+  onStaffAdded: (staff: Omit<Staff, 'id' | 'attendanceStatus'>) => void;
 }
 
 const staffFormSchema = z.object({
