@@ -1,3 +1,68 @@
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Briefcase, User, Shield, Gem } from 'lucide-react';
+
+const roles = [
+  {
+    name: 'Client',
+    description: 'Manage your staff, track attendance, and automate salaries.',
+    href: '/client',
+    icon: <Briefcase className="h-8 w-8 text-primary" />,
+  },
+  {
+    name: 'Employee',
+    description: 'View your attendance, salary slips, and personal details.',
+    href: '/employee',
+    icon: <User className="h-8 w-8 text-primary" />,
+  },
+  {
+    name: 'HR / Admin',
+    description: 'Oversee all employees, manage system settings, and generate reports.',
+    href: '/admin',
+    icon: <Shield className="h-8 w-8 text-primary" />,
+  },
+  {
+    name: 'Super Admin',
+    description: 'Manage multiple clients, subscriptions, and platform settings.',
+    href: '/super-admin',
+    icon: <Gem className="h-8 w-8 text-primary" />,
+  },
+];
+
 export default function Home() {
-  return <></>;
+  return (
+    <main className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-8">
+      <div className="text-center mb-12">
+        <h1 className="font-headline text-5xl md:text-7xl font-bold text-primary mb-4 tracking-tight">
+          Karma Manager
+        </h1>
+        <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+          An intelligent staff management and salary automation platform. Please select a role to proceed.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-6xl">
+        {roles.map((role) => (
+          <Card key={role.name} className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-in-out group">
+            <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+              {role.icon}
+              <CardTitle className="font-headline text-2xl">{role.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col justify-between h-[160px]">
+              <p className="text-muted-foreground pt-2">{role.description}</p>
+              <Button asChild className="mt-4 w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                <Link href={role.href}>
+                  Proceed <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+       <footer className="mt-16 text-center text-muted-foreground text-sm">
+        <p>Karma Manager &copy; {new Date().getFullYear()}. All Rights Reserved.</p>
+      </footer>
+    </main>
+  );
 }
