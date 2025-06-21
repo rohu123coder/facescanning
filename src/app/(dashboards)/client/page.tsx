@@ -9,13 +9,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { staff, type Staff } from '@/lib/data';
 import { generateSalaryCsv } from '@/lib/actions';
 import { FaceScanModal } from '@/components/face-scan-modal';
+import { AddStaffModal } from '@/components/add-staff-modal';
 
 export default function ClientDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+  const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [staffList, setStaffList] = useState<Staff[]>(staff);
 
   const handleGenerateCsv = async () => {
-    const csvData = await generateSalaryCsv(staff);
+    const csvData = await generateSalaryCsv(staffList);
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     if (link.download !== undefined) {
@@ -34,6 +37,12 @@ export default function ClientDashboard() {
     setIsModalOpen(true);
   };
   
+  const handleAddStaff = (newStaff: Omit<Staff, 'id' | 'salary'> & { salary: number }) => {
+    const newIdNumber = Math.max(0, ...staffList.map(s => parseInt(s.id.split('-')[1], 10))) + 1;
+    const newId = `KM-${String(newIdNumber).padStart(3, '0')}`;
+    setStaffList(prev => [...prev, { ...newStaff, id: newId }]);
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -46,7 +55,7 @@ export default function ClientDashboard() {
             <FileDown className="mr-2 h-4 w-4" />
             Salary Report
           </Button>
-          <Button>
+          <Button onClick={() => setIsAddStaffModalOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Staff
           </Button>
@@ -71,7 +80,7 @@ export default function ClientDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {staff.map((employee) => (
+              {staffList.map((employee) => (
                 <TableRow key={employee.id}>
                   <TableCell className="font-medium">{employee.id}</TableCell>
                   <TableCell>{employee.name}</TableCell>
@@ -113,6 +122,12 @@ export default function ClientDashboard() {
           staffMember={selectedStaff}
         />
       )}
+
+      <AddStaffModal 
+        isOpen={isAddStaffModalOpen}
+        onOpenChange={setIsAddStaffModalOpen}
+        onStaffAdded={handleAddStaff}
+      />
     </div>
   );
 }
