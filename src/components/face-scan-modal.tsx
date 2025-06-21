@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ChangeEvent } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,12 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { faceScanAttendance } from '@/ai/flows/face-scan-attendance';
 import type { Staff } from '@/lib/data';
-import { Loader2, UserCheck, UserX, Camera } from 'lucide-react';
+import { Loader2, Camera, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface FaceScanModalProps {
   isOpen: boolean;
@@ -25,60 +24,95 @@ interface FaceScanModalProps {
 }
 
 export function FaceScanModal({ isOpen, onOpenChange, staffMember }: FaceScanModalProps) {
-  const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const { toast } = useToast();
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPhoto(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    
+    const getCameraPermission = async () => {
+      if (!isOpen) return;
+
+      setPhotoPreview(null);
+      setHasCameraPermission(null);
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings.',
+        });
+      }
+    };
+
+    getCameraPermission();
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [isOpen, toast]);
+
+  const handleCapture = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        const dataUri = canvas.toDataURL('image/jpeg');
+        setPhotoPreview(dataUri);
+      }
     }
   };
 
   const handleSubmit = async () => {
-    if (!photo || !staffMember) return;
+    if (!photoPreview || !staffMember) return;
 
     setIsLoading(true);
 
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(photo);
-      reader.onloadend = async () => {
-        const base64data = reader.result as string;
-        
-        const result = await faceScanAttendance({
-          photoDataUri: base64data,
-          staffId: staffMember.id,
-        });
+      const result = await faceScanAttendance({
+        photoDataUri: photoPreview,
+        staffId: staffMember.id,
+      });
 
-        if (result.isRecognized) {
-          toast({
-            title: 'Attendance Logged',
-            description: `${staffMember.name}'s attendance has been successfully logged.`,
-            variant: 'default',
-          });
-        } else {
-          toast({
-            title: 'Recognition Failed',
-            description: `Could not recognize ${staffMember.name}. Please try again.`,
-            variant: 'destructive',
-          });
-        }
-        onOpenChange(false);
-        setPhoto(null);
-        setPhotoPreview(null);
-      };
+      if (result.isRecognized) {
+        toast({
+          title: 'Attendance Logged',
+          description: `${staffMember.name}'s attendance has been successfully logged.`,
+        });
+      } else {
+        toast({
+          title: 'Recognition Failed',
+          description: result.message || `Could not recognize ${staffMember.name}. Please try again.`,
+          variant: 'destructive',
+        });
+      }
+      onOpenChange(false);
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'An unexpected error occurred.',
+        description: 'An unexpected error occurred during face scan.',
         variant: 'destructive',
       });
     } finally {
@@ -86,51 +120,89 @@ export function FaceScanModal({ isOpen, onOpenChange, staffMember }: FaceScanMod
     }
   };
 
+  const handleClose = () => {
+    onOpenChange(false);
+  };
+  
+  const handleRetake = () => {
+    setPhotoPreview(null);
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="font-headline">Face Scan Attendance</DialogTitle>
           <DialogDescription>
-            Upload a photo of {staffMember?.name} to log their attendance.
+            Center {staffMember?.name}'s face in the frame and capture a photo.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="flex items-center justify-center w-full">
+          <div className="relative flex items-center justify-center w-full aspect-video rounded-md bg-muted overflow-hidden border">
             {photoPreview ? (
               <Image
                 src={photoPreview}
                 alt="Face preview"
-                width={200}
-                height={200}
-                className="rounded-full object-cover w-[200px] h-[200px] border-4 border-primary/50 shadow-lg"
+                fill
+                className="object-cover"
               />
             ) : (
-              <div className="flex flex-col items-center justify-center w-[200px] h-[200px] rounded-full bg-muted border-2 border-dashed">
-                <Camera className="h-16 w-16 text-muted-foreground" />
-                <p className="mt-2 text-sm text-muted-foreground">Photo Preview</p>
-              </div>
+              <>
+                <video 
+                  ref={videoRef} 
+                  className="w-full h-full object-cover" 
+                  autoPlay 
+                  muted 
+                  playsInline 
+                  data-testid="video-feed"
+                />
+                {hasCameraPermission === false && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-4 text-center">
+                        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                        <AlertTitle className="font-bold">Camera Access Denied</AlertTitle>
+                        <AlertDescription className="text-sm">
+                            Please enable camera permissions in your browser settings to use this feature.
+                        </AlertDescription>
+                    </div>
+                )}
+                 {hasCameraPermission === null && (
+                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
+                        <Camera className="h-16 w-16 text-muted-foreground" />
+                        <p className="mt-2 text-sm text-muted-foreground">Requesting camera...</p>
+                    </div>
+                 )}
+              </>
             )}
           </div>
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="picture">Picture</Label>
-            <Input id="picture" type="file" accept="image/*" onChange={handleFileChange} />
-          </div>
+          <canvas ref={canvasRef} className="hidden" />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!photo || isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              'Log Attendance'
-            )}
-          </Button>
+          {photoPreview ? (
+            <>
+              <Button variant="secondary" onClick={handleRetake} disabled={isLoading}>
+                <RefreshCw className="mr-2" />
+                Retake
+              </Button>
+              <Button onClick={handleSubmit} disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Log Attendance'
+                )}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={handleCapture} disabled={!hasCameraPermission || isLoading}>
+              <Camera className="mr-2" />
+              Capture Photo
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
