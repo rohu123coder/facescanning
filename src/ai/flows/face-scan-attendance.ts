@@ -17,6 +17,9 @@ const FaceScanAttendanceInputSchema = z.object({
     .describe(
       "A photo of the staff member's face, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+  referencePhotoUrl: z
+    .string()
+    .describe("A URL to a reference photo of the staff member."),
   staffId: z.string().describe('The unique identifier of the staff member.'),
 });
 export type FaceScanAttendanceInput = z.infer<typeof FaceScanAttendanceInputSchema>;
@@ -35,13 +38,15 @@ const prompt = ai.definePrompt({
   name: 'faceScanAttendancePrompt',
   input: {schema: FaceScanAttendanceInputSchema},
   output: {schema: FaceScanAttendanceOutputSchema},
-  prompt: `You are an AI attendance system that logs staff attendance based on facial recognition.
+  prompt: `You are an AI facial recognition system. Your task is to determine if the person in the live photo is the same person as in the reference photo for staff member {{{staffId}}}.
 
-You will use the provided photo to verify the identity of the staff member and log their attendance.
+Compare the two images.
 
-Determine if the face in the photo matches the staff member with ID {{{staffId}}}. If the face is recognized, set isRecognized to true and provide a success message. Otherwise, set isRecognized to false and provide a message indicating that the face was not recognized.
+- If they are the same person, set isRecognized to true and for the message, say "Welcome!".
+- If they are not the same person, set isRecognized to false and for the message, say "Face not recognized.".
 
-Photo: {{media url=photoDataUri}}`,
+Live Photo: {{media url=photoDataUri}}
+Reference Photo: {{media url=referencePhotoUrl}}`,
 });
 
 const faceScanAttendanceFlow = ai.defineFlow(

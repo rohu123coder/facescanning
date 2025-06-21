@@ -4,6 +4,7 @@ export type Staff = {
   department: string;
   role: string;
   salary: number;
+  photoUrl: string;
   attendanceStatus?: {
       time: string;
       date: string;
@@ -24,11 +25,11 @@ export type Attendance = {
 }
 
 export const staff: Staff[] = [
-  { id: 'KM-001', name: 'Aarav Sharma', department: 'Engineering', role: 'Frontend Developer', salary: 75000, attendanceStatus: null },
-  { id: 'KM-002', name: 'Diya Patel', department: 'Design', role: 'UI/UX Designer', salary: 72000, attendanceStatus: null },
-  { id: 'KM-003', name: 'Rohan Mehta', department: 'Engineering', role: 'Backend Developer', salary: 80000, attendanceStatus: null },
-  { id: 'KM-004', name: 'Priya Singh', department: 'Product', role: 'Product Manager', salary: 95000, attendanceStatus: null },
-  { id: 'KM-005', name: 'Aditya Kumar', department: 'QA', role: 'QA Engineer', salary: 65000, attendanceStatus: null },
+  { id: 'KM-001', name: 'Aarav Sharma', department: 'Engineering', role: 'Frontend Developer', salary: 75000, photoUrl: 'https://placehold.co/400x400.png', attendanceStatus: null },
+  { id: 'KM-002', name: 'Diya Patel', department: 'Design', role: 'UI/UX Designer', salary: 72000, photoUrl: 'https://placehold.co/400x400.png', attendanceStatus: null },
+  { id: 'KM-003', name: 'Rohan Mehta', department: 'Engineering', role: 'Backend Developer', salary: 80000, photoUrl: 'https://placehold.co/400x400.png', attendanceStatus: null },
+  { id: 'KM-004', name: 'Priya Singh', department: 'Product', role: 'Product Manager', salary: 95000, photoUrl: 'https://placehold.co/400x400.png', attendanceStatus: null },
+  { id: 'KM-005', name: 'Aditya Kumar', department: 'QA', role: 'QA Engineer', salary: 65000, photoUrl: 'https://placehold.co/400x400.png', attendanceStatus: null },
 ];
 
 export const clients: Client[] = [

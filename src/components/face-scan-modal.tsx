@@ -122,6 +122,7 @@ export function FaceScanModal({ isOpen, onOpenChange, staffMember, onAttendanceS
             const result = await faceScanAttendance({
                 photoDataUri: dataUri,
                 staffId: staffMember.id,
+                referencePhotoUrl: staffMember.photoUrl,
             });
 
             if (result.isRecognized) {
