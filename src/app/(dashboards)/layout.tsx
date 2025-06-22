@@ -96,8 +96,10 @@ function ClientDashboardLayout({
           <SidebarMenu>
             {navConfig.map((item) => {
               if (allowedFeatures.includes(item.feature)) {
+                // Special handling for staff and student links to avoid duplicate keys
+                const key = item.feature === 'STAFF_MANAGEMENT' ? `${item.href}-staff` : item.feature === 'STUDENT_MANAGEMENT' ? `${item.href}-student` : item.href;
                 return (
-                  <SidebarMenuItem key={item.href}>
+                  <SidebarMenuItem key={key}>
                     <SidebarMenuButton
                       asChild
                       isActive={getIsActive(item.href, pathname)}
