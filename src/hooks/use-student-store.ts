@@ -43,6 +43,18 @@ export function useStudentStore() {
     
     updateStudentList([...studentList, studentToAdd]);
   }, [studentList, updateStudentList]);
+
+  const updateStudent = useCallback((updatedStudentData: Student) => {
+    const updatedList = studentList.map(student => 
+      student.id === updatedStudentData.id ? updatedStudentData : student
+    );
+    updateStudentList(updatedList);
+  }, [studentList, updateStudentList]);
+
+  const deleteStudent = useCallback((studentId: string) => {
+      const updatedList = studentList.filter(student => student.id !== studentId);
+      updateStudentList(updatedList);
+  }, [studentList, updateStudentList]);
   
   const updateStudentAttendance = useCallback((studentId: string) => {
     const now = new Date();
@@ -79,5 +91,5 @@ export function useStudentStore() {
     return 'Arrived';
   }, [studentList, updateStudentList]);
 
-  return { studentList, setStudentList, addStudent, updateStudentAttendance, isInitialized };
+  return { studentList, setStudentList, addStudent, updateStudent, deleteStudent, updateStudentAttendance, isInitialized };
 }

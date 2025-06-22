@@ -11,6 +11,7 @@ import { type Staff, type Student } from '@/lib/data';
 import { generateAttendanceReportCsv, generateStudentAttendanceReportCsv } from '@/lib/actions';
 import { AddStaffModal } from '@/components/add-staff-modal';
 import { AddStudentModal } from '@/components/add-student-modal';
+import { EditStudentModal } from '@/components/edit-student-modal';
 import { Badge } from '@/components/ui/badge';
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { useStudentStore } from '@/hooks/use-student-store';
@@ -22,11 +23,16 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, isWithinInterval, startOfDay } from 'date-fns';
 import { type DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 export default function ClientDashboard() {
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
+  const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
   const [activeTab, setActiveTab] = useState('staff');
+  const { toast } = useToast();
 
   // Filter states
   const [staffNameFilter, setStaffNameFilter] = useState('');
@@ -39,7 +45,7 @@ export default function ClientDashboard() {
   });
   
   const { staffList, addStaff, isInitialized: staffInitialized } = useStaffStore();
-  const { studentList, addStudent, isInitialized: studentInitialized } = useStudentStore();
+  const { studentList, addStudent, updateStudent, deleteStudent, isInitialized: studentInitialized } = useStudentStore();
   
   // Memoized lists for filter options
   const staffDepartments = useMemo(() => {
@@ -145,6 +151,24 @@ export default function ClientDashboard() {
   
   const handleAddStudent = (newStudent: Omit<Student, 'id' | 'attendanceStatus'>) => {
     addStudent(newStudent);
+  };
+
+  const handleEditStudent = (student: Student) => {
+    setStudentToEdit(student);
+    setIsEditStudentModalOpen(true);
+  };
+
+  const handleUpdateStudent = (updatedStudent: Student) => {
+    updateStudent(updatedStudent);
+  };
+
+  const handleDeleteStudent = (studentId: string) => {
+    deleteStudent(studentId);
+    toast({
+      variant: 'destructive',
+      title: 'Student Deleted',
+      description: 'The student has been successfully removed.',
+    });
   };
   
   const clearFilters = () => {
@@ -254,11 +278,12 @@ export default function ClientDashboard() {
                     <TableHead>Arrival Time</TableHead>
                     <TableHead>Departure Time</TableHead>
                     <TableHead>Total Hours</TableHead>
+                    <TableHead className="text-right print-hide">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {!studentInitialized ? (
-                        <TableRow><TableCell colSpan={7} className="text-center h-24">Loading student data...</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={8} className="text-center h-24">Loading student data...</TableCell></TableRow>
                     ) : filteredStudentList.length > 0 ? (
                     filteredStudentList.map((student) => (
                         <TableRow key={student.id}>
@@ -269,10 +294,37 @@ export default function ClientDashboard() {
                             <TableCell>{student.attendanceStatus?.inTime ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">{student.attendanceStatus.inTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
                             <TableCell>{student.attendanceStatus?.outTime ? <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{student.attendanceStatus.outTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
                             <TableCell>{student.attendanceStatus?.totalHours ? <Badge variant="outline">{student.attendanceStatus.totalHours}</Badge> : <Badge variant="secondary">--</Badge>}</TableCell>
+                            <TableCell className="text-right print-hide">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleEditStudent(student)}>Edit</DropdownMenuItem>
+                                  <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/90 focus:text-destructive-foreground">
+                                            Delete
+                                          </DropdownMenuItem>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                  This action cannot be undone. This will permanently delete the student and all associated attendance data.
+                                              </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => handleDeleteStudent(student.id)} className={cn(buttonVariants({ variant: "destructive" }))}>Delete</AlertDialogAction>
+                                          </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                  </AlertDialog>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
                         </TableRow>
                         ))
                     ) : (
-                        <TableRow><TableCell colSpan={7} className="text-center h-24">No students match the current filters.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={8} className="text-center h-24">No students match the current filters.</TableCell></TableRow>
                     )}
                 </TableBody>
                 </Table>
@@ -377,6 +429,12 @@ export default function ClientDashboard() {
 
       <AddStaffModal isOpen={isAddStaffModalOpen} onOpenChange={setIsAddStaffModalOpen} onStaffAdded={handleAddStaff} />
       <AddStudentModal isOpen={isAddStudentModalOpen} onOpenChange={setIsAddStudentModalOpen} onStudentAdded={handleAddStudent} />
+      <EditStudentModal 
+        isOpen={isEditStudentModalOpen}
+        onOpenChange={setIsEditStudentModalOpen}
+        student={studentToEdit}
+        onStudentUpdated={handleUpdateStudent}
+      />
     </div>
   );
 }
