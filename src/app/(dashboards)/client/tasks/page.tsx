@@ -25,28 +25,30 @@ const priorityBadgeVariant = {
 
 export default function TaskManagementPage() {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
-  const { tasks, isInitialized: tasksInitialized } = useTaskStore();
+  const { tasks, addTask, isInitialized: tasksInitialized } = useTaskStore();
   const { staffList, isInitialized: staffInitialized } = useStaffStore();
   
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [taskStats, setTaskStats] = useState({ overdue: 0, completed: 0, dueToday: 0 });
   
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-        setSelectedDate(new Date());
-    }
+    // This runs only on the client, after hydration
+    setSelectedDate(new Date());
   }, []);
   
   const isDataReady = tasksInitialized && staffInitialized;
 
-  const taskStats = useMemo(() => {
-    const today = startOfToday();
-    const overdue = tasks.filter(t => new Date(t.dueDate) < today && t.status !== 'Completed').length;
-    const completed = tasks.filter(t => t.status === 'Completed').length;
-    const dueToday = tasks.filter(t => isSameDay(new Date(t.dueDate), today)).length;
-    
-    return { overdue, completed, dueToday };
-  }, [tasks]);
+  useEffect(() => {
+    if (isDataReady) {
+        const today = startOfToday();
+        const overdue = tasks.filter(t => new Date(t.dueDate) < today && t.status !== 'Completed').length;
+        const completed = tasks.filter(t => t.status === 'Completed').length;
+        const dueToday = tasks.filter(t => isSameDay(new Date(t.dueDate), today)).length;
+        setTaskStats({ overdue, completed, dueToday });
+    }
+  }, [tasks, isDataReady]);
+
 
   const kanbanColumns: Task['status'][] = ['Pending', 'In Progress', 'Completed'];
 
@@ -84,6 +86,13 @@ export default function TaskManagementPage() {
 
   // Simulating admin/manager as the current user
   const currentUser = staffList.find(s => s.id === 'KM-003') || staffList[0];
+
+  const handleTaskAdded = (newTask: Omit<Task, 'id' | 'createdAt' | 'status' | 'activity'>) => {
+    if (currentUser) {
+      addTask(newTask, currentUser);
+    }
+  };
+
 
   return (
     <>
@@ -239,6 +248,7 @@ export default function TaskManagementPage() {
        <AddTaskModal
         isOpen={isAddTaskModalOpen}
         onOpenChange={setIsAddTaskModalOpen}
+        onTaskAdded={handleTaskAdded}
       />
       {selectedTask && currentUser && (
         <TaskDetailsModal

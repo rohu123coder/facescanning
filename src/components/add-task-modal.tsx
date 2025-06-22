@@ -34,13 +34,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { autoAssignTask } from '@/ai/flows/auto-assign-task';
 import { useStaffStore } from '@/hooks/use-staff-store';
-import { useTaskStore } from '@/hooks/use-task-store';
 import { StaffSelectionModal } from './staff-selection-modal';
 
 interface AddTaskModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  // onTaskAdded is now handled by useTaskStore
+  onTaskAdded: (task: Omit<Task, 'id' | 'createdAt' | 'status' | 'activity'>) => void;
 }
 
 const taskFormSchema = z.object({
@@ -54,13 +53,12 @@ const taskFormSchema = z.object({
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
 
-export function AddTaskModal({ isOpen, onOpenChange }: AddTaskModalProps) {
+export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const { toast } = useToast();
   const { staffList } = useStaffStore();
-  const { addTask } = useTaskStore();
   
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
@@ -109,16 +107,14 @@ export function AddTaskModal({ isOpen, onOpenChange }: AddTaskModalProps) {
   const onSubmit = async (values: TaskFormValues) => {
     setIsSaving(true);
     try {
-      // Assuming the creator is the admin 'Rohan Mehta'
-      const creator = { id: 'KM-003', name: 'Rohan Mehta' };
-      addTask(
+      await new Promise(resolve => setTimeout(resolve, 500));
+      onTaskAdded(
         {
           ...values,
           description: values.description || '',
           tags: values.tags ? values.tags.split(',').map(tag => tag.trim()) : [],
           dueDate: values.dueDate.toISOString(),
-        },
-        creator
+        }
       );
       handleClose();
     } catch (error) {
