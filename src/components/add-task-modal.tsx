@@ -223,73 +223,96 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
               name="assignedTo"
               render={({ field }) => (
                 <FormItem>
-                    <div className="flex justify-between items-center">
-                        <FormLabel>Assign To</FormLabel>
-                        <Button type="button" size="sm" variant="ghost" onClick={handleAutoAssign} disabled={isAiLoading}>
-                           {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4 text-yellow-400"/>}
-                            Auto-assign
-                        </Button>
-                    </div>
-                    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                        <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                variant="outline"
-                                role="combobox"
-                                aria-expanded={popoverOpen}
-                                className={cn("w-full justify-between h-auto min-h-10", !(field.value && field.value.length > 0) && "text-muted-foreground")}
-                                >
-                                <div className="flex gap-1 flex-wrap">
-                                     {(field.value && field.value.length > 0) ? (
-                                        staffList
-                                            .filter(staff => field.value.includes(staff.id))
-                                            .map(staff => <Badge key={staff.id} variant="secondary">{staff.name}</Badge>)
-                                     ) : "Select staff..."}
-                                </div>
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                           <Command>
-                            <CommandInput placeholder="Search staff..." />
-                            <CommandList>
-                            <CommandEmpty>No staff found.</CommandEmpty>
-                            <CommandGroup>
-                            {staffList.map((staff) => {
-                                const isSelected = field.value?.includes(staff.id);
-                                return (
-                                <CommandItem
-                                    key={staff.id}
-                                    value={staff.name}
-                                    onSelect={() => {
-                                      const currentSelection = field.value || [];
-                                      const newSelection = isSelected
-                                          ? currentSelection.filter(id => id !== staff.id)
-                                          : [...currentSelection, staff.id];
-                                      field.onChange(newSelection);
-                                    }}
-                                >
-                                    <div
-                                      className={cn(
-                                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                                        isSelected
-                                          ? "bg-primary text-primary-foreground"
-                                          : "opacity-50 [&_svg]:invisible"
-                                      )}
-                                    >
-                                      <Check className={cn("h-4 w-4")} />
-                                    </div>
+                  <div className="flex justify-between items-center">
+                    <FormLabel>Assign To</FormLabel>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleAutoAssign}
+                      disabled={isAiLoading}
+                    >
+                      {isAiLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="mr-2 h-4 w-4 text-yellow-400" />
+                      )}
+                      Auto-assign
+                    </Button>
+                  </div>
+                  <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={popoverOpen}
+                          className={cn(
+                            'w-full justify-between h-auto min-h-10',
+                            !(field.value && field.value.length > 0) && 'text-muted-foreground'
+                          )}
+                        >
+                          <div className="flex gap-1 flex-wrap">
+                            {field.value && field.value.length > 0 ? (
+                              staffList
+                                .filter((staff) => field.value.includes(staff.id))
+                                .map((staff) => (
+                                  <Badge key={staff.id} variant="secondary">
                                     {staff.name}
+                                  </Badge>
+                                ))
+                            ) : (
+                              'Select staff...'
+                            )}
+                          </div>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search staff..." />
+                        <CommandList>
+                          <CommandEmpty>No staff found.</CommandEmpty>
+                          <CommandGroup>
+                            {staffList.map((staff) => {
+                              const isSelected = field.value?.includes(staff.id);
+                              return (
+                                <CommandItem
+                                  key={staff.id}
+                                  value={staff.name}
+                                  onSelect={() => {
+                                    const currentSelection = field.value || [];
+                                    const newSelection = isSelected
+                                      ? currentSelection.filter((id) => id !== staff.id)
+                                      : [...currentSelection, staff.id];
+                                    field.onChange(newSelection);
+                                  }}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                  }}
+                                >
+                                  <div
+                                    className={cn(
+                                      "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                      isSelected
+                                        ? "bg-primary text-primary-foreground"
+                                        : "opacity-50 [&_svg]:invisible"
+                                    )}
+                                  >
+                                    <Check className={cn("h-4 w-4")} />
+                                  </div>
+                                  {staff.name}
                                 </CommandItem>
-                                );
+                              );
                             })}
-                            </CommandGroup>
-                           </CommandList>
-                           </Command>
-                        </PopoverContent>
-                    </Popover>
-                    <FormMessage />
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
                 </FormItem>
               )}
             />
