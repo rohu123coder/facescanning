@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
 import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
 
 interface SalaryRulesModalProps {
   isOpen: boolean;
@@ -36,7 +37,11 @@ const rulesFormSchema = z.object({
   basicPercentage: z.coerce.number().min(0).max(100, 'Cannot exceed 100%'),
   hraPercentage: z.coerce.number().min(0).max(100, 'Cannot exceed 100%'),
   deductionPercentage: z.coerce.number().min(0).max(100, 'Cannot exceed 100%'),
+}).refine(data => data.basicPercentage + data.hraPercentage <= 100, {
+  message: "Basic and HRA percentage together cannot exceed 100%.",
+  path: ["hraPercentage"],
 });
+
 
 export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -53,6 +58,11 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
           form.reset(rules);
       }
   }, [isInitialized, rules, form, isOpen]);
+  
+  const basicPercentage = form.watch('basicPercentage');
+  const hraPercentage = form.watch('hraPercentage');
+  const specialAllowancePercentage = 100 - (basicPercentage || 0) - (hraPercentage || 0);
+
 
   const onSubmit = async (values: z.infer<typeof rulesFormSchema>) => {
     setIsLoading(true);
@@ -136,6 +146,20 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
                 </FormItem>
               )}
             />
+             <FormItem>
+                <FormLabel>Special Allowance Percentage</FormLabel>
+                <FormControl>
+                    <Input
+                    readOnly
+                    disabled
+                    value={`${specialAllowancePercentage.toFixed(0)}%`}
+                    className="text-muted-foreground font-medium"
+                    />
+                </FormControl>
+                <FormDescription>
+                    This is calculated automatically (100% - Basic% - HRA%) to balance the earnings.
+                </FormDescription>
+            </FormItem>
              <FormField
               control={form.control}
               name="deductionPercentage"
