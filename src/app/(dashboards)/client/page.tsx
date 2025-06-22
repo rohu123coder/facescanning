@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, FileDown, Video, User, Users, Printer, Calendar as CalendarIcon, X } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, FileDown, Video, User, Users, Printer, Calendar as CalendarIcon, X, Banknote } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { type Staff, type Student, type AttendanceRecord } from '@/lib/data';
 import { AddStaffModal } from '@/components/add-staff-modal';
@@ -205,10 +205,18 @@ export default function ClientDashboard() {
 
   const handleAddStaff = (newStaff: Omit<Staff, 'id' | 'attendanceRecords'>) => {
     addStaff(newStaff);
+    toast({
+      title: 'Staff Added',
+      description: `${newStaff.name} has been successfully added.`,
+    });
   };
   
   const handleAddStudent = (newStudent: Omit<Student, 'id' | 'attendanceRecords'>) => {
     addStudent(newStudent);
+    toast({
+      title: 'Student Added',
+      description: `${newStudent.name} has been successfully added.`,
+    });
   };
 
   const handleEditStudent = (student: Student) => {
@@ -311,7 +319,7 @@ export default function ClientDashboard() {
                                 key={className}
                                 onClick={() => setStudentClassFilter(className)}
                                 className={cn(
-                                    "p-4 bg-muted rounded-lg text-left transition-all hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50",
+                                    "p-4 bg-card rounded-lg text-left transition-all border hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50",
                                     studentClassFilter === className && "ring-2 ring-primary"
                                 )}
                             >
@@ -454,7 +462,7 @@ export default function ClientDashboard() {
     <div className="space-y-8">
       <div className="flex items-center justify-between print-hide">
         <div>
-          <h1 className="text-3xl font-headline font-bold">Client Dashboard</h1>
+          <h1 className="text-3xl font-bold">Client Dashboard</h1>
           <p className="text-muted-foreground">Manage your staff, students and view attendance.</p>
         </div>
         <div className="flex gap-2">
@@ -473,6 +481,7 @@ export default function ClientDashboard() {
           >
             <Printer className="mr-2 h-4 w-4" /> Print Report
           </Button>
+          <Button asChild><Link href="/client/salary"><Banknote className="mr-2 h-4 w-4" />Manage Salaries</Link></Button>
           <Button asChild><Link href="/client/attendance-kiosk"><Video className="mr-2 h-4 w-4" />Open Attendance Kiosk</Link></Button>
         </div>
       </div>

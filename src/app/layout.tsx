@@ -1,21 +1,12 @@
 import type {Metadata} from 'next';
-import { Playfair_Display, PT_Sans } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from '@/lib/utils';
 
-const playfair = Playfair_Display({
+const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-playfair-display',
-  display: 'swap',
-});
-
-const ptSans = PT_Sans({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-pt-sans',
-  display: 'swap',
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
@@ -29,12 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          "font-body antialiased",
-          ptSans.variable,
-          playfair.variable
+          "font-sans antialiased",
+          inter.variable
         )}
         suppressHydrationWarning={true}
       >

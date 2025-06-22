@@ -34,7 +34,7 @@ export default function Home() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-8">
       <div className="text-center mb-12">
-        <h1 className="font-headline text-5xl md:text-7xl font-bold text-primary mb-4 tracking-tight">
+        <h1 className="text-5xl md:text-7xl font-bold text-primary mb-4 tracking-tight">
           Karma Manager
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -44,14 +44,14 @@ export default function Home() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-6xl">
         {roles.map((role) => (
-          <Card key={role.name} className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-in-out group">
+          <Card key={role.name} className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-in-out group bg-card">
             <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
               {role.icon}
-              <CardTitle className="font-headline text-2xl">{role.name}</CardTitle>
+              <CardTitle className="text-2xl">{role.name}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col justify-between h-[160px]">
               <p className="text-muted-foreground pt-2">{role.description}</p>
-              <Button asChild className="mt-4 w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button asChild className="mt-4 w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                 <Link href={role.href}>
                   Proceed <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
