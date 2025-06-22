@@ -33,7 +33,7 @@ const navConfig: { feature: Feature, href: string, label: string, icon: React.El
 ];
 
 
-export default function DashboardLayout({
+function ClientDashboardLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -138,4 +138,22 @@ export default function DashboardLayout({
       </SidebarInset>
     </SidebarProvider>
   );
+}
+
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+  
+  // If the path is for super-admin, we bypass the client layout entirely.
+  // This allows the super-admin's own layout to handle its auth and UI.
+  if (pathname.startsWith('/super-admin')) {
+    return <>{children}</>;
+  }
+
+  // All other routes under (dashboards) get the client-side layout.
+  return <ClientDashboardLayout>{children}</ClientDashboardLayout>;
 }
