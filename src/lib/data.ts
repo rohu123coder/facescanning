@@ -94,13 +94,20 @@ export const initialStaff: Staff[] = [
     { id: 'KM-004', name: 'Priya Singh', email: 'priya.singh@example.com', mobile: '9876543213', whatsapp: '9876543213', address: '101 Design Studio, Delhi', department: 'Design', role: 'UI/UX Designer', salary: 70000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Figma', 'UI Design', 'User Research'] },
 ];
 
+const baseDate = new Date('2024-07-20T10:00:00.000Z');
+const addDays = (date: Date, days: number): Date => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
 export const initialTasks: Task[] = [
-    { id: 'TASK-001', title: 'Design new dashboard homepage', description: 'Create a modern and intuitive design for the main dashboard homepage.', priority: 'High', dueDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(), status: 'In Progress', assignedTo: ['KM-004'], tags: ['UI/UX', 'Design'], createdAt: new Date().toISOString() },
-    { id: 'TASK-002', title: 'Develop login API endpoint', description: 'Build and test the API endpoint for user authentication.', priority: 'High', dueDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString(), status: 'In Progress', assignedTo: ['KM-002'], tags: ['Backend', 'API'], createdAt: new Date().toISOString() },
-    { id: 'TASK-003', title: 'Implement frontend for settings page', description: 'Use React and TypeScript to build the settings page UI.', priority: 'Medium', dueDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(), status: 'Pending', assignedTo: ['KM-001'], tags: ['Frontend', 'React'], createdAt: new Date().toISOString() },
-    { id: 'TASK-004', title: 'Conduct user research for new feature', description: 'Interview 5 target users to gather feedback on the proposed feature.', priority: 'Medium', dueDate: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString(), status: 'Pending', assignedTo: ['KM-003', 'KM-004'], tags: ['Research', 'Product'], createdAt: new Date().toISOString() },
-    { id: 'TASK-005', title: 'Fix bug in reporting module', description: 'The CSV export in the reporting module is failing for large datasets.', priority: 'Low', dueDate: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Pending', assignedTo: [], tags: ['Bug', 'Backend'], createdAt: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString() },
-    { id: 'TASK-006', title: 'Update documentation for API v2', description: 'Write and publish the updated documentation for all v2 endpoints.', priority: 'Low', dueDate: new Date(new Date().setDate(new Date().getDate() + 20)).toISOString(), status: 'Completed', assignedTo: ['KM-002'], tags: ['Docs'], createdAt: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString() },
+    { id: 'TASK-001', title: 'Design new dashboard homepage', description: 'Create a modern and intuitive design for the main dashboard homepage.', priority: 'High', dueDate: addDays(baseDate, 5).toISOString(), status: 'In Progress', assignedTo: ['KM-004'], tags: ['UI/UX', 'Design'], createdAt: baseDate.toISOString() },
+    { id: 'TASK-002', title: 'Develop login API endpoint', description: 'Build and test the API endpoint for user authentication.', priority: 'High', dueDate: addDays(baseDate, 3).toISOString(), status: 'In Progress', assignedTo: ['KM-002'], tags: ['Backend', 'API'], createdAt: baseDate.toISOString() },
+    { id: 'TASK-003', title: 'Implement frontend for settings page', description: 'Use React and TypeScript to build the settings page UI.', priority: 'Medium', dueDate: addDays(baseDate, 10).toISOString(), status: 'Pending', assignedTo: ['KM-001'], tags: ['Frontend', 'React'], createdAt: baseDate.toISOString() },
+    { id: 'TASK-004', title: 'Conduct user research for new feature', description: 'Interview 5 target users to gather feedback on the proposed feature.', priority: 'Medium', dueDate: addDays(baseDate, 15).toISOString(), status: 'Pending', assignedTo: ['KM-003', 'KM-004'], tags: ['Research', 'Product'], createdAt: baseDate.toISOString() },
+    { id: 'TASK-005', title: 'Fix bug in reporting module', description: 'The CSV export in the reporting module is failing for large datasets.', priority: 'Low', dueDate: addDays(baseDate, -1).toISOString(), status: 'Pending', assignedTo: [], tags: ['Bug', 'Backend'], createdAt: addDays(baseDate, -2).toISOString() },
+    { id: 'TASK-006', title: 'Update documentation for API v2', description: 'Write and publish the updated documentation for all v2 endpoints.', priority: 'Low', dueDate: addDays(baseDate, 20).toISOString(), status: 'Completed', assignedTo: ['KM-002'], tags: ['Docs'], createdAt: addDays(baseDate, -5).toISOString() },
 ];
 
 
