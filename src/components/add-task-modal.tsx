@@ -264,7 +264,6 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                     key={staff.id}
                                     onMouseDown={(e) => {
                                       e.preventDefault();
-                                      e.stopPropagation();
                                     }}
                                     onSelect={() => {
                                         const currentSelection = field.value || [];
