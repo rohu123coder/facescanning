@@ -9,6 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useToast } from '@/hooks/use-toast';
 import { type Staff } from '@/lib/data';
 import { format } from 'date-fns';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
 
 type SalaryData = {
   presentDays: number;
@@ -41,24 +44,41 @@ export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPerio
   const { toast } = useToast();
 
   const handleDownload = () => {
-    toast({
-        title: 'Feature not available',
-        description: 'PDF download functionality is a planned feature.',
-    });
+    const payslipElement = document.getElementById('payslip-content');
+    if (payslipElement) {
+        toast({
+            title: 'Generating PDF...',
+            description: 'Please wait while your payslip is being created.',
+        });
+        html2canvas(payslipElement, { scale: 2 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`payslip-${staff.name.replace(/\s/g, '_')}-${payPeriod}.pdf`);
+        });
+    }
   };
   
   const handleEmail = () => {
+    const subject = `Payslip for ${staff.name} - ${payPeriod}`;
+    const body = `Hi ${staff.name},\n\nPlease find your payslip attached for the period of ${payPeriod}.\n\nBest regards,\nKarma Manager`;
+    const mailtoLink = `mailto:${staff.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoLink;
     toast({
-        title: 'Feature not available',
-        description: `Emailing payslip to ${staff.name} is a planned feature.`,
+        title: 'Email Client Opened',
+        description: `Please attach the downloaded PDF to send the payslip to ${staff.name}.`,
     });
   }
 
-  const specialAllowance = Math.max(0, salaryData.earnedGross - salaryData.basic - salaryData.hra);
+  const basic = salaryData.basic;
+  const hra = salaryData.hra;
+  const specialAllowance = Math.max(0, salaryData.earnedGross - basic - hra);
 
   const earnings = [
-    { description: 'Basic Salary', amount: salaryData.basic },
-    { description: 'House Rent Allowance (HRA)', amount: salaryData.hra },
+    { description: 'Basic Salary', amount: basic },
+    { description: 'House Rent Allowance (HRA)', amount: hra },
   ];
 
   if (specialAllowance > 0.01) { // Add only if it's a meaningful amount

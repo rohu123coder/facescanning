@@ -5,6 +5,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { useToast } from '@/hooks/use-toast';
 
 const employee = {
     name: 'Diya Patel',
@@ -31,13 +34,28 @@ const totalDeductions = deductions.reduce((sum, item) => sum + item.amount, 0);
 const netSalary = totalEarnings - totalDeductions;
 
 export function SalarySlip() {
+  const { toast } = useToast();
+
   const handleDownload = () => {
-    // In a real app, this would trigger a PDF generation API
-    alert('PDF download functionality is not implemented in this demo.');
+    const slipElement = document.getElementById('salary-slip-content');
+    if (slipElement) {
+        toast({
+            title: 'Generating PDF...',
+            description: 'Please wait while your payslip is being created.',
+        });
+        html2canvas(slipElement, { scale: 2 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`payslip-${employee.name.replace(/\s/g, '_')}-${employee.payPeriod}.pdf`);
+        });
+    }
   };
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
+    <Card id="salary-slip-content" className="w-full max-w-3xl mx-auto">
       <CardHeader>
         <CardTitle className="font-headline text-3xl">Salary Slip</CardTitle>
         <CardDescription>
