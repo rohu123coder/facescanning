@@ -8,12 +8,14 @@ export type SalaryRules = {
   basicPercentage: number;
   hraPercentage: number;
   deductionPercentage: number;
+  weeklyOffDays: number[]; // 0: Sun, 1: Mon, ..., 6: Sat
 };
 
 const defaultRules: SalaryRules = {
   basicPercentage: 50,
   hraPercentage: 30,
   deductionPercentage: 10,
+  weeklyOffDays: [0], // Default: Sunday off
 };
 
 export function useSalaryRulesStore() {
@@ -24,7 +26,9 @@ export function useSalaryRulesStore() {
     try {
       const storedRules = localStorage.getItem(STORE_KEY);
       if (storedRules) {
-        setRules(JSON.parse(storedRules));
+        // Merge stored rules with defaults to handle new properties
+        const parsedRules = JSON.parse(storedRules);
+        setRules({ ...defaultRules, ...parsedRules });
       } else {
         localStorage.setItem(STORE_KEY, JSON.stringify(defaultRules));
       }

@@ -27,6 +27,7 @@ import { Loader2 } from 'lucide-react';
 import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from './ui/checkbox';
 
 interface SalaryRulesModalProps {
   isOpen: boolean;
@@ -37,11 +38,21 @@ const rulesFormSchema = z.object({
   basicPercentage: z.coerce.number().min(0).max(100, 'Cannot exceed 100%'),
   hraPercentage: z.coerce.number().min(0).max(100, 'Cannot exceed 100%'),
   deductionPercentage: z.coerce.number().min(0).max(100, 'Cannot exceed 100%'),
+  weeklyOffDays: z.array(z.number()).min(0).max(7),
 }).refine(data => data.basicPercentage + data.hraPercentage <= 100, {
   message: "Basic and HRA percentage together cannot exceed 100%.",
   path: ["hraPercentage"],
 });
 
+const daysOfWeek = [
+    { id: 0, label: 'Sunday' },
+    { id: 1, label: 'Monday' },
+    { id: 2, label: 'Tuesday' },
+    { id: 3, label: 'Wednesday' },
+    { id: 4, label: 'Thursday' },
+    { id: 5, label: 'Friday' },
+    { id: 6, label: 'Saturday' },
+]
 
 export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -87,15 +98,59 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-headline">Salary Rules Setup</DialogTitle>
           <DialogDescription>
-            Define the percentage-based rules for salary calculation. These rules apply to all employees.
+            Define the rules for salary calculation. These rules apply to all employees.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+             <FormField
+                control={form.control}
+                name="weeklyOffDays"
+                render={() => (
+                    <FormItem>
+                        <FormLabel>Weekly Off-Days</FormLabel>
+                        <FormDescription>Select the days that are non-working days each week.</FormDescription>
+                        <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
+                            {daysOfWeek.map((day) => (
+                                <FormField
+                                    key={day.id}
+                                    control={form.control}
+                                    name="weeklyOffDays"
+                                    render={({ field }) => {
+                                    return (
+                                        <FormItem
+                                        key={day.id}
+                                        className="flex flex-row items-center space-x-2 space-y-0"
+                                        >
+                                        <FormControl>
+                                            <Checkbox
+                                            checked={field.value?.includes(day.id)}
+                                            onCheckedChange={(checked) => {
+                                                return checked
+                                                ? field.onChange([...(field.value || []), day.id])
+                                                : field.onChange(
+                                                    field.value?.filter(
+                                                        (value) => value !== day.id
+                                                    )
+                                                    )
+                                            }}
+                                            />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">{day.label}</FormLabel>
+                                        </FormItem>
+                                    )
+                                    }}
+                                />
+                                ))}
+                        </div>
+                        <FormMessage />
+                    </FormItem>
+                )}
+             />
             <FormField
               control={form.control}
               name="basicPercentage"
@@ -147,12 +202,15 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
               )}
             />
              <FormItem>
-                <FormLabel>Special Allowance Percentage</FormLabel>
+                <div className="flex justify-between items-center">
+                  <FormLabel>Special Allowance Percentage</FormLabel>
+                  <span className="text-sm font-medium">{specialAllowancePercentage < 0 ? 0 : specialAllowancePercentage.toFixed(0)}%</span>
+                </div>
                 <FormControl>
                     <Input
                     readOnly
                     disabled
-                    value={`${specialAllowancePercentage.toFixed(0)}%`}
+                    value={`${specialAllowancePercentage < 0 ? 0 : specialAllowancePercentage.toFixed(0)}%`}
                     className="text-muted-foreground font-medium"
                     />
                 </FormControl>

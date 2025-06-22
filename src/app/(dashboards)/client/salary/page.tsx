@@ -35,7 +35,7 @@ export default function SalaryManagementPage() {
   }, []);
 
   const { monthStart, monthEnd, totalDaysInMonth, workingDays, currentMonthFormatted, currentMonthShortFormatted } = useMemo(() => {
-    if (!currentDate || !holidaysInitialized) {
+    if (!currentDate || !holidaysInitialized || !areRulesInitialized) {
       return { monthStart: null, monthEnd: null, totalDaysInMonth: 0, workingDays: 0, currentMonthFormatted: 'Loading...', currentMonthShortFormatted: '...' };
     }
     const start = startOfMonth(currentDate);
@@ -51,8 +51,8 @@ export default function SalaryManagementPage() {
     let calculatedWorkingDays = 0;
     for (let i = 0; i < daysInMonth; i++) {
         const day = addDays(start, i);
-        // getDay() returns 0 for Sunday
-        if (getDay(day) !== 0 && !holidaysInMonth.has(format(day, 'yyyy-MM-dd'))) {
+        // getDay() returns 0 for Sunday, 1 for Monday, etc.
+        if (!rules.weeklyOffDays.includes(getDay(day)) && !holidaysInMonth.has(format(day, 'yyyy-MM-dd'))) {
             calculatedWorkingDays++;
         }
     }
@@ -65,7 +65,7 @@ export default function SalaryManagementPage() {
         currentMonthFormatted: format(currentDate, 'MMMM yyyy'),
         currentMonthShortFormatted: format(currentDate, 'MMMM')
     };
-  }, [currentDate, holidays, holidaysInitialized]);
+  }, [currentDate, holidays, holidaysInitialized, rules, areRulesInitialized]);
 
   const handleLeaveInputChange = (staffId: string, field: 'casual' | 'sick' | 'adjustment', value: string) => {
     const isAdjustment = field === 'adjustment';
@@ -186,7 +186,7 @@ export default function SalaryManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{workingDays > 0 ? workingDays : '...'} days</div>
-              <p className="text-xs text-muted-foreground">(Excludes Sundays & holidays)</p>
+              <p className="text-xs text-muted-foreground">(Excludes weekly off-days & holidays)</p>
             </CardContent>
           </Card>
            <Card>
