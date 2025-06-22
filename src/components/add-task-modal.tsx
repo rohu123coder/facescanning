@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -281,24 +282,22 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                 <CommandItem
                                   key={staff.id}
                                   value={staff.name}
-                                  onMouseDown={(e) => {
+                                  onClick={(e) => {
                                     e.preventDefault();
-                                    e.stopPropagation();
-                                  }}
-                                  onSelect={() => {
-                                    const currentSelection = field.value || [];
+                                    setPopoverOpen(true); // Keep it open
+                                    const current = field.value || [];
                                     const newSelection = isSelected
-                                      ? currentSelection.filter((id) => id !== staff.id)
-                                      : [...currentSelection, staff.id];
-                                    field.onChange(newSelection);
+                                      ? current.filter((id) => id !== staff.id)
+                                      : [...current, staff.id];
+                                    form.setValue('assignedTo', newSelection, { shouldValidate: true });
                                   }}
                                 >
                                   <div
                                     className={cn(
-                                      'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                      "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
                                       isSelected
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'opacity-50 [&_svg]:invisible'
+                                        ? "bg-primary text-primary-foreground"
+                                        : "opacity-50 [&_svg]:invisible"
                                     )}
                                   >
                                     <Check className="h-4 w-4" />
