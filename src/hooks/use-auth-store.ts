@@ -5,12 +5,12 @@ import { useClientStore } from './use-client-store';
 import { type Client } from '@/lib/data';
 
 const AUTH_KEY = 'loggedInClientId';
+const CLIENT_STORE_KEY = 'clientList';
 
 export function useAuthStore() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
-  const { clients, isInitialized: clientsInitialized } = useClientStore();
-
+  
   useEffect(() => {
     try {
       const loggedInClientId = localStorage.getItem(AUTH_KEY);
@@ -23,27 +23,31 @@ export function useAuthStore() {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; message?: string; client?: Client; }> => {
-    if (!clientsInitialized) {
-        return { success: false, message: "Client data not ready. Please try again." };
-    }
-    
-    const client = clients.find(c => c.email === email);
+    try {
+        const storedClients = localStorage.getItem(CLIENT_STORE_KEY);
+        if (!storedClients) {
+            return { success: false, message: "Client data not found. Please contact support." };
+        }
+        
+        const allClients: Client[] = JSON.parse(storedClients);
+        const client = allClients.find(c => c.email === email);
 
-    // For this simulation, the password is the client's mobile number
-    if (client && client.mobile === password) {
-      try {
-        localStorage.setItem(AUTH_KEY, client.id);
-        setIsAuthenticated(true);
-        // Add a small delay to allow client store to update
-        await new Promise(resolve => setTimeout(resolve, 100));
-        return { success: true, client: client };
-      } catch (error) {
-         console.error("Failed to save auth status", error);
-         return { success: false, message: "Could not save session." };
-      }
+        // For this simulation, the password is the client's mobile number
+        if (client && client.mobile === password) {
+          localStorage.setItem(AUTH_KEY, client.id);
+          setIsAuthenticated(true);
+          // Add a small delay to allow other stores to react to the auth change
+          await new Promise(resolve => setTimeout(resolve, 100));
+          return { success: true, client: client };
+        }
+        
+        return { success: false, message: "Invalid email or password." };
+
+    } catch (error) {
+        console.error("Failed to login", error);
+        return { success: false, message: "An error occurred during login." };
     }
-    return { success: false, message: "Invalid email or password." };
-  }, [clients, clientsInitialized]);
+  }, []);
 
   const logout = useCallback(() => {
     try {
