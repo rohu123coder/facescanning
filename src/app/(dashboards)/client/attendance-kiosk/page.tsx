@@ -33,6 +33,35 @@ export default function AttendanceKiosk() {
   const lastScanTimesRef = useRef(new Map<string, number>());
   const scanCooldown = 1000 * 60 * 5; // 5 minutes cooldown per person
 
+  const playBeep = useCallback(() => {
+    // Check if window is defined (runs only on client)
+    if (typeof window === 'undefined') return;
+    
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    if (!audioContext) {
+        console.warn('Browser does not support Web Audio API.');
+        return;
+    };
+
+    // Create an oscillator
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    // Connect oscillator to gain node to control volume
+    oscillator.connect(gainNode);
+    // Connect gain node to destination (speakers)
+    gainNode.connect(audioContext.destination);
+
+    // Configure oscillator
+    oscillator.type = 'sine'; // A clean tone
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5 pitch, noticeable but not jarring
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime); // Adjust volume
+
+    // Start and stop the tone to create a short beep
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.15); // 150ms duration
+  }, []);
+
   const addLog = useCallback((message: string, staffName: string, staffPhotoUrl: string) => {
     const newLog: LogEntry = {
       id: Date.now(),
@@ -85,6 +114,7 @@ export default function AttendanceKiosk() {
           lastScanTimesRef.current.set(staff.id, now);
           const statusMsg = updateStaffAttendance(staff.id);
           toast({ title: `Attendance Logged`, description: `${staff.name} has ${statusMsg.toLowerCase()}.` });
+          playBeep();
           addLog(statusMsg, staff.name, staff.photoUrl);
           return; 
         }
@@ -92,12 +122,17 @@ export default function AttendanceKiosk() {
         console.error(`Face scan API error for ${staff.name}:`, error);
       }
     }
-  }, [staffList, isInitialized, updateStaffAttendance, toast, scanCooldown, addLog]);
+  }, [staffList, isInitialized, updateStaffAttendance, toast, scanCooldown, addLog, playBeep]);
 
 
   const startScanning = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsScanning(true);
+    // This is needed on some browsers to allow audio to play without direct user interaction for each sound
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
     intervalRef.current = setInterval(handleScanFrame, 2500); // Scan every 2.5 seconds
   }, [handleScanFrame]);
 
