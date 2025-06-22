@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { type Staff, type AttendanceRecord } from '@/lib/data';
+import { type Staff, type AttendanceRecord, initialStaff } from '@/lib/data';
 import { parse, formatDistanceStrict } from 'date-fns';
 
 const STORE_KEY = 'staffList';
@@ -20,9 +20,14 @@ export function useStaffStore() {
       const storedStaff = localStorage.getItem(STORE_KEY);
       if (storedStaff) {
         setStaffList(JSON.parse(storedStaff));
+      } else {
+        // If no data in local storage, seed it with initial data.
+        setStaffList(initialStaff);
+        localStorage.setItem(STORE_KEY, JSON.stringify(initialStaff));
       }
     } catch (error) {
       console.error("Failed to load staff from localStorage", error);
+      setStaffList(initialStaff); // Fallback to initial data on error
     }
     setIsInitialized(true);
   }, []);
@@ -36,10 +41,10 @@ export function useStaffStore() {
     }
   }, []);
   
-  const addStaff = useCallback((newStaff: Omit<Staff, 'id' | 'attendanceRecords'>) => {
+  const addStaff = useCallback((newStaff: Omit<Staff, 'id' | 'attendanceRecords' | 'skills'>) => {
     const newIdNumber = staffList.length > 0 ? Math.max(0, ...staffList.map(s => parseInt(s.id.split('-')[1], 10))) + 1 : 1;
     const newId = `KM-${String(newIdNumber).padStart(3, '0')}`;
-    const staffToAdd: Staff = { ...newStaff, id: newId, attendanceRecords: [] };
+    const staffToAdd: Staff = { ...newStaff, id: newId, attendanceRecords: [], skills: [] };
     
     updateStaffList([...staffList, staffToAdd]);
   }, [staffList, updateStaffList]);
@@ -61,6 +66,7 @@ export function useStaffStore() {
     const today = now.toISOString().split('T')[0];
     const currentTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
+    let statusMsg = '';
     const updatedList = staffList.map(staff => {
       if (staff.id !== staffId) {
         return staff;
@@ -68,46 +74,34 @@ export function useStaffStore() {
 
       const records = staff.attendanceRecords ? [...staff.attendanceRecords] : [];
       const todayRecordIndex = records.findIndex(r => r.date === today);
+      let updatedRecord: AttendanceRecord;
 
-      // This is the first punch of the day, create a new record.
       if (todayRecordIndex === -1) {
-        const newRecord: AttendanceRecord = { date: today, inTime: currentTime, outTime: null, totalHours: null };
-        return { ...staff, attendanceRecords: [...records, newRecord] };
+        // First punch of the day
+        updatedRecord = { date: today, inTime: currentTime, outTime: null, totalHours: null };
+        statusMsg = 'Clocked In';
+        return { ...staff, attendanceRecords: [...records, updatedRecord] };
       }
 
-      // A record for today exists. Update it without mutation.
+      // Subsequent punch
       const updatedRecords = [...records];
       const existingRecord = updatedRecords[todayRecordIndex];
       
-      let updatedRecord: AttendanceRecord;
-
-      // This logic ensures if an in-time exists, we're setting/updating the out-time.
-      // If for some reason a record for today exists but without an in-time, this will set it.
-      if (!existingRecord.inTime) {
-        updatedRecord = { ...existingRecord, inTime: currentTime };
-      } else {
-        const inTimeDate = parseTime(today, existingRecord.inTime);
-        const outTimeDate = parseTime(today, currentTime);
-        const totalHours = (!isNaN(inTimeDate.getTime()) && !isNaN(outTimeDate.getTime()))
-          ? formatDistanceStrict(outTimeDate, inTimeDate)
-          : null;
-        
-        updatedRecord = { ...existingRecord, outTime: currentTime, totalHours };
-      }
+      const inTimeDate = parseTime(today, existingRecord.inTime!);
+      const outTimeDate = parseTime(today, currentTime);
+      const totalHours = (!isNaN(inTimeDate.getTime()) && !isNaN(outTimeDate.getTime()))
+        ? formatDistanceStrict(outTimeDate, inTimeDate)
+        : null;
+      
+      updatedRecord = { ...existingRecord, outTime: currentTime, totalHours };
+      statusMsg = 'Clocked Out';
       
       updatedRecords[todayRecordIndex] = updatedRecord;
-
       return { ...staff, attendanceRecords: updatedRecords };
     });
     
     updateStaffList(updatedList);
-    // Return the status message
-    const updatedStaff = updatedList.find(s => s.id === staffId);
-    const updatedRecordForStatus = updatedStaff?.attendanceRecords?.find(r => r.date === today);
-    if (updatedRecordForStatus?.outTime) {
-        return 'Clocked Out';
-    }
-    return 'Clocked In';
+    return statusMsg;
 
   }, [staffList, updateStaffList]);
 

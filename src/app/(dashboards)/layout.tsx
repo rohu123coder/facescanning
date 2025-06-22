@@ -14,11 +14,12 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Briefcase, User, Shield, Gem, LogOut, Mountain } from 'lucide-react';
+import { Briefcase, User, Shield, Gem, LogOut, Mountain, ClipboardCheck } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const navItems = [
   { href: '/client', label: 'Client', icon: Briefcase },
+  { href: '/client/tasks', label: 'Task Management', icon: ClipboardCheck },
   { href: '/employee', label: 'Employee', icon: User },
   { href: '/admin', label: 'Admin', icon: Shield },
   { href: '/super-admin', label: 'Super Admin', icon: Gem },
@@ -48,7 +49,7 @@ export default function DashboardLayout({
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === item.href}
+                  isActive={pathname.startsWith(item.href) && (item.href !== '/client' || pathname === '/client')}
                   tooltip={item.label}
                 >
                   <Link href={item.href}>
@@ -75,7 +76,7 @@ export default function DashboardLayout({
                 <SidebarTrigger />
             </div>
             <div className="flex items-center gap-4">
-                <span className="font-semibold">{navItems.find(item => item.href === pathname)?.label} Portal</span>
+                <span className="font-semibold">{navItems.find(item => pathname.startsWith(item.href))?.label} Portal</span>
                 <ThemeToggle />
             </div>
         </header>

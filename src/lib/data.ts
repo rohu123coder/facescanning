@@ -12,7 +12,7 @@ export type AttendanceRecord = {
 
 export type Staff = {
   id: string;
-  name: string;
+  name:string;
   email: string;
   mobile: string;
   whatsapp: string;
@@ -24,7 +24,20 @@ export type Staff = {
   totalCasualLeaves: number;
   totalSickLeaves: number;
   attendanceRecords: AttendanceRecord[];
+  skills: string[];
 };
+
+export type Task = {
+    id: string;
+    title: string;
+    description: string;
+    priority: 'High' | 'Medium' | 'Low';
+    dueDate: string;
+    status: 'Pending' | 'In Progress' | 'Completed';
+    assignedTo: string[]; // Array of staff IDs
+    tags: string[];
+    createdAt: string;
+}
 
 export type Student = {
     id: string;
@@ -62,8 +75,8 @@ export type Attendance = {
 }
 
 export type SalaryData = {
-  presentDays: number;
   workingDays: number;
+  presentDays: number;
   paidLeaveDays: number;
   earnedGross: number;
   basic: number;
@@ -73,6 +86,23 @@ export type SalaryData = {
   adjustment: number;
   netPay: number;
 };
+
+export const initialStaff: Staff[] = [
+    { id: 'KM-001', name: 'Aarav Sharma', email: 'aarav.sharma@example.com', mobile: '9876543210', whatsapp: '9876543210', address: '123 Tech Park, Bangalore', department: 'Engineering', role: 'Frontend Developer', salary: 75000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['React', 'TypeScript', 'Next.js'] },
+    { id: 'KM-002', name: 'Diya Patel', email: 'diya.patel@example.com', mobile: '9876543211', whatsapp: '9876543211', address: '456 Innovation Hub, Pune', department: 'Engineering', role: 'Backend Developer', salary: 85000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Node.js', 'Databases', 'API Design'] },
+    { id: 'KM-003', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', mobile: '9876543212', whatsapp: '9876543212', address: '789 Business Tower, Mumbai', department: 'Product', role: 'Product Manager', salary: 95000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Product Strategy', 'Jira', 'Agile'] },
+    { id: 'KM-004', name: 'Priya Singh', email: 'priya.singh@example.com', mobile: '9876543213', whatsapp: '9876543213', address: '101 Design Studio, Delhi', department: 'Design', role: 'UI/UX Designer', salary: 70000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Figma', 'UI Design', 'User Research'] },
+];
+
+export const initialTasks: Task[] = [
+    { id: 'TASK-001', title: 'Design new dashboard homepage', description: 'Create a modern and intuitive design for the main dashboard homepage.', priority: 'High', dueDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(), status: 'In Progress', assignedTo: ['KM-004'], tags: ['UI/UX', 'Design'], createdAt: new Date().toISOString() },
+    { id: 'TASK-002', title: 'Develop login API endpoint', description: 'Build and test the API endpoint for user authentication.', priority: 'High', dueDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString(), status: 'In Progress', assignedTo: ['KM-002'], tags: ['Backend', 'API'], createdAt: new Date().toISOString() },
+    { id: 'TASK-003', title: 'Implement frontend for settings page', description: 'Use React and TypeScript to build the settings page UI.', priority: 'Medium', dueDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(), status: 'Pending', assignedTo: ['KM-001'], tags: ['Frontend', 'React'], createdAt: new Date().toISOString() },
+    { id: 'TASK-004', title: 'Conduct user research for new feature', description: 'Interview 5 target users to gather feedback on the proposed feature.', priority: 'Medium', dueDate: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString(), status: 'Pending', assignedTo: ['KM-003', 'KM-004'], tags: ['Research', 'Product'], createdAt: new Date().toISOString() },
+    { id: 'TASK-005', title: 'Fix bug in reporting module', description: 'The CSV export in the reporting module is failing for large datasets.', priority: 'Low', dueDate: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Pending', assignedTo: [], tags: ['Bug', 'Backend'], createdAt: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString() },
+    { id: 'TASK-006', title: 'Update documentation for API v2', description: 'Write and publish the updated documentation for all v2 endpoints.', priority: 'Low', dueDate: new Date(new Date().setDate(new Date().getDate() + 20)).toISOString(), status: 'Completed', assignedTo: ['KM-002'], tags: ['Docs'], createdAt: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString() },
+];
+
 
 export const staff: Staff[] = [];
 
