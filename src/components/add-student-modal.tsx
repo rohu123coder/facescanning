@@ -71,6 +71,8 @@ export function AddStudentModal({ isOpen, onOpenChange, onStudentAdded }: AddStu
       email: '',
       className: '',
       rollNumber: '',
+      gender: undefined,
+      dob: '',
       religion: '',
       fatherName: '',
       motherName: '',
