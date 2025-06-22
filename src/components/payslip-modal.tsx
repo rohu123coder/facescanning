@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 type SalaryData = {
   presentDays: number;
   leaveDays: number;
+  earnedGross: number;
   basic: number;
   hra: number;
   deductions: number;
@@ -53,16 +54,23 @@ export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPerio
     });
   }
 
+  const specialAllowance = Math.max(0, salaryData.earnedGross - salaryData.basic - salaryData.hra);
+
   const earnings = [
     { description: 'Basic Salary', amount: salaryData.basic },
     { description: 'House Rent Allowance (HRA)', amount: salaryData.hra },
   ];
 
+  if (specialAllowance > 0.01) { // Add only if it's a meaningful amount
+    earnings.push({ description: 'Special Allowance', amount: specialAllowance });
+  }
+
   const deductions = [
-    { description: 'Standard Deductions (PF, ESI)', amount: salaryData.deductions },
+    { description: 'Standard Deductions', amount: salaryData.deductions },
   ];
   
-  const totalEarnings = earnings.reduce((sum, item) => sum + item.amount, 0);
+  const totalEarnings = salaryData.earnedGross;
+  const totalDeductions = salaryData.deductions;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -84,6 +92,7 @@ export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPerio
                     <div className="text-right">
                         <p className="font-semibold">Karma Manager Inc.</p>
                         <p className="text-muted-foreground">Pay Date: {format(new Date(), 'dd MMM, yyyy')}</p>
+                        <p className="text-muted-foreground">Present Days: {salaryData.presentDays}</p>
                     </div>
                 </div>
                 <Separator className="my-4" />
@@ -135,7 +144,7 @@ export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPerio
                     </div>
                     <div className="text-lg text-right">
                         <p className="font-semibold">Total Deductions:</p>
-                        <p className="font-bold text-destructive">{formatCurrency(salaryData.deductions)}</p>
+                        <p className="font-bold text-destructive">{formatCurrency(totalDeductions)}</p>
                     </div>
                 </div>
             </CardContent>

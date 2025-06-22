@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 type SalaryData = {
   presentDays: number;
   leaveDays: number;
+  earnedGross: number;
   basic: number;
   hra: number;
   deductions: number;
@@ -50,7 +51,7 @@ export default function SalaryManagementPage() {
   }, [currentDate]);
 
   const salaryData = useMemo(() => {
-    if (!isInitialized || !monthStart || !monthEnd) return [];
+    if (!isInitialized || !monthStart || !monthEnd || totalDaysInMonth === 0) return [];
 
     return staffList.map(staff => {
       const presentDays = staff.attendanceRecords?.filter(rec => {
@@ -60,18 +61,25 @@ export default function SalaryManagementPage() {
 
       const leaveDays = totalDaysInMonth - presentDays;
       
-      // Simulated salary calculation
-      const grossSalary = staff.salary;
-      const basic = grossSalary * 0.5;
-      const hra = grossSalary * 0.3;
-      const deductions = grossSalary * 0.1; // (PF, ESI, etc.)
-      const netPay = basic + hra - deductions;
+      // Salary calculation based on attendance
+      const monthlyGrossSalary = staff.salary;
+      const earnedGross = (monthlyGrossSalary / totalDaysInMonth) * presentDays;
+      
+      // Components are calculated based on the earned gross salary
+      const basic = earnedGross * 0.5; // 50% of Earned Gross
+      const hra = earnedGross * 0.3;   // 30% of Earned Gross
+      
+      // Deductions are also based on the earned salary, e.g. 10%
+      const deductions = earnedGross * 0.1;
+      
+      const netPay = earnedGross - deductions;
 
       return {
         staff,
         salary: {
           presentDays,
           leaveDays,
+          earnedGross,
           basic,
           hra,
           deductions,
