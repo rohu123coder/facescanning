@@ -281,10 +281,18 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                 <CommandItem
                                   key={staff.id}
                                   value={staff.name}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                  }}
                                   onSelect={() => {
+                                    // This now handles keyboard selection
+                                    const current = field.value || [];
+                                    const newSelection = isSelected
+                                      ? current.filter((id) => id !== staff.id)
+                                      : [...current, staff.id];
+                                    form.setValue('assignedTo', newSelection, { shouldValidate: true });
+                                  }}
+                                  onMouseDown={(e) => {
+                                    // This handles mouse selection and prevents popover closing
+                                    e.preventDefault();
+                                    e.stopPropagation();
                                     const current = field.value || [];
                                     const newSelection = isSelected
                                       ? current.filter((id) => id !== staff.id)
