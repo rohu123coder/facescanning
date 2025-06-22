@@ -238,7 +238,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                 variant="outline"
                                 role="combobox"
                                 aria-expanded={popoverOpen}
-                                className={cn("w-full justify-between h-auto", !(field.value && field.value.length > 0) && "text-muted-foreground")}
+                                className={cn("w-full justify-between h-auto min-h-10", !(field.value && field.value.length > 0) && "text-muted-foreground")}
                                 >
                                 <div className="flex gap-1 flex-wrap">
                                      {(field.value && field.value.length > 0) ? (
