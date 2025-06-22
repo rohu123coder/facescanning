@@ -35,7 +35,11 @@ export default function TaskManagementPage() {
   const { tasks, updateTaskStatus, deleteTask, isInitialized: tasksInitialized } = useTaskStore();
   const { staffList, isInitialized: staffInitialized } = useStaffStore();
   
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  
+  useEffect(() => {
+    setSelectedDate(new Date());
+  }, []);
   
   const isDataReady = tasksInitialized && staffInitialized;
 
