@@ -259,26 +259,27 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                             <CommandEmpty>No staff found.</CommandEmpty>
                             <CommandGroup>
                             {staffList.map((staff) => {
-                                const isSelected = (field.value || []).includes(staff.id);
+                                const isSelected = field.value?.includes(staff.id);
                                 return (
                                 <CommandItem
                                     key={staff.id}
-                                    value={staff.id}
-                                    onSelect={() => {
-                                        const newValue = isSelected
-                                            ? (field.value || []).filter(id => id !== staff.id)
-                                            : [...(field.value || []), staff.id];
-                                        field.onChange(newValue);
-                                    }}
+                                    value={staff.name}
                                     onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                    }}
+                                    onSelect={() => {
+                                      const currentSelection = field.value || [];
+                                      const newSelection = isSelected
+                                          ? currentSelection.filter(id => id !== staff.id)
+                                          : [...currentSelection, staff.id];
+                                      field.onChange(newSelection);
                                     }}
                                     className="cursor-pointer"
                                 >
                                     <Checkbox
                                         checked={isSelected}
-                                        className="mr-2 pointer-events-none"
+                                        className="mr-2"
                                     />
                                     {staff.name}
                                 </CommandItem>
