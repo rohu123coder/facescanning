@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, MessageSquare, Sparkles, Loader2 } from 'lucide-react';
+import { Star, MessageSquare, Sparkles, Loader2, Link as LinkIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
@@ -48,12 +48,77 @@ const mockReviews: Review[] = [
   },
 ];
 
+
+function GbpConnectCard({ onConnect }: { onConnect: () => Promise<void> }) {
+    const [isConnecting, setIsConnecting] = useState(false);
+
+    const handleConnect = async () => {
+        setIsConnecting(true);
+        await onConnect();
+    }
+
+    return (
+        <Card className="max-w-2xl mx-auto mt-10">
+            <CardHeader className="text-center">
+                <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M21.8 10c0-3.9-2-6.9-5.2-8.4C14.4.4,12.8,0,11,0H9.5C4.2,0,0,4.2,0,9.5S4.2,19,9.5,19h2c1.8,0,3.3-.4,4.9-1.6 3.2-1.5,5.1-4.5,5.1-8.4zM9.5,4.6c2.4,0,4.4,2,4.4,4.4s-2,4.4-4.4,4.4-4.4-2-4.4-4.4 2-4.4,4.4-4.4zm7.6,9.3c-1.3,1.3-3,2.1-4.9,2.1h-2C5.9,16,3,13.1,3,9.5S5.9,3,9.5,3H11c1.2,0,2.3,.3,3.3,.8.8,.4,1.4,1,1.8,1.8.5,1,.8,2.1,.8,3.2v.2h-4.3c-.6,0-1.1,.5-1.1,1.1s.5,1.1,1.1,1.1h4.3z"/></svg>
+                </div>
+                <CardTitle>Connect your Google Business Profile</CardTitle>
+                <CardDescription>
+                    To manage your online reputation, connect your Google Business account. This will allow us to fetch reviews and help you reply with AI.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button className="w-full" onClick={handleConnect} disabled={isConnecting}>
+                    {isConnecting ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Connecting...
+                        </>
+                    ) : (
+                        <>
+                            <LinkIcon className="mr-2 h-4 w-4" />
+                            Connect to Google
+                        </>
+                    )}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                    You will be redirected to Google to authenticate securely.
+                </p>
+            </CardContent>
+        </Card>
+    );
+}
+
+
 export default function ReputationManagementPage() {
   const { toast } = useToast();
-  const { currentClient } = useClientStore();
-  const [selectedReview, setSelectedReview] = useState<Review | null>(mockReviews[0]);
+  const { currentClient, updateClient } = useClientStore();
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [generatedReply, setGeneratedReply] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    if (currentClient?.isGbpConnected && mockReviews.length > 0) {
+      setSelectedReview(mockReviews[0]);
+    }
+  }, [currentClient?.isGbpConnected]);
+
+
+  const handleConnectGbp = async () => {
+    if (!currentClient) return;
+    
+    // Simulate API call to Google and backend
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const updatedClientData = { ...currentClient, isGbpConnected: true };
+    await updateClient(updatedClientData);
+
+    toast({
+        title: "Connection Successful!",
+        description: "Your Google Business Profile has been connected."
+    });
+  }
 
   const handleGenerateReply = async () => {
     if (!selectedReview || !currentClient) return;
@@ -85,6 +150,25 @@ export default function ReputationManagementPage() {
           title: "Reply Posted (Simulated)",
           description: "In a real app, this would post the reply to Google Business Profile."
       });
+  }
+
+  if (!currentClient) {
+    return (
+        <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-2 text-muted-foreground">Loading Client Data...</p>
+        </div>
+    );
+  }
+
+  if (!currentClient.isGbpConnected) {
+    return (
+        <div className="space-y-8">
+            <h1 className="text-3xl font-bold">Reputation Management</h1>
+            <p className="text-muted-foreground">Monitor and reply to your Google Business reviews using AI.</p>
+            <GbpConnectCard onConnect={handleConnectGbp} />
+        </div>
+    )
   }
 
   return (

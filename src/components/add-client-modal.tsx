@@ -69,7 +69,8 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
           staffCount: 0,
           isSetupComplete: false,
           logoUrl: '',
-          organizationDetails: ''
+          organizationDetails: '',
+          isGbpConnected: false,
       });
       toast({
         title: 'Client Added & Credentials Generated',
