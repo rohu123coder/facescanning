@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, FileDown, Video, User, Users, Printer, Calendar as CalendarIcon, X, Banknote } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, FileDown, Video, User, Users, Printer, Calendar as CalendarIcon, X, Banknote, CalendarDays } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { type Staff, type Student, type AttendanceRecord } from '@/lib/data';
 import { AddStaffModal } from '@/components/add-staff-modal';
@@ -24,11 +24,13 @@ import { type DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { HolidayManagementModal } from '@/components/holiday-management-modal';
 
 export default function ClientDashboard() {
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
+  const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
   const [activeTab, setActiveTab] = useState('staff');
   const [studentView, setStudentView] = useState('list');
@@ -463,6 +465,7 @@ export default function ClientDashboard() {
   )
 
   return (
+    <>
     <div className="space-y-8">
       <div className="flex items-center justify-between print-hide">
         <div>
@@ -486,6 +489,10 @@ export default function ClientDashboard() {
             <Printer className="mr-2 h-4 w-4" /> Print Report
           </Button>
           <Button asChild><Link href="/client/salary"><Banknote className="mr-2 h-4 w-4" />Manage Salaries</Link></Button>
+          <Button variant="outline" onClick={() => setIsHolidayModalOpen(true)}>
+            <CalendarDays className="mr-2 h-4 w-4" />
+            Holiday Calendar
+          </Button>
           <Button asChild><Link href="/client/attendance-kiosk"><Video className="mr-2 h-4 w-4" />Open Attendance Kiosk</Link></Button>
         </div>
       </div>
@@ -577,5 +584,7 @@ export default function ClientDashboard() {
         onStudentUpdated={handleUpdateStudent}
       />
     </div>
+     <HolidayManagementModal isOpen={isHolidayModalOpen} onOpenChange={setIsHolidayModalOpen} />
+     </>
   );
 }

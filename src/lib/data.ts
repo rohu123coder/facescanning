@@ -1,3 +1,8 @@
+export type Holiday = {
+    date: string; // ISO string for date 'yyyy-MM-dd'
+    name: string;
+};
+
 export type AttendanceRecord = {
     date: string;
     inTime: string | null;
@@ -16,7 +21,9 @@ export type Staff = {
   role: string;
   salary: number;
   photoUrl: string;
-  attendanceRecords?: AttendanceRecord[];
+  totalCasualLeaves: number;
+  totalSickLeaves: number;
+  attendanceRecords: AttendanceRecord[];
 };
 
 export type Student = {
@@ -56,7 +63,7 @@ export type Attendance = {
 
 export type SalaryData = {
   presentDays: number;
-  leaveDays: number;
+  workingDays: number;
   paidLeaveDays: number;
   earnedGross: number;
   basic: number;
@@ -90,3 +97,5 @@ export const attendance: Attendance[] = [
     { date: '2024-07-09', status: 'Present' },
     { date: '2024-07-10', status: 'Present' },
 ];
+
+export const holidays: Holiday[] = [];

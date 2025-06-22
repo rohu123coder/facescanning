@@ -47,6 +47,8 @@ const staffFormSchema = z.object({
   department: z.string().min(2, { message: 'Department is required.' }),
   role: z.string().min(2, { message: 'Role is required.' }),
   salary: z.coerce.number().min(0, { message: 'Salary must be a positive number.' }),
+  totalCasualLeaves: z.coerce.number().min(0, { message: 'Casual leaves must be a positive number.' }),
+  totalSickLeaves: z.coerce.number().min(0, { message: 'Sick leaves must be a positive number.' }),
   photo: z.string().min(1, { message: 'A valid staff photo is required.' }),
 });
 
@@ -65,7 +67,7 @@ export function EditStaffModal({ isOpen, onOpenChange, staff, onStaffUpdated }: 
   const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffFormSchema),
     defaultValues: {
-      name: '', email: '', mobile: '', whatsapp: '', address: '', department: '', role: '', salary: 0, photo: '',
+      name: '', email: '', mobile: '', whatsapp: '', address: '', department: '', role: '', salary: 0, photo: '', totalCasualLeaves: 0, totalSickLeaves: 0,
     },
   });
 
@@ -81,6 +83,8 @@ export function EditStaffModal({ isOpen, onOpenChange, staff, onStaffUpdated }: 
         role: staff.role,
         salary: staff.salary,
         photo: staff.photoUrl,
+        totalCasualLeaves: staff.totalCasualLeaves,
+        totalSickLeaves: staff.totalSickLeaves,
       });
     }
   }, [staff, form, isOpen]);
@@ -296,6 +300,32 @@ export function EditStaffModal({ isOpen, onOpenChange, staff, onStaffUpdated }: 
                             <FormLabel>Salary (INR)</FormLabel>
                             <FormControl>
                             <Input type="number" placeholder="e.g. 75000" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="totalCasualLeaves"
+                        render={({ field }) => (
+                        <FormItem className="col-span-2 sm:col-span-1">
+                            <FormLabel>Annual Casual Leaves</FormLabel>
+                            <FormControl>
+                            <Input type="number" placeholder="e.g. 12" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="totalSickLeaves"
+                        render={({ field }) => (
+                        <FormItem className="col-span-2 sm:col-span-1">
+                            <FormLabel>Annual Sick Leaves</FormLabel>
+                            <FormControl>
+                            <Input type="number" placeholder="e.g. 10" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
