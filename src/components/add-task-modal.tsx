@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { type Task } from '@/lib/data';
-import { Loader2, Sparkles, CalendarIcon, ChevronsUpDown } from 'lucide-react';
+import { Loader2, Sparkles, CalendarIcon, ChevronsUpDown, Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -264,10 +264,6 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                 <CommandItem
                                     key={staff.id}
                                     value={staff.name}
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                    }}
                                     onSelect={() => {
                                       const currentSelection = field.value || [];
                                       const newSelection = isSelected
@@ -275,11 +271,13 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                           : [...currentSelection, staff.id];
                                       field.onChange(newSelection);
                                     }}
-                                    className="cursor-pointer"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                    }}
                                 >
                                     <Checkbox
-                                        checked={isSelected}
                                         className="mr-2"
+                                        checked={isSelected}
                                     />
                                     {staff.name}
                                 </CommandItem>
