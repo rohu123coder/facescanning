@@ -40,6 +40,7 @@ export default function AttendanceKiosk() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const lastScanTimesRef = useRef(new Map<string, number>());
   const isProcessingFrame = useRef(false);
   const scanCooldown = 1000 * 60 * 5; // 5 minutes cooldown per person
@@ -155,11 +156,10 @@ export default function AttendanceKiosk() {
   }, [handleScanFrame]);
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
     const initializeKiosk = async () => {
       try {
         const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        stream = cameraStream;
+        streamRef.current = cameraStream;
         setHasCameraPermission(true);
 
         if (videoRef.current) {
@@ -184,8 +184,9 @@ export default function AttendanceKiosk() {
 
     return () => {
       stopScanning();
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
       if (videoRef.current) {
         videoRef.current.srcObject = null;
