@@ -80,13 +80,11 @@ export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPerio
     });
   }
 
-  const basic = salaryData.basic;
-  const hra = salaryData.hra;
-  const specialAllowance = Math.max(0, salaryData.earnedGross - basic - hra);
+  const specialAllowance = Math.max(0, salaryData.earnedGross - salaryData.basic - salaryData.hra);
 
   const earnings = [
-    { description: 'Basic Salary', amount: basic },
-    { description: 'House Rent Allowance (HRA)', amount: hra },
+    { description: 'Basic Salary', amount: salaryData.basic },
+    { description: 'House Rent Allowance (HRA)', amount: salaryData.hra },
   ];
 
   if (specialAllowance > 0.01) { // Add only if it's a meaningful amount
