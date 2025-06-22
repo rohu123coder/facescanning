@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -282,9 +281,11 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                 <CommandItem
                                   key={staff.id}
                                   value={staff.name}
-                                  onClick={(e) => {
+                                  onMouseDown={(e) => {
                                     e.preventDefault();
-                                    setPopoverOpen(true); // Keep it open
+                                    e.stopPropagation();
+                                  }}
+                                  onSelect={() => {
                                     const current = field.value || [];
                                     const newSelection = isSelected
                                       ? current.filter((id) => id !== staff.id)
