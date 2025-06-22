@@ -40,6 +40,10 @@ const calculateSalary = (staff: Staff | null, rules: any, monthStart: Date, mont
 
     const leaveDays = totalDaysInMonth - presentDays;
     
+    // Employee view doesn't handle adjustments, so these are 0
+    const paidLeaveDays = 0;
+    const adjustment = 0;
+
     const monthlyGrossSalary = staff.salary;
     const earnedGross = presentDays > 0 ? (monthlyGrossSalary / totalDaysInMonth) * presentDays : 0;
     
@@ -52,11 +56,13 @@ const calculateSalary = (staff: Staff | null, rules: any, monthStart: Date, mont
     const salaryDetails: SalaryData = {
         presentDays,
         leaveDays,
+        paidLeaveDays,
         earnedGross,
         basic,
         hra,
         specialAllowance,
         deductions,
+        adjustment,
         netPay,
     };
 

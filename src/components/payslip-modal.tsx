@@ -78,12 +78,20 @@ export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPerio
     earnings.push({ description: 'Special Allowance', amount: salaryData.specialAllowance });
   }
 
+  if (salaryData.adjustment > 0) {
+    earnings.push({ description: 'Salary Adjustment', amount: salaryData.adjustment });
+  }
+
   const deductions = [
     { description: 'Standard Deductions', amount: salaryData.deductions },
   ];
   
-  const totalEarnings = salaryData.earnedGross;
-  const totalDeductions = salaryData.deductions;
+  if (salaryData.adjustment < 0) {
+    deductions.push({ description: 'Salary Adjustment', amount: Math.abs(salaryData.adjustment) });
+  }
+  
+  const totalEarnings = salaryData.earnedGross + Math.max(0, salaryData.adjustment);
+  const totalDeductions = salaryData.deductions + Math.abs(Math.min(0, salaryData.adjustment));
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -96,16 +104,21 @@ export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPerio
                 </DialogDescription>
             </CardHeader>
             <CardContent className="px-6">
-                <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+                <div className="grid grid-cols-3 gap-4 mb-6 text-sm">
                     <div>
                         <p className="font-semibold">{staff.name}</p>
                         <p className="text-muted-foreground">Employee ID: {staff.id}</p>
                         <p className="text-muted-foreground">Department: {staff.department}</p>
                     </div>
+                    <div className="text-center">
+                        <p className="font-semibold">Pay Date: {payDate}</p>
+                        <p className="text-muted-foreground">Present Days: {salaryData.presentDays}</p>
+                        {salaryData.paidLeaveDays > 0 && <p className="text-muted-foreground">Paid Leave Days: {salaryData.paidLeaveDays}</p>}
+                    </div>
                     <div className="text-right">
                         <p className="font-semibold">Karma Manager Inc.</p>
-                        <p className="text-muted-foreground">Pay Date: {payDate}</p>
-                        <p className="text-muted-foreground">Present Days: {salaryData.presentDays}</p>
+                        <p className="text-muted-foreground">123 Business Rd, Suite 456</p>
+                        <p className="text-muted-foreground">Metropolis, India</p>
                     </div>
                 </div>
                 <Separator className="my-4" />

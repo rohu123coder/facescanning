@@ -70,12 +70,20 @@ export function SalarySlip({ staff, salaryData, payPeriod, payDate }: SalarySlip
     earnings.push({ description: 'Special Allowance', amount: salaryData.specialAllowance });
   }
 
+  if (salaryData.adjustment && salaryData.adjustment > 0) {
+    earnings.push({ description: 'Salary Adjustment', amount: salaryData.adjustment });
+  }
+
   const deductions = [
     { description: 'Standard Deductions', amount: salaryData.deductions },
   ];
+
+  if (salaryData.adjustment && salaryData.adjustment < 0) {
+    deductions.push({ description: 'Salary Adjustment', amount: Math.abs(salaryData.adjustment) });
+  }
   
-  const totalEarnings = salaryData.earnedGross;
-  const totalDeductions = salaryData.deductions;
+  const totalEarnings = salaryData.earnedGross + Math.max(0, salaryData.adjustment || 0);
+  const totalDeductions = salaryData.deductions + Math.abs(Math.min(0, salaryData.adjustment || 0));
   const netSalary = salaryData.netPay;
 
   return (

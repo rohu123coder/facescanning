@@ -57,11 +57,13 @@ export type Attendance = {
 export type SalaryData = {
   presentDays: number;
   leaveDays: number;
+  paidLeaveDays: number;
   earnedGross: number;
   basic: number;
   hra: number;
   specialAllowance: number;
   deductions: number;
+  adjustment: number;
   netPay: number;
 };
 

@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
 import { SalaryRulesModal } from '@/components/salary-rules-modal';
+import { Input } from '@/components/ui/input';
 
 export default function SalaryManagementPage() {
   const { staffList, isInitialized: isStaffInitialized } = useStaffStore();
@@ -24,6 +25,8 @@ export default function SalaryManagementPage() {
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<{ staff: Staff, salaryData: SalaryData } | null>(null);
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
+  const [adjustments, setAdjustments] = useState<Record<string, { paidLeaveDays: string; adjustment: string }>>({});
+
 
   useEffect(() => {
     setCurrentDate(new Date());
@@ -45,6 +48,24 @@ export default function SalaryManagementPage() {
     };
   }, [currentDate]);
 
+  const handleAdjustmentChange = (staffId: string, field: 'paidLeaveDays' | 'adjustment', value: string) => {
+    const isAdjustment = field === 'adjustment';
+    const isPaidLeave = field === 'paidLeaveDays';
+    
+    // Validation: adjustment can be negative/float, paid leave must be positive integer
+    if (isAdjustment && value !== '' && !/^-?\d*\.?\d*$/.test(value)) return;
+    if (isPaidLeave && !/^\d*$/.test(value)) return;
+    
+    setAdjustments(prev => ({
+      ...prev,
+      [staffId]: {
+        ...prev[staffId],
+        paidLeaveDays: isPaidLeave ? value : (prev[staffId]?.paidLeaveDays || ''),
+        adjustment: isAdjustment ? value : (prev[staffId]?.adjustment || ''),
+      },
+    }));
+  };
+
   const salaryData = useMemo(() => {
     if (!isStaffInitialized || !areRulesInitialized || !monthStart || !monthEnd || totalDaysInMonth === 0) return [];
 
@@ -54,26 +75,33 @@ export default function SalaryManagementPage() {
         return isWithinInterval(recDate, { start: monthStart, end: monthEnd });
       }).length ?? 0;
 
+      const staffAdjustments = adjustments[staff.id] || {};
+      const paidLeaveDays = Number(staffAdjustments.paidLeaveDays) || 0;
+      const adjustment = Number(staffAdjustments.adjustment) || 0;
+      
+      const payableDays = Math.min(presentDays + paidLeaveDays, totalDaysInMonth);
       const leaveDays = totalDaysInMonth - presentDays;
       
       const monthlyGrossSalary = staff.salary;
-      const earnedGross = presentDays > 0 ? (monthlyGrossSalary / totalDaysInMonth) * presentDays : 0;
+      const earnedGross = payableDays > 0 ? (monthlyGrossSalary / totalDaysInMonth) * payableDays : 0;
       
       const basic = earnedGross * (rules.basicPercentage / 100);
       const hra = earnedGross * (rules.hraPercentage / 100);
       const specialAllowance = Math.max(0, earnedGross - basic - hra);
       const deductions = earnedGross * (rules.deductionPercentage / 100);
       
-      const netPay = earnedGross - deductions;
+      const netPay = earnedGross - deductions + adjustment;
 
       const salaryDetails: SalaryData = {
         presentDays,
         leaveDays,
+        paidLeaveDays,
         earnedGross,
         basic,
         hra,
         specialAllowance,
         deductions,
+        adjustment,
         netPay,
       };
 
@@ -82,7 +110,7 @@ export default function SalaryManagementPage() {
         salary: salaryDetails
       };
     });
-  }, [staffList, isStaffInitialized, areRulesInitialized, rules, monthStart, monthEnd, totalDaysInMonth]);
+  }, [staffList, isStaffInitialized, areRulesInitialized, rules, monthStart, monthEnd, totalDaysInMonth, adjustments]);
 
   const summaryStats = useMemo(() => {
     const totalSalary = salaryData.reduce((acc, curr) => acc + curr.salary.netPay, 0);
@@ -168,17 +196,17 @@ export default function SalaryManagementPage() {
         <Card>
           <CardHeader>
             <CardTitle>Employee-wise Salary for {currentMonthFormatted}</CardTitle>
-            <CardDescription>Auto-calculated based on attendance data and your defined salary rules.</CardDescription>
+            <CardDescription>Auto-calculated based on attendance data and your defined salary rules. You can add paid leave days or manual adjustments below.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee Name</TableHead>
-                  <TableHead className="text-center">Present Days</TableHead>
-                  <TableHead className="text-center">Leave/Absent</TableHead>
-                  <TableHead className="text-right">Basic</TableHead>
-                  <TableHead className="text-right">HRA</TableHead>
+                  <TableHead className="text-center">Present</TableHead>
+                  <TableHead className="text-center">Paid Leave</TableHead>
+                  <TableHead className="text-center">Adjustment (₹)</TableHead>
+                  <TableHead className="text-right">Gross Pay</TableHead>
                   <TableHead className="text-right">Deductions</TableHead>
                   <TableHead className="text-right font-bold">Net Pay</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
@@ -196,9 +224,27 @@ export default function SalaryManagementPage() {
                     <TableRow key={staff.id}>
                       <TableCell className="font-medium">{staff.name}</TableCell>
                       <TableCell className="text-center"><Badge variant="default" className="bg-green-600">{salary.presentDays}</Badge></TableCell>
-                      <TableCell className="text-center"><Badge variant="destructive">{salary.leaveDays}</Badge></TableCell>
-                      <TableCell className="text-right">{formatCurrency(salary.basic)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(salary.hra)}</TableCell>
+                      <TableCell className="text-center">
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={adjustments[staff.id]?.paidLeaveDays || ''}
+                          onChange={(e) => handleAdjustmentChange(staff.id, 'paidLeaveDays', e.target.value)}
+                          className="h-8 w-20 text-center"
+                          min="0"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                         <Input
+                          type="number"
+                          placeholder="0"
+                          value={adjustments[staff.id]?.adjustment || ''}
+                          onChange={(e) => handleAdjustmentChange(staff.id, 'adjustment', e.target.value)}
+                          className="h-8 w-24 text-center"
+                          step="100"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">{formatCurrency(salary.earnedGross)}</TableCell>
                       <TableCell className="text-right text-destructive">{formatCurrency(salary.deductions)}</TableCell>
                       <TableCell className="text-right font-bold text-primary">{formatCurrency(salary.netPay)}</TableCell>
                       <TableCell className="text-center">
