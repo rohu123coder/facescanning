@@ -185,7 +185,7 @@ export function TaskDetailsModal({ isOpen, onOpenChange, task, currentUser }: Ta
 
                 <ScrollArea className="flex-1 -mx-4">
                     <div className="px-4 space-y-6">
-                        {task.activity.map(act => (
+                        {(task.activity || []).map(act => (
                             <div key={act.id} className="flex items-start gap-3">
                                 <Avatar className="h-8 w-8">
                                     <AvatarImage src={staffList.find(s=>s.id === act.authorId)?.photoUrl} />

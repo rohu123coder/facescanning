@@ -81,7 +81,7 @@ export function useTaskStore() {
               id: `ACT-${Date.now()}`,
               createdAt: new Date().toISOString()
           };
-          const updatedTask = { ...task, activity: [...task.activity, activityToAdd] };
+          const updatedTask = { ...task, activity: [...(task.activity || []), activityToAdd] };
           updateTask(updatedTask);
           toast({
             title: `New Update on "${task.title}"`,
@@ -103,7 +103,7 @@ export function useTaskStore() {
           createdAt: new Date().toISOString(),
       };
       
-      const updatedTask = { ...task, status: newStatus, activity: [...task.activity, statusChangeActivity] };
+      const updatedTask = { ...task, status: newStatus, activity: [...(task.activity || []), statusChangeActivity] };
       updateTask(updatedTask);
        toast({
         title: 'Task Updated',
