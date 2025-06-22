@@ -1,9 +1,13 @@
+'use client';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { attendance } from '@/lib/data';
 import { SalarySlip } from '@/components/salary-slip';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { format } from 'date-fns';
 
 const getStatusBadge = (status: 'Present' | 'Absent' | 'Leave') => {
   switch (status) {
@@ -17,6 +21,12 @@ const getStatusBadge = (status: 'Present' | 'Absent' | 'Leave') => {
 };
 
 export default function EmployeeDashboard() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <div className="space-y-8">
       <div>
@@ -51,12 +61,18 @@ export default function EmployeeDashboard() {
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {attendance.map((record) => (
+                    {isClient ? (
+                      attendance.map((record) => (
                         <TableRow key={record.date}>
-                        <TableCell>{new Date(record.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric'})}</TableCell>
-                        <TableCell className="text-right">{getStatusBadge(record.status)}</TableCell>
+                          <TableCell>{format(new Date(record.date), 'dd MMMM, yyyy')}</TableCell>
+                          <TableCell className="text-right">{getStatusBadge(record.status)}</TableCell>
                         </TableRow>
-                    ))}
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={2} className="h-24 text-center">Loading...</TableCell>
+                      </TableRow>
+                    )}
                     </TableBody>
                 </Table>
                 </CardContent>

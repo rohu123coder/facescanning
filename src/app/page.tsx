@@ -1,7 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Briefcase, User, Shield, Gem } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 const roles = [
   {
@@ -31,6 +34,12 @@ const roles = [
 ];
 
 export default function Home() {
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
+
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-8">
       <div className="text-center mb-12">
@@ -61,7 +70,7 @@ export default function Home() {
         ))}
       </div>
        <footer className="mt-16 text-center text-muted-foreground text-sm">
-        <p>Karma Manager &copy; {new Date().getFullYear()}. All Rights Reserved.</p>
+        <p>Karma Manager &copy; {currentYear}. All Rights Reserved.</p>
       </footer>
     </main>
   );

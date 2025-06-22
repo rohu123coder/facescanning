@@ -11,6 +11,7 @@ import { type Staff } from '@/lib/data';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useState, useEffect } from 'react';
 
 
 type SalaryData = {
@@ -42,6 +43,13 @@ const formatCurrency = (amount: number) => {
 
 export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPeriod }: PayslipModalProps) {
   const { toast } = useToast();
+  const [payDate, setPayDate] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+        setPayDate(format(new Date(), 'dd MMM, yyyy'));
+    }
+  }, [isOpen]);
 
   const handleDownload = () => {
     const payslipElement = document.getElementById('payslip-content');
@@ -111,7 +119,7 @@ export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPerio
                     </div>
                     <div className="text-right">
                         <p className="font-semibold">Karma Manager Inc.</p>
-                        <p className="text-muted-foreground">Pay Date: {format(new Date(), 'dd MMM, yyyy')}</p>
+                        <p className="text-muted-foreground">Pay Date: {payDate}</p>
                         <p className="text-muted-foreground">Present Days: {salaryData.presentDays}</p>
                     </div>
                 </div>
