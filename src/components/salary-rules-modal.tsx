@@ -1,0 +1,174 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
+import { Slider } from '@/components/ui/slider';
+
+interface SalaryRulesModalProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+}
+
+const rulesFormSchema = z.object({
+  basicPercentage: z.coerce.number().min(0).max(100, 'Cannot exceed 100%'),
+  hraPercentage: z.coerce.number().min(0).max(100, 'Cannot exceed 100%'),
+  deductionPercentage: z.coerce.number().min(0).max(100, 'Cannot exceed 100%'),
+});
+
+export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const { rules, updateRules, isInitialized } = useSalaryRulesStore();
+
+  const form = useForm<z.infer<typeof rulesFormSchema>>({
+    resolver: zodResolver(rulesFormSchema),
+    defaultValues: rules,
+  });
+  
+  useEffect(() => {
+      if(isInitialized) {
+          form.reset(rules);
+      }
+  }, [isInitialized, rules, form, isOpen]);
+
+  const onSubmit = async (values: z.infer<typeof rulesFormSchema>) => {
+    setIsLoading(true);
+    try {
+      updateRules(values);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast({
+        title: 'Salary Rules Updated',
+        description: 'The new salary calculation rules have been saved.',
+      });
+      onOpenChange(false);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update salary rules. Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-headline">Salary Rules Setup</DialogTitle>
+          <DialogDescription>
+            Define the percentage-based rules for salary calculation. These rules apply to all employees.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+            <FormField
+              control={form.control}
+              name="basicPercentage"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex justify-between items-center">
+                    <FormLabel>Basic Salary Percentage</FormLabel>
+                    <span className="text-sm font-medium">{field.value}%</span>
+                  </div>
+                  <FormControl>
+                    <Slider
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={[field.value]}
+                      onValueChange={(value) => field.onChange(value[0])}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="hraPercentage"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex justify-between items-center">
+                    <FormLabel>House Rent Allowance (HRA) %</FormLabel>
+                    <span className="text-sm font-medium">{field.value}%</span>
+                  </div>
+                  <FormControl>
+                     <Slider
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={[field.value]}
+                      onValueChange={(value) => field.onChange(value[0])}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="deductionPercentage"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex justify-between items-center">
+                    <FormLabel>Standard Deduction %</FormLabel>
+                    <span className="text-sm font-medium">{field.value}%</span>
+                  </div>
+                   <FormControl>
+                     <Slider
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={[field.value]}
+                      onValueChange={(value) => field.onChange(value[0])}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <DialogFooter className="pt-4">
+               <Button variant="outline" onClick={() => onOpenChange(false)} type="button" disabled={isLoading}>
+                  Cancel
+               </Button>
+               <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Rules'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
