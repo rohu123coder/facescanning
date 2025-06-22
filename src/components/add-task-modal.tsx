@@ -35,8 +35,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Badge } from '@/components/ui/badge';
 import { autoAssignTask } from '@/ai/flows/auto-assign-task';
 import { useStaffStore } from '@/hooks/use-staff-store';
-import { Checkbox } from '@/components/ui/checkbox';
-
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -271,14 +269,17 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                           : [...currentSelection, staff.id];
                                       field.onChange(newSelection);
                                     }}
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                    }}
                                 >
-                                    <Checkbox
-                                        className="mr-2"
-                                        checked={isSelected}
-                                    />
+                                    <div
+                                      className={cn(
+                                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                        isSelected
+                                          ? "bg-primary text-primary-foreground"
+                                          : "opacity-50 [&_svg]:invisible"
+                                      )}
+                                    >
+                                      <Check className={cn("h-4 w-4")} />
+                                    </div>
                                     {staff.name}
                                 </CommandItem>
                                 );
