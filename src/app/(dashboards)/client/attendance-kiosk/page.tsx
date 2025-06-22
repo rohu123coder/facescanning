@@ -184,13 +184,11 @@ export default function AttendanceKiosk() {
 
     return () => {
       stopScanning();
-      if (videoRef.current && videoRef.current.srcObject) {
-        const streamFromRef = videoRef.current.srcObject as MediaStream;
-        streamFromRef.getTracks().forEach((track) => track.stop());
-        videoRef.current.srcObject = null;
-      }
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
     };
   }, [startScanning, stopScanning, toast]);
