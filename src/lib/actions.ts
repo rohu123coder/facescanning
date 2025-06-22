@@ -3,12 +3,11 @@
 import type { Staff, Student } from './data';
 import { format } from 'date-fns';
 
-export async function generateAttendanceReportCsv(staff: Staff[]): Promise<string> {
-    const todayStr = new Date().toISOString().split('T')[0];
+export async function generateAttendanceReportCsv(staff: Staff[], date: string): Promise<string> {
     const headers = ['Staff ID', 'Name', 'Email', 'Mobile', 'Department', 'Role', 'Date', 'In-Time', 'Out-Time', 'Total Hours Worked'];
     
     const rows = staff.map(employee => {
-        const attendance = employee.attendanceStatus?.date === todayStr ? employee.attendanceStatus : null;
+        const attendance = employee.attendanceStatus?.date === date ? employee.attendanceStatus : null;
         return [
             employee.id,
             employee.name,
@@ -16,7 +15,7 @@ export async function generateAttendanceReportCsv(staff: Staff[]): Promise<strin
             employee.mobile,
             employee.department,
             employee.role,
-            attendance ? format(new Date(attendance.date), 'yyyy-MM-dd') : 'N/A',
+            attendance ? format(new Date(attendance.date), 'yyyy-MM-dd') : date,
             attendance?.inTime ?? 'N/A',
             attendance?.outTime ?? 'N/A',
             attendance?.totalHours ?? 'N/A'
@@ -27,12 +26,11 @@ export async function generateAttendanceReportCsv(staff: Staff[]): Promise<strin
 }
 
 
-export async function generateStudentAttendanceReportCsv(students: Student[]): Promise<string> {
-    const todayStr = new Date().toISOString().split('T')[0];
+export async function generateStudentAttendanceReportCsv(students: Student[], date: string): Promise<string> {
     const headers = ['Student ID', 'Name', 'Email', 'Class', 'Roll Number', 'Gender', 'DOB', 'Religion', 'Father Name', "Mother's Name", 'Parent Mobile', 'Parent WhatsApp', 'Date', 'Arrival Time', 'Departure Time', 'Total Hours'];
     
     const rows = students.map(student => {
-        const attendance = student.attendanceStatus?.date === todayStr ? student.attendanceStatus : null;
+        const attendance = student.attendanceStatus?.date === date ? student.attendanceStatus : null;
         return [
             student.id,
             student.name,
@@ -46,7 +44,7 @@ export async function generateStudentAttendanceReportCsv(students: Student[]): P
             student.motherName,
             student.parentMobile,
             student.parentWhatsapp,
-            attendance ? format(new Date(attendance.date), 'yyyy-MM-dd') : 'N/A',
+            attendance ? format(new Date(attendance.date), 'yyyy-MM-dd') : date,
             attendance?.inTime ?? 'N/A',
             attendance?.outTime ?? 'N/A',
             attendance?.totalHours ?? 'N/A'
