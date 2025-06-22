@@ -41,7 +41,8 @@ export default function AttendanceKiosk() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastScanTimesRef = useRef(new Map<string, number>());
-  const scanCooldown = 1000 * 10; // 10 seconds cooldown per person
+  const isProcessingFrame = useRef(false);
+  const scanCooldown = 1000 * 60 * 5; // 5 minutes cooldown per person
 
   const playBeep = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -79,60 +80,65 @@ export default function AttendanceKiosk() {
   }, []);
 
   const handleScanFrame = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current || !staffInitialized || !studentInitialized) return;
-    
-    const video = videoRef.current;
-    if (video.readyState < video.HAVE_METADATA) return;
+    if (isProcessingFrame.current || !videoRef.current || !canvasRef.current || !staffInitialized || !studentInitialized) return;
 
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUri = canvas.toDataURL('image/jpeg');
-    const now = Date.now();
+    isProcessingFrame.current = true;
+    try {
+        const video = videoRef.current;
+        if (video.readyState < video.HAVE_METADATA) return;
 
-    const allPeople: Person[] = [
-      ...staffList.map(s => ({ ...s, type: 'Staff' as const })),
-      ...studentList.map(s => ({ ...s, type: 'Student' as const }))
-    ];
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        if (!context) return;
+        
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUri = canvas.toDataURL('image/jpeg');
+        const now = Date.now();
 
-    for (const person of allPeople) {
-      const lastScan = lastScanTimesRef.current.get(person.id) || 0;
-      if (now - lastScan < scanCooldown) {
-        continue;
-      }
+        const allPeople: Person[] = [
+          ...staffList.map(s => ({ ...s, type: 'Staff' as const })),
+          ...studentList.map(s => ({ ...s, type: 'Student' as const }))
+        ];
 
-      try {
-        const result = await faceScanAttendance({
-          photoDataUri: dataUri,
-          personId: person.id,
-          referencePhotoUrl: person.photoUrl,
-        });
-
-        if (result.isRecognized) {
-          lastScanTimesRef.current.set(person.id, now);
-          
-          let statusMsg = '';
-          if (person.type === 'Staff') {
-            statusMsg = updateStaffAttendance(person.id);
-          } else {
-            statusMsg = updateStudentAttendance(person.id);
+        for (const person of allPeople) {
+          const lastScan = lastScanTimesRef.current.get(person.id) || 0;
+          if (now - lastScan < scanCooldown) {
+            continue;
           }
-          
-          toast({ title: `Attendance Logged`, description: `${person.name} has ${statusMsg.toLowerCase()}.` });
-          playBeep();
-          addLog(statusMsg, person);
-          
-          sendAttendanceNotification(person.id, person.name, statusMsg);
 
-          return; 
+          try {
+            const result = await faceScanAttendance({
+              photoDataUri: dataUri,
+              personId: person.id,
+              referencePhotoUrl: person.photoUrl,
+            });
+
+            if (result.isRecognized) {
+              lastScanTimesRef.current.set(person.id, now);
+              
+              let statusMsg = '';
+              if (person.type === 'Staff') {
+                statusMsg = updateStaffAttendance(person.id);
+              } else {
+                statusMsg = updateStudentAttendance(person.id);
+              }
+              
+              toast({ title: `Attendance Logged`, description: `${person.name} has ${statusMsg.toLowerCase()}.` });
+              playBeep();
+              addLog(statusMsg, person);
+              
+              sendAttendanceNotification(person.id, person.name, statusMsg);
+
+              return; 
+            }
+          } catch (error) {
+            console.error(`Face scan API error for ${person.name}:`, error);
+          }
         }
-      } catch (error) {
-        console.error(`Face scan API error for ${person.name}:`, error);
-      }
+    } finally {
+        isProcessingFrame.current = false;
     }
   }, [staffList, studentList, staffInitialized, studentInitialized, updateStaffAttendance, updateStudentAttendance, toast, scanCooldown, addLog, playBeep]);
 
