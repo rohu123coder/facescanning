@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { faceScanAttendance } from '@/ai/flows/face-scan-attendance';
-import { AlertCircle, Video, VideoOff, UserCheck, GraduationCap } from 'lucide-react';
+import { AlertCircle, UserCheck, GraduationCap } from 'lucide-react';
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { useStudentStore } from '@/hooks/use-student-store';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -146,22 +145,27 @@ export default function AttendanceKiosk() {
           audioContext.resume();
         }
     }
-    intervalRef.current = setInterval(handleScanFrame, 2500);
+    intervalRef.current = setInterval(handleScanFrame, 2000);
   }, [handleScanFrame]);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
-    const getCameraPermission = async () => {
+    const initializeKiosk = async () => {
       try {
         const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
         stream = cameraStream;
         setHasCameraPermission(true);
+
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          videoRef.current.srcObject = cameraStream;
+           videoRef.current.onloadedmetadata = () => {
+            startScanning();
+          };
         }
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
+        setIsScanning(false);
         toast({
           variant: 'destructive',
           title: 'Camera Access Denied',
@@ -170,7 +174,7 @@ export default function AttendanceKiosk() {
       }
     };
 
-    getCameraPermission();
+    initializeKiosk();
 
     return () => {
       stopScanning();
@@ -183,14 +187,14 @@ export default function AttendanceKiosk() {
         stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [stopScanning, toast]);
+  }, [startScanning, stopScanning, toast]);
 
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-8rem)] gap-8 p-1">
       <Card className="md:w-2/3 flex flex-col">
         <CardHeader>
           <CardTitle>Attendance Kiosk</CardTitle>
-          <CardDescription>The camera is active. Members can log attendance by facing the camera.</CardDescription>
+          <CardDescription>The attendance kiosk is now active. Scanning will begin automatically.</CardDescription>
         </CardHeader>
         <CardContent className="flex-grow flex flex-col items-center justify-center relative">
             <div className="w-full aspect-video rounded-md bg-muted overflow-hidden border relative">
@@ -214,17 +218,6 @@ export default function AttendanceKiosk() {
               )}
             </div>
              <canvas ref={canvasRef} className="hidden" />
-             <div className="mt-4">
-                {!isScanning ? (
-                    <Button size="lg" onClick={startScanning} disabled={hasCameraPermission !== true}>
-                        <Video className="mr-2"/> Start Scanning
-                    </Button>
-                ) : (
-                    <Button size="lg" variant="destructive" onClick={stopScanning}>
-                        <VideoOff className="mr-2" /> Stop Scanning
-                    </Button>
-                )}
-             </div>
         </CardContent>
       </Card>
       <Card className="md:w-1/3 flex flex-col">
@@ -236,7 +229,7 @@ export default function AttendanceKiosk() {
              <ScrollArea className="h-full">
                 {scanLogs.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <p>No activity yet. Start scanning.</p>
+                    <p>No activity yet. Scanning for faces...</p>
                   </div>
                 ) : (
                   <div className="space-y-4 pr-4">
