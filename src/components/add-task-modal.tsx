@@ -286,12 +286,11 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                     e.stopPropagation();
                                   }}
                                   onSelect={() => {
-                                    const current = field.value || [];
-                                    const updated = isSelected
-                                      ? current.filter((id) => id !== staff.id)
-                                      : [...current, staff.id];
-                                    field.onChange(updated);
-                                    setPopoverOpen(true);
+                                    const currentSelection = field.value || [];
+                                    const newSelection = isSelected
+                                      ? currentSelection.filter((id) => id !== staff.id)
+                                      : [...currentSelection, staff.id];
+                                    field.onChange(newSelection);
                                   }}
                                 >
                                   <div
@@ -335,7 +334,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                <Button variant="outline" onClick={handleClose} type="button" disabled={isSaving}>
                   Cancel
                </Button>
-               <Button type="submit" disabled={isSaving}>
+               <Button type="submit" form="add-task-form" disabled={isSaving}>
                 {isSaving ? (<><Loader2 className="mr-2 animate-spin" /> Saving...</>) : 'Create Task'}
               </Button>
             </DialogFooter>
