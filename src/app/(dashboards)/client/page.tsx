@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MoreHorizontal, PlusCircle, FileDown, Video, User, Users, Printer, Calendar as CalendarIcon, X } from 'lucide-react';
@@ -243,16 +243,23 @@ export default function ClientDashboard() {
         <Card>
             <CardHeader>
                 <CardTitle>Class Strength</CardTitle>
-                <CardDescription>Total number of students in each class.</CardDescription>
+                <CardDescription>Click on a class to filter the list below.</CardDescription>
             </CardHeader>
             <CardContent>
                 {studentInitialized && Object.keys(classStrength).length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                         {Object.entries(classStrength).map(([className, count]) => (
-                            <div key={className} className="p-4 bg-muted rounded-lg text-center">
+                            <button
+                                key={className}
+                                onClick={() => setStudentClassFilter(className)}
+                                className={cn(
+                                    "p-4 bg-muted rounded-lg text-center transition-all hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50",
+                                    studentClassFilter === className && "ring-2 ring-primary"
+                                )}
+                            >
                                 <p className="text-sm font-medium text-muted-foreground truncate" title={className}>{className}</p>
                                 <p className="text-2xl font-bold">{count}</p>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 ) : (
