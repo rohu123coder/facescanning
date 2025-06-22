@@ -35,10 +35,11 @@ export default function SuperAdminDashboard() {
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <>
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-headline font-bold">Super Admin Panel</h1>
+          <h1 className="text-3xl font-headline font-bold">Client Management</h1>
           <p className="text-muted-foreground">Manage clients, payments, and onboarding.</p>
         </div>
         <Button onClick={() => setIsAddClientModalOpen(true)}>
@@ -48,7 +49,7 @@ export default function SuperAdminDashboard() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Client Management</CardTitle>
+          <CardTitle>Client List</CardTitle>
           <CardDescription>A list of all clients on the platform.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -101,5 +102,6 @@ export default function SuperAdminDashboard() {
         onClientAdded={addClient}
       />
     </div>
+    </>
   );
 }

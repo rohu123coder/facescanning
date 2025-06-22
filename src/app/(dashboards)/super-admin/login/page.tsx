@@ -5,13 +5,13 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuthStore } from '@/hooks/use-auth-store';
+import { useSuperAdminAuthStore } from '@/hooks/use-super-admin-auth-store';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Loader2, Mountain } from 'lucide-react';
+import { Loader2, Gem } from 'lucide-react';
 import Link from 'next/link';
 
 const loginFormSchema = z.object({
@@ -19,10 +19,10 @@ const loginFormSchema = z.object({
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
-export default function LoginPage() {
+export default function SuperAdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { login } = useAuthStore();
+  const { login } = useSuperAdminAuthStore();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof loginFormSchema>>({
@@ -36,23 +36,19 @@ export default function LoginPage() {
   const onSubmit = async (values: z.infer<typeof loginFormSchema>) => {
     setIsLoading(true);
     try {
-      const result = await login(values.email, values.password);
+      const success = await login(values.email, values.password);
 
-      if (result.success) {
+      if (success) {
         toast({
           title: 'Login Successful',
-          description: `Welcome back, ${result.client?.contactName}!`,
+          description: `Welcome back, Super Admin!`,
         });
-        if (result.client?.isSetupComplete) {
-            router.push('/client');
-        } else {
-            router.push('/setup');
-        }
+        router.push('/super-admin');
       } else {
         toast({
           variant: 'destructive',
           title: 'Login Failed',
-          description: result.message || 'Invalid email or password.',
+          description: 'Invalid email or password.',
         });
       }
     } catch (error) {
@@ -69,15 +65,15 @@ export default function LoginPage() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-8">
        <Link href="/" className="flex items-center gap-2 mb-8">
-            <Mountain className="h-8 w-8 text-primary" />
+            <Gem className="h-8 w-8 text-primary" />
             <h1 className="font-headline text-3xl font-semibold">
-              Karma Manager
+              Super Admin
             </h1>
         </Link>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Client Login</CardTitle>
-          <CardDescription>Enter your email and password to access your dashboard.</CardDescription>
+          <CardTitle className="text-2xl">Super Admin Login</CardTitle>
+          <CardDescription>Enter your credentials to access the admin panel.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -89,7 +85,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="name@example.com" {...field} />
+                      <Input placeholder="superadmin@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -115,7 +111,7 @@ export default function LoginPage() {
           </Form>
         </CardContent>
         <CardFooter className="flex justify-center text-sm">
-            <p>Are you the admin? <Link href="/super-admin" className="font-semibold text-primary hover:underline">Go to Super Admin</Link></p>
+            <p>Not an admin? <Link href="/login" className="font-semibold text-primary hover:underline">Go to Client Login</Link></p>
         </CardFooter>
       </Card>
     </main>
