@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { type Staff } from '@/lib/data';
-import { parse, differenceInMinutes, formatDistanceStrict } from 'date-fns';
+import { type Staff, type AttendanceRecord } from '@/lib/data';
+import { parse, formatDistanceStrict } from 'date-fns';
 
 const STORE_KEY = 'staffList';
 
@@ -36,10 +36,10 @@ export function useStaffStore() {
     }
   }, []);
   
-  const addStaff = useCallback((newStaff: Omit<Staff, 'id' | 'attendanceStatus'>) => {
+  const addStaff = useCallback((newStaff: Omit<Staff, 'id' | 'attendanceRecords'>) => {
     const newIdNumber = staffList.length > 0 ? Math.max(0, ...staffList.map(s => parseInt(s.id.split('-')[1], 10))) + 1 : 1;
     const newId = `KM-${String(newIdNumber).padStart(3, '0')}`;
-    const staffToAdd: Staff = { ...newStaff, id: newId, attendanceStatus: null };
+    const staffToAdd: Staff = { ...newStaff, id: newId, attendanceRecords: [] };
     
     updateStaffList([...staffList, staffToAdd]);
   }, [staffList, updateStaffList]);
@@ -51,22 +51,26 @@ export function useStaffStore() {
 
     const updatedList = staffList.map(staff => {
       if (staff.id === staffId) {
-        const attendance = staff.attendanceStatus && staff.attendanceStatus.date === today
-          ? { ...staff.attendanceStatus }
-          : { date: today, inTime: null, outTime: null, totalHours: null };
+        const records = staff.attendanceRecords ? [...staff.attendanceRecords] : [];
+        let todayRecord = records.find(r => r.date === today);
 
-        if (!attendance.inTime) {
-          attendance.inTime = currentTime;
-        } else {
-          attendance.outTime = currentTime;
-          const inTimeDate = parseTime(today, attendance.inTime);
-          const outTimeDate = parseTime(today, attendance.outTime);
-          
-          if (!isNaN(inTimeDate.getTime()) && !isNaN(outTimeDate.getTime())) {
-            attendance.totalHours = formatDistanceStrict(outTimeDate, inTimeDate);
+        if (todayRecord) {
+          if (!todayRecord.inTime) {
+            // This case should not happen if logic is correct, but as a fallback
+            todayRecord.inTime = currentTime;
+          } else {
+            todayRecord.outTime = currentTime;
+            const inTimeDate = parseTime(today, todayRecord.inTime);
+            const outTimeDate = parseTime(today, currentTime);
+            if (!isNaN(inTimeDate.getTime()) && !isNaN(outTimeDate.getTime())) {
+              todayRecord.totalHours = formatDistanceStrict(outTimeDate, inTimeDate);
+            }
           }
+        } else {
+          todayRecord = { date: today, inTime: currentTime, outTime: null, totalHours: null };
+          records.push(todayRecord);
         }
-        return { ...staff, attendanceStatus: attendance };
+        return { ...staff, attendanceRecords: records };
       }
       return staff;
     });
@@ -74,7 +78,8 @@ export function useStaffStore() {
     updateStaffList(updatedList);
     // Return the status message
     const updatedStaff = updatedList.find(s => s.id === staffId);
-    if (updatedStaff?.attendanceStatus?.outTime) {
+    const updatedRecord = updatedStaff?.attendanceRecords?.find(r => r.date === today);
+    if (updatedRecord?.outTime) {
         return 'Clocked Out';
     }
     return 'Clocked In';

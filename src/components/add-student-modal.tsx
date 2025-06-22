@@ -34,7 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 interface AddStudentModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onStudentAdded: (student: Omit<Student, 'id' | 'attendanceStatus'>) => void;
+  onStudentAdded: (student: Omit<Student, 'id' | 'attendanceRecords'>) => void;
 }
 
 const studentFormSchema = z.object({
@@ -428,7 +428,7 @@ export function AddStudentModal({ isOpen, onOpenChange, onStudentAdded }: AddStu
             </Form>
           </div>
         </div>
-         <DialogFooter className="p-6 pt-4 border-t">
+         <DialogFooter className="p-6 pt-4 border-t sticky bottom-0 bg-background">
             <Button variant="outline" onClick={handleClose} type="button" disabled={isLoading}>
                 Cancel
             </Button>

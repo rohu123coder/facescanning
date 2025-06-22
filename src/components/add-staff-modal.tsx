@@ -34,7 +34,7 @@ import { Label } from '@/components/ui/label';
 interface AddStaffModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onStaffAdded: (staff: Omit<Staff, 'id' | 'attendanceStatus'>) => void;
+  onStaffAdded: (staff: Omit<Staff, 'id' | 'attendanceRecords'>) => void;
 }
 
 const staffFormSchema = z.object({
@@ -376,7 +376,7 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
                 </Form>
             </div>
         </div>
-        <DialogFooter className="p-6 pt-4 border-t">
+        <DialogFooter className="p-6 pt-4 border-t sticky bottom-0 bg-background">
             <Button variant="outline" onClick={handleClose} type="button" disabled={isLoading}>
                 Cancel
             </Button>

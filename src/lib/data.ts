@@ -1,3 +1,10 @@
+export type AttendanceRecord = {
+    date: string;
+    inTime: string | null;
+    outTime: string | null;
+    totalHours: string | null;
+};
+
 export type Staff = {
   id: string;
   name: string;
@@ -9,12 +16,7 @@ export type Staff = {
   role: string;
   salary: number;
   photoUrl: string;
-  attendanceStatus?: {
-      date: string;
-      inTime: string | null;
-      outTime: string | null;
-      totalHours: string | null;
-  } | null;
+  attendanceRecords?: AttendanceRecord[];
 };
 
 export type Student = {
@@ -31,12 +33,7 @@ export type Student = {
     parentMobile: string;
     parentWhatsapp: string;
     photoUrl: string;
-    attendanceStatus?: {
-        date: string;
-        inTime: string | null;
-        outTime: string | null;
-        totalHours: string | null;
-    } | null;
+    attendanceRecords?: AttendanceRecord[];
 };
 
 

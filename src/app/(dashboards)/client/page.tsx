@@ -7,8 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MoreHorizontal, PlusCircle, FileDown, Video, User, Users, Printer, Calendar as CalendarIcon, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { type Staff, type Student } from '@/lib/data';
-import { generateAttendanceReportCsv, generateStudentAttendanceReportCsv } from '@/lib/actions';
+import { type Staff, type Student, type AttendanceRecord } from '@/lib/data';
 import { AddStaffModal } from '@/components/add-staff-modal';
 import { AddStudentModal } from '@/components/add-student-modal';
 import { EditStudentModal } from '@/components/edit-student-modal';
@@ -71,60 +70,109 @@ export default function ClientDashboard() {
     }, {} as Record<string, number>);
   }, [studentList, studentInitialized]);
 
-  // Memoized filtered lists for display
-  const filteredStaffList = useMemo(() => {
-    return staffList.filter(staff => {
+  const staffAttendanceList = useMemo(() => {
+    const list: { staff: Staff; record: AttendanceRecord }[] = [];
+
+    const filteredStaff = staffList.filter(staff => {
       const nameMatch = staff.name.toLowerCase().includes(staffNameFilter.toLowerCase());
       const departmentMatch = staffDepartmentFilter === 'all' || staff.department === staffDepartmentFilter;
-      
-      let dateMatch = true;
-      if (date?.from) {
-        const attendanceDate = staff.attendanceStatus?.date ? new Date(staff.attendanceStatus.date) : null;
-        if (!attendanceDate) {
-          dateMatch = false;
-        } else {
-          dateMatch = isWithinInterval(attendanceDate, {
-            start: startOfDay(date.from),
-            end: startOfDay(date.to ?? date.from)
-          });
-        }
-      }
-      return nameMatch && departmentMatch && dateMatch;
+      return nameMatch && departmentMatch;
     });
+
+    filteredStaff.forEach(staff => {
+      if (staff.attendanceRecords) {
+        staff.attendanceRecords.forEach(record => {
+          let dateMatch = false;
+          if (date?.from) {
+            const recordDate = startOfDay(new Date(record.date));
+            dateMatch = isWithinInterval(recordDate, {
+              start: startOfDay(date.from),
+              end: startOfDay(date.to ?? date.from),
+            });
+          } else {
+            dateMatch = true;
+          }
+
+          if (dateMatch) {
+            list.push({ staff, record });
+          }
+        });
+      }
+    });
+
+    list.sort((a, b) => {
+      const dateComparison = new Date(b.record.date).getTime() - new Date(a.record.date).getTime();
+      if (dateComparison !== 0) return dateComparison;
+      return a.staff.name.localeCompare(b.staff.name);
+    });
+
+    return list;
   }, [staffList, staffNameFilter, staffDepartmentFilter, date]);
-  
-  const filteredStudentList = useMemo(() => {
-    return studentList.filter(student => {
+
+  const studentAttendanceList = useMemo(() => {
+    const list: { student: Student; record: AttendanceRecord }[] = [];
+
+    const filteredStudents = studentList.filter(student => {
       const nameMatch = student.name.toLowerCase().includes(studentNameFilter.toLowerCase());
       const classMatch = studentClassFilter === 'all' || student.className === studentClassFilter;
-
-      let dateMatch = true;
-      if (date?.from) {
-        const attendanceDate = student.attendanceStatus?.date ? new Date(student.attendanceStatus.date) : null;
-        if (!attendanceDate) {
-          dateMatch = false;
-        } else {
-           dateMatch = isWithinInterval(attendanceDate, {
-            start: startOfDay(date.from),
-            end: startOfDay(date.to ?? date.from)
-          });
-        }
-      }
-      return nameMatch && classMatch && dateMatch;
+      return nameMatch && classMatch;
     });
+
+    filteredStudents.forEach(student => {
+      if (student.attendanceRecords) {
+        student.attendanceRecords.forEach(record => {
+          let dateMatch = false;
+          if (date?.from) {
+            const recordDate = startOfDay(new Date(record.date));
+            dateMatch = isWithinInterval(recordDate, {
+              start: startOfDay(date.from),
+              end: startOfDay(date.to ?? date.from),
+            });
+          } else {
+            dateMatch = true;
+          }
+
+          if (dateMatch) {
+            list.push({ student, record });
+          }
+        });
+      }
+    });
+    
+    list.sort((a, b) => {
+        const dateComparison = new Date(b.record.date).getTime() - new Date(a.record.date).getTime();
+        if (dateComparison !== 0) return dateComparison;
+        return a.student.name.localeCompare(b.student.name);
+    });
+
+    return list;
   }, [studentList, studentNameFilter, studentClassFilter, date]);
 
 
-  const handleGenerateCsv = async () => {
+  const handleGenerateCsv = () => {
     if (!date?.from) return;
     const dateStr = `${format(date.from, 'yyyy-MM-dd')}_to_${format(date.to ?? date.from, 'yyyy-MM-dd')}`;
     let csvData;
     let fileName;
+    
     if (activeTab === 'staff') {
-      csvData = await generateAttendanceReportCsv(filteredStaffList, dateStr);
+      const headers = ['Staff ID', 'Name', 'Email', 'Mobile', 'Department', 'Role', 'Date', 'In-Time', 'Out-Time', 'Total Hours Worked'];
+      const rows = staffAttendanceList.map(({ staff, record }) => [
+            staff.id, staff.name, staff.email, staff.mobile, staff.department, staff.role,
+            record.date ? format(new Date(record.date), 'yyyy-MM-dd') : 'N/A',
+            record.inTime ?? 'N/A', record.outTime ?? 'N/A', record.totalHours ?? 'N/A'
+      ].join(','));
+      csvData = [headers.join(','), ...rows].join('\n');
       fileName = `staff_attendance_${dateStr}.csv`;
     } else {
-      csvData = await generateStudentAttendanceReportCsv(filteredStudentList, dateStr);
+      const headers = ['Student ID', 'Name', 'Email', 'Class', 'Roll Number', 'Gender', 'DOB', 'Religion', 'Father Name', "Mother's Name", 'Parent Mobile', 'Parent WhatsApp', 'Date', 'Arrival Time', 'Departure Time', 'Total Hours'];
+      const rows = studentAttendanceList.map(({ student, record }) => [
+            student.id, student.name, student.email, student.className, student.rollNumber, student.gender, student.dob,
+            student.religion, student.fatherName, student.motherName, student.parentMobile, student.parentWhatsapp,
+            record.date ? format(new Date(record.date), 'yyyy-MM-dd') : 'N/A',
+            record.inTime ?? 'N/A', record.outTime ?? 'N/A', record.totalHours ?? 'N/A'
+      ].join(','));
+      csvData = [headers.join(','), ...rows].join('\n');
       fileName = `student_attendance_${dateStr}.csv`;
     }
     
@@ -145,11 +193,11 @@ export default function ClientDashboard() {
     window.print();
   };
 
-  const handleAddStaff = (newStaff: Omit<Staff, 'id' | 'attendanceStatus'>) => {
+  const handleAddStaff = (newStaff: Omit<Staff, 'id' | 'attendanceRecords'>) => {
     addStaff(newStaff);
   };
   
-  const handleAddStudent = (newStudent: Omit<Student, 'id' | 'attendanceStatus'>) => {
+  const handleAddStudent = (newStudent: Omit<Student, 'id' | 'attendanceRecords'>) => {
     addStudent(newStudent);
   };
 
@@ -212,15 +260,15 @@ export default function ClientDashboard() {
           <TableBody>
             {!staffInitialized ? (
               <TableRow><TableCell colSpan={7} className="text-center h-24">Loading staff data...</TableCell></TableRow>
-            ) : filteredStaffList.length > 0 ? (
-              filteredStaffList.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell className="font-medium">{employee.name}</TableCell>
-                    <TableCell>{employee.department}</TableCell>
-                    <TableCell>{employee.attendanceStatus?.date ? format(new Date(employee.attendanceStatus.date), 'PPP') : 'N/A'}</TableCell>
-                    <TableCell>{employee.attendanceStatus?.inTime ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">{employee.attendanceStatus.inTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
-                    <TableCell>{employee.attendanceStatus?.outTime ? <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{employee.attendanceStatus.outTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
-                    <TableCell>{employee.attendanceStatus?.totalHours ? <Badge variant="outline">{employee.attendanceStatus.totalHours}</Badge> : <Badge variant="secondary">--</Badge>}</TableCell>
+            ) : staffAttendanceList.length > 0 ? (
+              staffAttendanceList.map(({ staff, record }) => (
+                  <TableRow key={`${staff.id}-${record.date}`}>
+                    <TableCell className="font-medium">{staff.name}</TableCell>
+                    <TableCell>{staff.department}</TableCell>
+                    <TableCell>{record.date ? format(new Date(record.date), 'PPP') : 'N/A'}</TableCell>
+                    <TableCell>{record.inTime ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">{record.inTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
+                    <TableCell>{record.outTime ? <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{record.outTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
+                    <TableCell>{record.totalHours ? <Badge variant="outline">{record.totalHours}</Badge> : <Badge variant="secondary">--</Badge>}</TableCell>
                     <TableCell className="text-right print-hide">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -230,7 +278,7 @@ export default function ClientDashboard() {
                   </TableRow>
                 ))
             ) : (
-              <TableRow><TableCell colSpan={7} className="text-center h-24">No staff members match the current filters.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center h-24">No attendance records match the current filters.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -243,7 +291,7 @@ export default function ClientDashboard() {
         <Card>
             <CardHeader>
                 <CardTitle>Class Strength</CardTitle>
-                <CardDescription>Click on a class to filter the list below.</CardDescription>
+                <CardDescription>A quick overview of student distribution. Click a class to filter.</CardDescription>
             </CardHeader>
             <CardContent>
                 {studentInitialized && Object.keys(classStrength).length > 0 ? (
@@ -253,12 +301,12 @@ export default function ClientDashboard() {
                                 key={className}
                                 onClick={() => setStudentClassFilter(className)}
                                 className={cn(
-                                    "p-4 bg-muted rounded-lg text-center transition-all hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50",
+                                    "p-4 bg-muted rounded-lg text-left transition-all hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50",
                                     studentClassFilter === className && "ring-2 ring-primary"
                                 )}
                             >
-                                <p className="text-sm font-medium text-muted-foreground truncate" title={className}>{className}</p>
-                                <p className="text-2xl font-bold">{count}</p>
+                                <p className="text-sm font-medium text-muted-foreground">Class {className}</p>
+                                <p className="text-2xl font-bold">{count} <span className="text-sm font-medium text-muted-foreground">Students</span></p>
                             </button>
                         ))}
                     </div>
@@ -291,16 +339,16 @@ export default function ClientDashboard() {
                 <TableBody>
                     {!studentInitialized ? (
                         <TableRow><TableCell colSpan={8} className="text-center h-24">Loading student data...</TableCell></TableRow>
-                    ) : filteredStudentList.length > 0 ? (
-                    filteredStudentList.map((student) => (
-                        <TableRow key={student.id}>
+                    ) : studentAttendanceList.length > 0 ? (
+                    studentAttendanceList.map(({ student, record }) => (
+                        <TableRow key={`${student.id}-${record.date}`}>
                             <TableCell className="font-medium">{student.name}</TableCell>
                             <TableCell>{student.className}</TableCell>
                             <TableCell>{student.rollNumber}</TableCell>
-                            <TableCell>{student.attendanceStatus?.date ? format(new Date(student.attendanceStatus.date), 'PPP') : 'N/A'}</TableCell>
-                            <TableCell>{student.attendanceStatus?.inTime ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">{student.attendanceStatus.inTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
-                            <TableCell>{student.attendanceStatus?.outTime ? <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{student.attendanceStatus.outTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
-                            <TableCell>{student.attendanceStatus?.totalHours ? <Badge variant="outline">{student.attendanceStatus.totalHours}</Badge> : <Badge variant="secondary">--</Badge>}</TableCell>
+                            <TableCell>{record.date ? format(new Date(record.date), 'PPP') : 'N/A'}</TableCell>
+                            <TableCell>{record.inTime ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">{record.inTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
+                            <TableCell>{record.outTime ? <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{record.outTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
+                            <TableCell>{record.totalHours ? <Badge variant="outline">{record.totalHours}</Badge> : <Badge variant="secondary">--</Badge>}</TableCell>
                             <TableCell className="text-right print-hide">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -331,7 +379,7 @@ export default function ClientDashboard() {
                         </TableRow>
                         ))
                     ) : (
-                        <TableRow><TableCell colSpan={8} className="text-center h-24">No students match the current filters.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={8} className="text-center h-24">No attendance records match the current filters.</TableCell></TableRow>
                     )}
                 </TableBody>
                 </Table>
@@ -348,7 +396,7 @@ export default function ClientDashboard() {
           <p className="text-muted-foreground">Manage your staff, students and view attendance.</p>
         </div>
         <div className="flex gap-2">
-           <Button variant="outline" onClick={handleGenerateCsv} disabled={!date?.from || (activeTab === 'staff' && filteredStaffList.length === 0) || (activeTab === 'student' && filteredStudentList.length === 0)}>
+           <Button variant="outline" onClick={handleGenerateCsv} disabled={!date?.from || (activeTab === 'staff' && staffAttendanceList.length === 0) || (activeTab === 'student' && studentAttendanceList.length === 0)}>
             <FileDown className="mr-2 h-4 w-4" />
             Download Report
           </Button>

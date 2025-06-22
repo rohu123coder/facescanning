@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { type Student } from '@/lib/data';
+import { type Student, type AttendanceRecord } from '@/lib/data';
 import { parse, formatDistanceStrict } from 'date-fns';
 
 const STORE_KEY = 'studentList';
@@ -36,10 +36,10 @@ export function useStudentStore() {
     }
   }, []);
   
-  const addStudent = useCallback((newStudent: Omit<Student, 'id' | 'attendanceStatus'>) => {
+  const addStudent = useCallback((newStudent: Omit<Student, 'id' | 'attendanceRecords'>) => {
     const newIdNumber = studentList.length > 0 ? Math.max(0, ...studentList.map(s => parseInt(s.id.split('-')[1], 10))) + 1 : 1;
     const newId = `ST-${String(newIdNumber).padStart(4, '0')}`;
-    const studentToAdd: Student = { ...newStudent, id: newId, attendanceStatus: null };
+    const studentToAdd: Student = { ...newStudent, id: newId, attendanceRecords: [] };
     
     updateStudentList([...studentList, studentToAdd]);
   }, [studentList, updateStudentList]);
@@ -63,29 +63,35 @@ export function useStudentStore() {
 
     const updatedList = studentList.map(student => {
       if (student.id === studentId) {
-        const attendance = student.attendanceStatus && student.attendanceStatus.date === today
-          ? { ...student.attendanceStatus }
-          : { date: today, inTime: null, outTime: null, totalHours: null };
+        const records = student.attendanceRecords ? [...student.attendanceRecords] : [];
+        let todayRecord = records.find(r => r.date === today);
 
-        if (!attendance.inTime) {
-          attendance.inTime = currentTime;
-        } else {
-          attendance.outTime = currentTime;
-          const inTimeDate = parseTime(today, attendance.inTime);
-          const outTimeDate = parseTime(today, attendance.outTime);
-          
-          if (!isNaN(inTimeDate.getTime()) && !isNaN(outTimeDate.getTime())) {
-            attendance.totalHours = formatDistanceStrict(outTimeDate, inTimeDate);
+        if (todayRecord) {
+          if (!todayRecord.inTime) {
+             // This case should not happen if logic is correct, but as a fallback
+            todayRecord.inTime = currentTime;
+          } else {
+            todayRecord.outTime = currentTime;
+            const inTimeDate = parseTime(today, todayRecord.inTime);
+            const outTimeDate = parseTime(today, currentTime);
+            if (!isNaN(inTimeDate.getTime()) && !isNaN(outTimeDate.getTime())) {
+              todayRecord.totalHours = formatDistanceStrict(outTimeDate, inTimeDate);
+            }
           }
+        } else {
+          todayRecord = { date: today, inTime: currentTime, outTime: null, totalHours: null };
+          records.push(todayRecord);
         }
-        return { ...student, attendanceStatus: attendance };
+        return { ...student, attendanceRecords: records };
       }
       return student;
     });
     
     updateStudentList(updatedList);
     const updatedStudent = updatedList.find(s => s.id === studentId);
-    if (updatedStudent?.attendanceStatus?.outTime) {
+    const updatedRecord = updatedStudent?.attendanceRecords?.find(r => r.date === today);
+
+    if (updatedRecord?.outTime) {
         return 'Departed';
     }
     return 'Arrived';
