@@ -24,17 +24,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { type Task } from '@/lib/data';
-import { Loader2, Sparkles, CalendarIcon, ChevronsUpDown, Check } from 'lucide-react';
+import { Loader2, Sparkles, CalendarIcon, Users, Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { autoAssignTask } from '@/ai/flows/auto-assign-task';
 import { useStaffStore } from '@/hooks/use-staff-store';
+import { StaffSelectionModal } from './staff-selection-modal';
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -56,7 +56,7 @@ type TaskFormValues = z.infer<typeof taskFormSchema>;
 export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const { toast } = useToast();
   const { staffList } = useStaffStore();
   
@@ -69,6 +69,8 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
         assignedTo: [],
     },
   });
+
+  const assignedToValue = form.watch('assignedTo');
   
   const handleAutoAssign = async () => {
       setIsAiLoading(true);
@@ -128,11 +130,11 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
   const handleClose = () => {
     if (isSaving) return;
     form.reset();
-    setPopoverOpen(false);
     onOpenChange(false);
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
@@ -223,7 +225,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
               name="assignedTo"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex justify-between items-center">
+                   <div className="flex justify-between items-center">
                     <FormLabel>Assign To</FormLabel>
                     <Button
                       type="button"
@@ -240,85 +242,32 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                       Auto-assign
                     </Button>
                   </div>
-                  <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={popoverOpen}
-                          className={cn(
-                            'w-full justify-between h-auto min-h-10',
-                            !(field.value && field.value.length > 0) && 'text-muted-foreground'
-                          )}
-                        >
-                          <div className="flex gap-1 flex-wrap">
-                            {field.value && field.value.length > 0 ? (
-                              staffList
-                                .filter((staff) => field.value.includes(staff.id))
-                                .map((staff) => (
-                                  <Badge key={staff.id} variant="secondary">
-                                    {staff.name}
-                                  </Badge>
-                                ))
-                            ) : (
-                              'Select staff...'
+                  <FormControl>
+                     <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-start text-left h-auto min-h-10"
+                        onClick={() => setIsStaffModalOpen(true)}
+                     >
+                        <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <div className="flex-1">
+                             {field.value && field.value.length > 0 ? (
+                                <div className="flex gap-1 flex-wrap">
+                                    {staffList
+                                        .filter((staff) => field.value.includes(staff.id))
+                                        .map((staff) => (
+                                        <Badge key={staff.id} variant="secondary">
+                                            {staff.name}
+                                        </Badge>
+                                        ))
+                                    }
+                                </div>
+                                ) : (
+                                <span className="text-muted-foreground">Select staff...</span>
                             )}
-                          </div>
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search staff..." />
-                        <CommandList>
-                          <CommandEmpty>No staff found.</CommandEmpty>
-                          <CommandGroup>
-                            {staffList.map((staff) => {
-                              const isSelected = field.value?.includes(staff.id);
-                              return (
-                                <CommandItem
-                                  key={staff.id}
-                                  value={staff.name}
-                                  onSelect={() => {
-                                    // This now handles keyboard selection
-                                    const current = field.value || [];
-                                    const newSelection = isSelected
-                                      ? current.filter((id) => id !== staff.id)
-                                      : [...current, staff.id];
-                                    form.setValue('assignedTo', newSelection, { shouldValidate: true });
-                                  }}
-                                  onMouseDown={(e) => {
-                                    // This handles mouse selection and prevents popover closing
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const current = field.value || [];
-                                    const newSelection = isSelected
-                                      ? current.filter((id) => id !== staff.id)
-                                      : [...current, staff.id];
-                                    form.setValue('assignedTo', newSelection, { shouldValidate: true });
-                                  }}
-                                >
-                                  <div
-                                    className={cn(
-                                      "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                                      isSelected
-                                        ? "bg-primary text-primary-foreground"
-                                        : "opacity-50 [&_svg]:invisible"
-                                    )}
-                                  >
-                                    <Check className="h-4 w-4" />
-                                  </div>
-                                  {staff.name}
-                                </CommandItem>
-                              );
-                            })}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                        </div>
+                     </Button>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -349,5 +298,15 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
         </Form>
       </DialogContent>
     </Dialog>
+     <StaffSelectionModal
+        isOpen={isStaffModalOpen}
+        onOpenChange={setIsStaffModalOpen}
+        staffList={staffList}
+        selectedStaffIds={assignedToValue || []}
+        onSelectionChange={(newSelection) => {
+            form.setValue('assignedTo', newSelection, { shouldValidate: true });
+        }}
+    />
+    </>
   );
 }
