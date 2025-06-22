@@ -44,6 +44,18 @@ export function useStaffStore() {
     updateStaffList([...staffList, staffToAdd]);
   }, [staffList, updateStaffList]);
   
+  const updateStaff = useCallback((updatedStaffData: Staff) => {
+    const updatedList = staffList.map(staff => 
+      staff.id === updatedStaffData.id ? updatedStaffData : staff
+    );
+    updateStaffList(updatedList);
+  }, [staffList, updateStaffList]);
+
+  const deleteStaff = useCallback((staffId: string) => {
+      const updatedList = staffList.filter(staff => staff.id !== staffId);
+      updateStaffList(updatedList);
+  }, [staffList, updateStaffList]);
+  
   const updateStaffAttendance = useCallback((staffId: string) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
@@ -87,5 +99,5 @@ export function useStaffStore() {
   }, [staffList, updateStaffList]);
 
 
-  return { staffList, setStaffList, addStaff, updateStaffAttendance, isInitialized };
+  return { staffList, setStaffList, addStaff, updateStaff, deleteStaff, updateStaffAttendance, isInitialized };
 }
