@@ -256,14 +256,11 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                             <CommandInput placeholder="Search staff..." />
                             <CommandList>
                             <CommandEmpty>No staff found.</CommandEmpty>
-                            <CommandGroup>
+                            <CommandGroup onMouseDown={(e) => e.preventDefault()}>
                             {staffList.map((staff) => (
                                 <CommandItem
                                     key={staff.id}
                                     value={staff.name}
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                    }}
                                     onSelect={() => {
                                         const currentSelection = field.value || [];
                                         const isSelected = currentSelection.includes(staff.id);
