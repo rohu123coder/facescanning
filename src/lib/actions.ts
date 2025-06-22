@@ -29,17 +29,23 @@ export async function generateAttendanceReportCsv(staff: Staff[]): Promise<strin
 
 export async function generateStudentAttendanceReportCsv(students: Student[]): Promise<string> {
     const todayStr = new Date().toISOString().split('T')[0];
-    const headers = ['Student ID', 'Name', 'Class', 'Roll Number', 'Parent Name', 'Parent Mobile', 'Date', 'Arrival Time', 'Departure Time', 'Total Hours'];
+    const headers = ['Student ID', 'Name', 'Email', 'Class', 'Roll Number', 'Gender', 'DOB', 'Religion', 'Father Name', "Mother's Name", 'Parent Mobile', 'Parent WhatsApp', 'Date', 'Arrival Time', 'Departure Time', 'Total Hours'];
     
     const rows = students.map(student => {
         const attendance = student.attendanceStatus?.date === todayStr ? student.attendanceStatus : null;
         return [
             student.id,
             student.name,
+            student.email,
             student.className,
             student.rollNumber,
-            student.parentName,
+            student.gender,
+            student.dob,
+            student.religion,
+            student.fatherName,
+            student.motherName,
             student.parentMobile,
+            student.parentWhatsapp,
             attendance ? format(new Date(attendance.date), 'yyyy-MM-dd') : 'N/A',
             attendance?.inTime ?? 'N/A',
             attendance?.outTime ?? 'N/A',

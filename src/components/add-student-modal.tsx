@@ -29,6 +29,7 @@ import type { Student } from '@/lib/data';
 import { Loader2, Camera, Upload, Link as LinkIcon, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -38,10 +39,16 @@ interface AddStudentModalProps {
 
 const studentFormSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
   className: z.string().min(1, { message: 'Class is required.' }),
   rollNumber: z.string().min(1, { message: 'Roll number is required.' }),
-  parentName: z.string().min(2, { message: 'Parent name must be at least 2 characters.' }),
+  gender: z.enum(['Male', 'Female', 'Other'], { required_error: 'Please select a gender.' }),
+  dob: z.string().min(1, { message: 'Date of birth is required.' }),
+  religion: z.string().min(2, { message: 'Religion is required.' }),
+  fatherName: z.string().min(2, { message: "Father's name must be at least 2 characters." }),
+  motherName: z.string().min(2, { message: "Mother's name must be at least 2 characters." }),
   parentMobile: z.string().min(10, { message: 'Parent mobile number must be at least 10 digits.' }),
+  parentWhatsapp: z.string().min(10, { message: 'Parent WhatsApp number must be at least 10 digits.' }),
   photo: z.string().url({ message: 'A valid student photo URL is required.' }),
 });
 
@@ -61,10 +68,14 @@ export function AddStudentModal({ isOpen, onOpenChange, onStudentAdded }: AddStu
     resolver: zodResolver(studentFormSchema),
     defaultValues: {
       name: '',
+      email: '',
       className: '',
       rollNumber: '',
-      parentName: '',
+      religion: '',
+      fatherName: '',
+      motherName: '',
       parentMobile: '',
+      parentWhatsapp: '',
       photo: '',
     },
   });
@@ -167,7 +178,7 @@ export function AddStudentModal({ isOpen, onOpenChange, onStudentAdded }: AddStu
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="font-headline">Add New Student</DialogTitle>
           <DialogDescription>
@@ -184,6 +195,19 @@ export function AddStudentModal({ isOpen, onOpenChange, onStudentAdded }: AddStu
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g. Priya Singh" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="e.g. priya.singh@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -216,13 +240,74 @@ export function AddStudentModal({ isOpen, onOpenChange, onStudentAdded }: AddStu
                 )}
               />
             <FormField
+              control={form.control}
+              name="gender"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Gender</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
                 control={form.control}
-                name="parentName"
+                name="dob"
+                render={({ field }) => (
+                  <FormItem  className="col-span-2 sm:col-span-1">
+                    <FormLabel>Date of Birth</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <FormField
+                control={form.control}
+                name="religion"
+                render={({ field }) => (
+                  <FormItem  className="col-span-2 sm:col-span-1">
+                    <FormLabel>Religion</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Hinduism" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <FormField
+                control={form.control}
+                name="fatherName"
                 render={({ field }) => (
                   <FormItem className="col-span-2 sm:col-span-1">
-                    <FormLabel>Parent's Name</FormLabel>
+                    <FormLabel>Father's Name</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g. Rajesh Singh" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <FormField
+                control={form.control}
+                name="motherName"
+                render={({ field }) => (
+                  <FormItem className="col-span-2 sm:col-span-1">
+                    <FormLabel>Mother's Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Sunita Singh" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -234,6 +319,19 @@ export function AddStudentModal({ isOpen, onOpenChange, onStudentAdded }: AddStu
                 render={({ field }) => (
                   <FormItem  className="col-span-2 sm:col-span-1">
                     <FormLabel>Parent's Mobile</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. +919876543210" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <FormField
+                control={form.control}
+                name="parentWhatsapp"
+                render={({ field }) => (
+                  <FormItem  className="col-span-2 sm:col-span-1">
+                    <FormLabel>Parent's WhatsApp</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g. +919876543210" {...field} />
                     </FormControl>

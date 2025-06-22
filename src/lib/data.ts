@@ -20,10 +20,16 @@ export type Staff = {
 export type Student = {
     id: string;
     name: string;
+    email: string;
     className: string;
     rollNumber: string;
-    parentName: string;
+    gender: 'Male' | 'Female' | 'Other';
+    dob: string;
+    religion: string;
+    fatherName: string;
+    motherName: string;
     parentMobile: string;
+    parentWhatsapp: string;
     photoUrl: string;
     attendanceStatus?: {
         date: string;
