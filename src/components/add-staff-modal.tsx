@@ -30,7 +30,6 @@ import type { Staff } from '@/lib/data';
 import { Loader2, Camera, Upload, Link as LinkIcon, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AddStaffModalProps {
   isOpen: boolean;
@@ -176,206 +175,208 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 flex flex-col">
+        <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle className="font-headline">Add New Staff Member</DialogTitle>
           <DialogDescription>
             Enter the details for the new employee and provide a photo for facial recognition.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="pr-6 -mr-2">
-            <Form {...form}>
-            <form id="add-staff-form" onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-4 gap-y-4 py-4">
-                <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                    <FormItem className="col-span-2">
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                        <Input placeholder="e.g. Aarav Sharma" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                    <FormItem className="col-span-2 sm:col-span-1">
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                        <Input type="email" placeholder="e.g. aarav.sharma@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <FormField
+        <div className="flex-1 overflow-y-auto">
+            <div className="px-6 py-4">
+                <Form {...form}>
+                <form id="add-staff-form" onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-4 gap-y-4">
+                    <FormField
                     control={form.control}
-                    name="mobile"
+                    name="name"
                     render={({ field }) => (
-                    <FormItem  className="col-span-2 sm:col-span-1">
-                        <FormLabel>Mobile Number</FormLabel>
+                        <FormItem className="col-span-2">
+                        <FormLabel>Full Name</FormLabel>
                         <FormControl>
-                        <Input placeholder="e.g. +919876543210" {...field} />
+                            <Input placeholder="e.g. Aarav Sharma" {...field} />
                         </FormControl>
                         <FormMessage />
-                    </FormItem>
+                        </FormItem>
                     )}
-                />
-                <FormField
+                    />
+                    <FormField
                     control={form.control}
-                    name="whatsapp"
+                    name="email"
                     render={({ field }) => (
-                    <FormItem className="col-span-2 sm:col-span-1">
-                        <FormLabel>WhatsApp Number</FormLabel>
+                        <FormItem className="col-span-2 sm:col-span-1">
+                        <FormLabel>Email Address</FormLabel>
                         <FormControl>
-                        <Input placeholder="e.g. +919876543210" {...field} />
+                            <Input type="email" placeholder="e.g. aarav.sharma@example.com" {...field} />
                         </FormControl>
                         <FormMessage />
-                    </FormItem>
+                        </FormItem>
                     )}
-                />
-                <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                    <FormItem className="col-span-2">
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                        <Textarea placeholder="Enter full address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <FormField
-                control={form.control}
-                name="department"
-                render={({ field }) => (
-                    <FormItem className="col-span-2 sm:col-span-1">
-                    <FormLabel>Department</FormLabel>
-                    <FormControl>
-                        <Input placeholder="e.g. Engineering" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                    <FormItem className="col-span-2 sm:col-span-1">
-                    <FormLabel>Role</FormLabel>
-                    <FormControl>
-                        <Input placeholder="e.g. Frontend Developer" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <FormField
+                    />
+                    <FormField
+                        control={form.control}
+                        name="mobile"
+                        render={({ field }) => (
+                        <FormItem  className="col-span-2 sm:col-span-1">
+                            <FormLabel>Mobile Number</FormLabel>
+                            <FormControl>
+                            <Input placeholder="e.g. +919876543210" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="whatsapp"
+                        render={({ field }) => (
+                        <FormItem className="col-span-2 sm:col-span-1">
+                            <FormLabel>WhatsApp Number</FormLabel>
+                            <FormControl>
+                            <Input placeholder="e.g. +919876543210" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
                     control={form.control}
-                    name="salary"
+                    name="address"
                     render={({ field }) => (
-                    <FormItem className="col-span-2 sm:col-span-1">
-                        <FormLabel>Salary (INR)</FormLabel>
+                        <FormItem className="col-span-2">
+                        <FormLabel>Address</FormLabel>
                         <FormControl>
-                        <Input type="number" placeholder="e.g. 75000" {...field} />
+                            <Textarea placeholder="Enter full address" {...field} />
                         </FormControl>
                         <FormMessage />
-                    </FormItem>
+                        </FormItem>
                     )}
-                />
-                <FormField
-                control={form.control}
-                name="photo"
-                render={({ field }) => (
-                    <FormItem className="col-span-2">
-                    <FormLabel>Staff Photo</FormLabel>
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="url"><LinkIcon className="mr-1" /> URL</TabsTrigger>
-                        <TabsTrigger value="upload"><Upload className="mr-1" /> Upload</TabsTrigger>
-                        <TabsTrigger value="camera"><Camera className="mr-1" /> Camera</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="url">
+                    />
+                    <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                        <FormItem className="col-span-2 sm:col-span-1">
+                        <FormLabel>Department</FormLabel>
                         <FormControl>
-                            <Input 
-                            placeholder="https://placehold.co/400x400.png" 
-                            onChange={(e) => field.onChange(e.target.value)}
-                            value={field.value?.startsWith('http') ? field.value : ''}
-                            />
+                            <Input placeholder="e.g. Engineering" {...field} />
                         </FormControl>
-                        </TabsContent>
-                        <TabsContent value="upload">
-                            <Button type="button" variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
-                            <Upload className="mr-2"/> Select File
-                            </Button>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                        <FormItem className="col-span-2 sm:col-span-1">
+                        <FormLabel>Role</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. Frontend Developer" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="salary"
+                        render={({ field }) => (
+                        <FormItem className="col-span-2 sm:col-span-1">
+                            <FormLabel>Salary (INR)</FormLabel>
+                            <FormControl>
+                            <Input type="number" placeholder="e.g. 75000" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="photo"
+                    render={({ field }) => (
+                        <FormItem className="col-span-2">
+                        <FormLabel>Staff Photo</FormLabel>
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                            <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="url"><LinkIcon className="mr-1" /> URL</TabsTrigger>
+                            <TabsTrigger value="upload"><Upload className="mr-1" /> Upload</TabsTrigger>
+                            <TabsTrigger value="camera"><Camera className="mr-1" /> Camera</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="url">
                             <FormControl>
                                 <Input 
-                                    type="file" 
-                                    className="hidden" 
-                                    ref={fileInputRef} 
-                                    accept="image/*" 
-                                    onChange={handleFileChange}
+                                placeholder="https://placehold.co/400x400.png" 
+                                onChange={(e) => field.onChange(e.target.value)}
+                                value={field.value?.startsWith('http') ? field.value : ''}
                                 />
                             </FormControl>
-                        </TabsContent>
-                        <TabsContent value="camera">
-                        <div className="space-y-2">
-                            {hasCameraPermission === false ? (
-                            <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Camera Access Denied</AlertTitle>
-                                <AlertDescription>
-                                Please enable camera permissions to use this feature.
-                                </AlertDescription>
-                            </Alert>
-                            ) : (
-                            <>
-                            <div className="w-full aspect-video rounded-md bg-muted overflow-hidden border relative">
-                                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                                {hasCameraPermission === null && <p className="absolute inset-0 flex items-center justify-center text-muted-foreground">Initializing camera...</p>}
+                            </TabsContent>
+                            <TabsContent value="upload">
+                                <Button type="button" variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                                <Upload className="mr-2"/> Select File
+                                </Button>
+                                <FormControl>
+                                    <Input 
+                                        type="file" 
+                                        className="hidden" 
+                                        ref={fileInputRef} 
+                                        accept="image/*" 
+                                        onChange={handleFileChange}
+                                    />
+                                </FormControl>
+                            </TabsContent>
+                            <TabsContent value="camera">
+                            <div className="space-y-2">
+                                {hasCameraPermission === false ? (
+                                <Alert variant="destructive">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertTitle>Camera Access Denied</AlertTitle>
+                                    <AlertDescription>
+                                    Please enable camera permissions to use this feature.
+                                    </AlertDescription>
+                                </Alert>
+                                ) : (
+                                <>
+                                <div className="w-full aspect-video rounded-md bg-muted overflow-hidden border relative">
+                                    <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                                    {hasCameraPermission === null && <p className="absolute inset-0 flex items-center justify-center text-muted-foreground">Initializing camera...</p>}
+                                </div>
+                                <Button type="button" className="w-full" onClick={handleTakePhoto} disabled={!hasCameraPermission}>
+                                    <Camera className="mr-2" /> Take Photo
+                                </Button>
+                                </>
+                                )}
                             </div>
-                            <Button type="button" className="w-full" onClick={handleTakePhoto} disabled={!hasCameraPermission}>
-                                <Camera className="mr-2" /> Take Photo
-                            </Button>
-                            </>
-                            )}
-                        </div>
-                        </TabsContent>
-                    </Tabs>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
+                            </TabsContent>
+                        </Tabs>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
 
-                {photoValue && (
-                    <div className="col-span-2 space-y-2">
-                        <Label>Photo Preview</Label>
-                        <div className="w-full flex justify-center p-2 border rounded-md bg-muted">
-                            <Image
-                                src={photoValue}
-                                alt="Staff photo preview"
-                                width={128}
-                                height={128}
-                                className="rounded-md object-cover aspect-square"
-                                data-ai-hint="person portrait"
-                            />
+                    {photoValue && (
+                        <div className="col-span-2 space-y-2">
+                            <Label>Photo Preview</Label>
+                            <div className="w-full flex justify-center p-2 border rounded-md bg-muted">
+                                <Image
+                                    src={photoValue}
+                                    alt="Staff photo preview"
+                                    width={128}
+                                    height={128}
+                                    className="rounded-md object-cover aspect-square"
+                                    data-ai-hint="person portrait"
+                                />
+                            </div>
                         </div>
-                    </div>
-                )}
-                
-                <canvas ref={canvasRef} className="hidden" />
-                
-            </form>
-            </Form>
-        </ScrollArea>
-        <DialogFooter className="pt-4 border-t">
+                    )}
+                    
+                    <canvas ref={canvasRef} className="hidden" />
+                    
+                </form>
+                </Form>
+            </div>
+        </div>
+        <DialogFooter className="p-6 pt-4 border-t">
             <Button variant="outline" onClick={handleClose} type="button" disabled={isLoading}>
                 Cancel
             </Button>

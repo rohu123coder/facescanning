@@ -30,7 +30,6 @@ import { Loader2, Camera, Upload, Link as LinkIcon, AlertCircle } from 'lucide-r
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -181,16 +180,17 @@ export function AddStudentModal({ isOpen, onOpenChange, onStudentAdded }: AddStu
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0 flex flex-col">
+        <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle className="font-headline">Add New Student</DialogTitle>
           <DialogDescription>
             Enter the details for the new student and provide a photo for facial recognition.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="pr-6 -mr-2">
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-6 py-4">
             <Form {...form}>
-            <form id="add-student-form" onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-4 gap-y-4 py-4">
+            <form id="add-student-form" onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-4 gap-y-4">
                 <FormField
                 control={form.control}
                 name="name"
@@ -426,8 +426,9 @@ export function AddStudentModal({ isOpen, onOpenChange, onStudentAdded }: AddStu
                 <canvas ref={canvasRef} className="hidden" />
             </form>
             </Form>
-        </ScrollArea>
-         <DialogFooter className="pt-4 border-t">
+          </div>
+        </div>
+         <DialogFooter className="p-6 pt-4 border-t">
             <Button variant="outline" onClick={handleClose} type="button" disabled={isLoading}>
                 Cancel
             </Button>
