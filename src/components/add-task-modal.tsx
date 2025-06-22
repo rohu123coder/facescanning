@@ -260,19 +260,22 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                             <CommandGroup>
                             {staffList.map((staff) => {
                                 const isSelected = (field.value || []).includes(staff.id);
+                                
+                                const handleToggleSelection = () => {
+                                    const newValue = isSelected
+                                        ? (field.value || []).filter(id => id !== staff.id)
+                                        : [...(field.value || []), staff.id];
+                                    field.onChange(newValue);
+                                }
+
                                 return (
                                 <CommandItem
                                     key={staff.id}
                                     value={staff.name}
+                                    onSelect={handleToggleSelection}
                                     onMouseDown={(e) => {
                                         e.preventDefault();
-                                        e.stopPropagation();
-                                    }}
-                                    onSelect={() => {
-                                        const newValue = isSelected
-                                            ? (field.value || []).filter(id => id !== staff.id)
-                                            : [...(field.value || []), staff.id];
-                                        field.onChange(newValue);
+                                        handleToggleSelection();
                                     }}
                                     className="cursor-pointer"
                                 >
