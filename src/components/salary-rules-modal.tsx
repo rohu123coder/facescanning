@@ -16,6 +16,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -103,6 +104,9 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
                       onValueChange={(value) => field.onChange(value[0])}
                     />
                   </FormControl>
+                  <FormDescription>
+                    The percentage of the employee's earned gross salary that constitutes the basic pay.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -125,6 +129,9 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
                       onValueChange={(value) => field.onChange(value[0])}
                     />
                   </FormControl>
+                  <FormDescription>
+                    The percentage of the employee's earned gross salary provided as house rent allowance.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -147,6 +154,9 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
                       onValueChange={(value) => field.onChange(value[0])}
                     />
                   </FormControl>
+                   <FormDescription>
+                    The percentage of standard deductions (like PF) from the employee's earned gross salary.
+                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
