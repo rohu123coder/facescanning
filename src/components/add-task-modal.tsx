@@ -258,16 +258,21 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                             <CommandGroup>
                             {staffList.map((staff) => (
                                 <CommandItem
-                                    value={staff.id}
+                                    value={staff.name}
                                     key={staff.id}
-                                    onSelect={(idToToggle) => {
+                                    onSelect={(selectedName) => {
+                                        const staffToToggle = staffList.find(s => s.name === selectedName);
+                                        if (!staffToToggle) return;
+
+                                        const idToToggle = staffToToggle.id;
                                         const currentSelection = field.value || [];
-                                        const selected = currentSelection.includes(idToToggle);
-                                        const newValue = selected
+                                        const isSelected = currentSelection.includes(idToToggle);
+                                        
+                                        const newValue = isSelected
                                             ? currentSelection.filter(id => id !== idToToggle)
                                             : [...currentSelection, idToToggle];
+                                            
                                         field.onChange(newValue);
-                                        setPopoverOpen(true); // Keep popover open for multi-select
                                     }}
                                 >
                                     <Check className={cn("mr-2 h-4 w-4", (field.value || []).includes(staff.id) ? "opacity-100" : "opacity-0")}/>
