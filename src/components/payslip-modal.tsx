@@ -7,22 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Download, Mail } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { type Staff } from '@/lib/data';
+import { type Staff, type SalaryData } from '@/lib/data';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useState, useEffect } from 'react';
-
-
-type SalaryData = {
-  presentDays: number;
-  leaveDays: number;
-  earnedGross: number;
-  basic: number;
-  hra: number;
-  deductions: number;
-  netPay: number;
-};
 
 interface PayslipModalProps {
   isOpen: boolean;
@@ -80,15 +69,13 @@ export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPerio
     });
   }
 
-  const specialAllowance = Math.max(0, salaryData.earnedGross - salaryData.basic - salaryData.hra);
-
   const earnings = [
     { description: 'Basic Salary', amount: salaryData.basic },
     { description: 'House Rent Allowance (HRA)', amount: salaryData.hra },
   ];
 
-  if (specialAllowance > 0.01) { // Add only if it's a meaningful amount
-    earnings.push({ description: 'Special Allowance', amount: specialAllowance });
+  if (salaryData.specialAllowance > 0.01) {
+    earnings.push({ description: 'Special Allowance', amount: salaryData.specialAllowance });
   }
 
   const deductions = [

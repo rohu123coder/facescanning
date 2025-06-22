@@ -9,7 +9,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
-import { type Staff, type AttendanceRecord } from '@/lib/data';
+import { type Staff, type AttendanceRecord, type SalaryData } from '@/lib/data';
 
 const getStatusForRecord = (record: AttendanceRecord) => {
     if (record.inTime) return 'Present';
@@ -26,17 +26,6 @@ const getStatusBadge = (status: 'Present' | 'Absent' | 'Leave') => {
     case 'Leave':
       return <Badge variant="secondary"><Clock className="mr-1 h-3 w-3" />{status}</Badge>;
   }
-};
-
-// --- Salary Calculation Logic (copied and adapted from salary page) ---
-type SalaryData = {
-  presentDays: number;
-  leaveDays: number;
-  earnedGross: number;
-  basic: number;
-  hra: number;
-  deductions: number;
-  netPay: number;
 };
 
 const calculateSalary = (staff: Staff | null, rules: any, monthStart: Date, monthEnd: Date): { staff: Staff | null, salaryData: SalaryData | null } => {
@@ -56,20 +45,24 @@ const calculateSalary = (staff: Staff | null, rules: any, monthStart: Date, mont
     
     const basic = earnedGross * (rules.basicPercentage / 100);
     const hra = earnedGross * (rules.hraPercentage / 100);
+    const specialAllowance = Math.max(0, earnedGross - basic - hra);
     const deductions = earnedGross * (rules.deductionPercentage / 100);
     const netPay = earnedGross - deductions;
 
+    const salaryDetails: SalaryData = {
+        presentDays,
+        leaveDays,
+        earnedGross,
+        basic,
+        hra,
+        specialAllowance,
+        deductions,
+        netPay,
+    };
+
     return {
         staff,
-        salaryData: {
-            presentDays,
-            leaveDays,
-            earnedGross,
-            basic,
-            hra,
-            deductions,
-            netPay,
-        }
+        salaryData: salaryDetails
     };
 };
 

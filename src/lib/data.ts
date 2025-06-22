@@ -54,6 +54,17 @@ export type Attendance = {
     status: 'Present' | 'Absent' | 'Leave';
 }
 
+export type SalaryData = {
+  presentDays: number;
+  leaveDays: number;
+  earnedGross: number;
+  basic: number;
+  hra: number;
+  specialAllowance: number;
+  deductions: number;
+  netPay: number;
+};
+
 export const staff: Staff[] = [];
 
 export const students: Student[] = [];

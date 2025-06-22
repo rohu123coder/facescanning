@@ -9,21 +9,11 @@ import { Wallet, CalendarCheck, Clock, Settings, MoreHorizontal, Mail, FileDown 
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { endOfMonth, format, isWithinInterval, startOfMonth } from 'date-fns';
 import { PayslipModal } from '@/components/payslip-modal';
-import { type Staff } from '@/lib/data';
+import { type Staff, type SalaryData } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
 import { SalaryRulesModal } from '@/components/salary-rules-modal';
-
-type SalaryData = {
-  presentDays: number;
-  leaveDays: number;
-  earnedGross: number;
-  basic: number;
-  hra: number;
-  deductions: number;
-  netPay: number;
-};
 
 export default function SalaryManagementPage() {
   const { staffList, isInitialized: isStaffInitialized } = useStaffStore();
@@ -71,21 +61,25 @@ export default function SalaryManagementPage() {
       
       const basic = earnedGross * (rules.basicPercentage / 100);
       const hra = earnedGross * (rules.hraPercentage / 100);
+      const specialAllowance = Math.max(0, earnedGross - basic - hra);
       const deductions = earnedGross * (rules.deductionPercentage / 100);
       
       const netPay = earnedGross - deductions;
 
+      const salaryDetails: SalaryData = {
+        presentDays,
+        leaveDays,
+        earnedGross,
+        basic,
+        hra,
+        specialAllowance,
+        deductions,
+        netPay,
+      };
+
       return {
         staff,
-        salary: {
-          presentDays,
-          leaveDays,
-          earnedGross,
-          basic,
-          hra,
-          deductions,
-          netPay,
-        }
+        salary: salaryDetails
       };
     });
   }, [staffList, isStaffInitialized, areRulesInitialized, rules, monthStart, monthEnd, totalDaysInMonth]);

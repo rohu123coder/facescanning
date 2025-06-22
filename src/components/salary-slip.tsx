@@ -8,17 +8,7 @@ import { Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
-import type { Staff } from '@/lib/data';
-
-type SalaryData = {
-  presentDays: number;
-  leaveDays: number;
-  earnedGross: number;
-  basic: number;
-  hra: number;
-  deductions: number;
-  netPay: number;
-};
+import { type Staff, type SalaryData } from '@/lib/data';
 
 interface SalarySlipProps {
   staff: Staff | null;
@@ -71,14 +61,12 @@ export function SalarySlip({ staff, salaryData, payPeriod, payDate }: SalarySlip
     );
   }
 
-  const specialAllowance = Math.max(0, salaryData.earnedGross - salaryData.basic - salaryData.hra);
-  
   const earnings = [
     { description: 'Basic Salary', amount: salaryData.basic },
     { description: 'House Rent Allowance (HRA)', amount: salaryData.hra },
   ];
-  if (specialAllowance > 0.01) {
-    earnings.push({ description: 'Special Allowance', amount: specialAllowance });
+  if (salaryData.specialAllowance > 0.01) {
+    earnings.push({ description: 'Special Allowance', amount: salaryData.specialAllowance });
   }
 
   const deductions = [
