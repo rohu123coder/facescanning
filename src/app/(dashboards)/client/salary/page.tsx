@@ -131,7 +131,7 @@ export default function SalaryManagementPage() {
             <p className="text-xs text-muted-foreground">Payroll for {totalDaysInMonth} days</p>
           </CardContent>
         </Card>
-        <Card className="bg-primary/10 border-primary/20">
+        <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Actions</CardTitle>
                 <Settings className="h-4 w-4 text-muted-foreground" />
