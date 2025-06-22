@@ -59,7 +59,7 @@ export default function SuperAdminDashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Client List</CardTitle>
-          <CardDescription>A list of all clients on the platform.</CardDescription>
+          <CardDescription>A list of all clients on the platform. The password is the client's mobile number.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -69,6 +69,7 @@ export default function SuperAdminDashboard() {
                 <TableHead>Organization Name</TableHead>
                 <TableHead>Contact Name</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Mobile (Password)</TableHead>
                 <TableHead>Plan</TableHead>
                 <TableHead>Staff Count</TableHead>
                 <TableHead>Onboarded</TableHead>
@@ -79,7 +80,7 @@ export default function SuperAdminDashboard() {
             <TableBody>
               {!isInitialized ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center h-24">Loading clients...</TableCell>
+                  <TableCell colSpan={10} className="text-center h-24">Loading clients...</TableCell>
                 </TableRow>
               ) : clients.length > 0 ? (
                 clients.map((client) => (
@@ -88,6 +89,7 @@ export default function SuperAdminDashboard() {
                     <TableCell>{client.organizationName}</TableCell>
                     <TableCell>{client.contactName}</TableCell>
                     <TableCell>{client.email}</TableCell>
+                    <TableCell>{client.mobile}</TableCell>
                     <TableCell>{getPlanBadge(client.plan)}</TableCell>
                     <TableCell>{client.staffCount}</TableCell>
                      <TableCell>
@@ -113,7 +115,7 @@ export default function SuperAdminDashboard() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center h-24">No clients found.</TableCell>
+                  <TableCell colSpan={10} className="text-center h-24">No clients found.</TableCell>
                 </TableRow>
               )}
             </TableBody>
