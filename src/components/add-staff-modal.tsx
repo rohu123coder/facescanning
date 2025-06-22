@@ -46,7 +46,7 @@ const staffFormSchema = z.object({
   department: z.string().min(2, { message: 'Department is required.' }),
   role: z.string().min(2, { message: 'Role is required.' }),
   salary: z.coerce.number().min(0, { message: 'Salary must be a positive number.' }),
-  photo: z.string().url({ message: 'A valid staff photo URL is required.' }),
+  photo: z.string().min(1, { message: 'A valid staff photo is required.' }),
 });
 
 type StaffFormValues = z.infer<typeof staffFormSchema>;
@@ -291,7 +291,7 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
             <FormField
               control={form.control}
               name="photo"
-              render={() => (
+              render={({ field }) => (
                 <FormItem className="col-span-2">
                   <FormLabel>Staff Photo</FormLabel>
                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -304,8 +304,8 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
                       <FormControl>
                         <Input 
                           placeholder="https://placehold.co/400x400.png" 
-                          onChange={(e) => form.setValue('photo', e.target.value, { shouldValidate: true })} 
-                          value={photoValue && photoValue.startsWith('http') ? photoValue : ''}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          value={field.value?.startsWith('http') ? field.value : ''}
                         />
                       </FormControl>
                     </TabsContent>

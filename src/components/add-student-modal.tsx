@@ -49,7 +49,7 @@ const studentFormSchema = z.object({
   motherName: z.string().min(2, { message: "Mother's name must be at least 2 characters." }),
   parentMobile: z.string().min(10, { message: 'Parent mobile number must be at least 10 digits.' }),
   parentWhatsapp: z.string().min(10, { message: 'Parent WhatsApp number must be at least 10 digits.' }),
-  photo: z.string().url({ message: 'A valid student photo URL is required.' }),
+  photo: z.string().min(1, { message: 'A valid student photo is required.' }),
 });
 
 type StudentFormValues = z.infer<typeof studentFormSchema>;
@@ -344,7 +344,7 @@ export function AddStudentModal({ isOpen, onOpenChange, onStudentAdded }: AddStu
             <FormField
               control={form.control}
               name="photo"
-              render={() => (
+              render={({ field }) => (
                 <FormItem className="col-span-2">
                   <FormLabel>Student Photo</FormLabel>
                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -357,8 +357,8 @@ export function AddStudentModal({ isOpen, onOpenChange, onStudentAdded }: AddStu
                       <FormControl>
                         <Input 
                           placeholder="https://placehold.co/400x400.png" 
-                          onChange={(e) => form.setValue('photo', e.target.value, { shouldValidate: true })} 
-                          value={photoValue && photoValue.startsWith('http') ? photoValue : ''}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          value={field.value?.startsWith('http') ? field.value : ''}
                         />
                       </FormControl>
                     </TabsContent>
