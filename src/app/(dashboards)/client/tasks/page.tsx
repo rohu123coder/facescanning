@@ -32,13 +32,15 @@ const priorityBadgeVariant = {
 
 export default function TaskManagementPage() {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
-  const { tasks, updateTaskStatus, deleteTask, isInitialized: tasksInitialized } = useTaskStore();
+  const { tasks, addTask, updateTaskStatus, deleteTask, isInitialized: tasksInitialized } = useTaskStore();
   const { staffList, isInitialized: staffInitialized } = useStaffStore();
   
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   
   useEffect(() => {
-    setSelectedDate(new Date());
+    if (typeof window !== 'undefined') {
+        setSelectedDate(new Date());
+    }
   }, []);
   
   const isDataReady = tasksInitialized && staffInitialized;
@@ -259,7 +261,7 @@ export default function TaskManagementPage() {
        <AddTaskModal
         isOpen={isAddTaskModalOpen}
         onOpenChange={setIsAddTaskModalOpen}
-        onTaskAdded={(newTask) => useTaskStore.getState().addTask(newTask)}
+        onTaskAdded={addTask}
       />
     </>
   );

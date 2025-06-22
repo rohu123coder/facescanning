@@ -262,6 +262,10 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                 <CommandItem
                                     value={staff.name}
                                     key={staff.id}
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                    }}
                                     onSelect={() => {
                                         const currentSelection = field.value || [];
                                         const isSelected = currentSelection.includes(staff.id);
