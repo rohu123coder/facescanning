@@ -14,7 +14,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Briefcase, LogOut, Mountain, ClipboardCheck, CalendarCheck, Banknote, Users, User, Video } from 'lucide-react';
+import { Briefcase, LogOut, Mountain, ClipboardCheck, CalendarCheck, Banknote, Users, User, Video, Star } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/hooks/use-auth-store';
 import { useClientStore } from '@/hooks/use-client-store';
@@ -30,6 +30,7 @@ const navConfig: { feature: Feature, href: string, label: string, icon: React.El
   { feature: 'TASK_MANAGEMENT', href: '/client/tasks', label: 'Task Management', icon: ClipboardCheck },
   { feature: 'LEAVE_MANAGEMENT', href: '/client/leaves', label: 'Leave Requests', icon: CalendarCheck },
   { feature: 'SALARY_MANAGEMENT', href: '/client/salary', label: 'Salary Management', icon: Banknote },
+  { feature: 'REPUTATION_MANAGEMENT', href: '/client/reputation', label: 'Reputation', icon: Star },
 ];
 
 
