@@ -40,7 +40,7 @@ import { useStaffStore } from '@/hooks/use-staff-store';
 interface AddTaskModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onTaskAdded: (task: Omit<Task, 'id' | 'createdAt'>) => void;
+  onTaskAdded: (task: Omit<Task, 'id' | 'createdAt' | 'status'>) => void;
 }
 
 const taskFormSchema = z.object({
@@ -112,7 +112,6 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
           description: values.description || '',
           tags: values.tags ? values.tags.split(',').map(tag => tag.trim()) : [],
           dueDate: values.dueDate.toISOString(),
-          status: 'Pending',
       });
       handleClose();
     } catch (error) {
@@ -252,7 +251,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                 </Button>
                             </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                            <Command>
                             <CommandInput placeholder="Search staff..." />
                             <CommandList>
@@ -260,8 +259,8 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                             <CommandGroup>
                             {staffList.map((staff) => (
                                 <CommandItem
-                                    value={staff.name}
                                     key={staff.id}
+                                    value={staff.name}
                                     onMouseDown={(e) => {
                                       e.preventDefault();
                                     }}
@@ -317,5 +316,3 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
     </Dialog>
   );
 }
-
-    

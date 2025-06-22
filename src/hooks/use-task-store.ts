@@ -38,13 +38,14 @@ export function useTaskStore() {
     }
   }, []);
 
-  const addTask = useCallback((newTask: Omit<Task, 'id' | 'createdAt'>) => {
+  const addTask = useCallback((newTask: Omit<Task, 'id' | 'createdAt' | 'status'>) => {
     const newIdNumber = tasks.length > 0 ? Math.max(0, ...tasks.map(t => parseInt(t.id.split('-')[1], 10))) + 1 : 1;
     const newId = `TASK-${String(newIdNumber).padStart(3, '0')}`;
     const taskToAdd: Task = { 
         ...newTask, 
         id: newId, 
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        status: 'Pending',
     };
     
     updateTaskList([taskToAdd, ...tasks]);
@@ -85,5 +86,3 @@ export function useTaskStore() {
 
   return { tasks, setTasks, addTask, updateTask, updateTaskStatus, deleteTask, isInitialized };
 }
-
-    
