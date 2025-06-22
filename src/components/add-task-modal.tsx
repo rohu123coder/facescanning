@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,16 +23,16 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { type Task, type Staff } from '@/lib/data';
+import { type Task } from '@/lib/data';
 import { Loader2, Sparkles, CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Calendar } from './ui/calendar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Textarea } from './ui/textarea';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
-import { Badge } from './ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
 import { autoAssignTask } from '@/ai/flows/auto-assign-task';
 import { useStaffStore } from '@/hooks/use-staff-store';
 
@@ -59,7 +59,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const { toast } = useToast();
-  const { staffList, isInitialized: staffInitialized } = useStaffStore();
+  const { staffList } = useStaffStore();
   
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
@@ -317,3 +317,5 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
     </Dialog>
   );
 }
+
+    

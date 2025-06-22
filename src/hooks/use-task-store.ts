@@ -28,9 +28,11 @@ export function useTaskStore() {
   }, []);
 
   const updateTaskList = useCallback((newList: Task[]) => {
-    setTasks(newList);
+    // Sort tasks by creation date, newest first
+    const sortedList = newList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    setTasks(sortedList);
     try {
-      localStorage.setItem(STORE_KEY, JSON.stringify(newList));
+      localStorage.setItem(STORE_KEY, JSON.stringify(sortedList));
     } catch (error) {
       console.error("Failed to save tasks to localStorage", error);
     }
@@ -71,14 +73,17 @@ export function useTaskStore() {
   }, [tasks, updateTask, toast]);
 
   const deleteTask = useCallback((taskId: string) => {
+    const taskToDelete = tasks.find(task => task.id === taskId);
     const updatedList = tasks.filter(task => task.id !== taskId);
     updateTaskList(updatedList);
      toast({
         variant: 'destructive',
         title: 'Task Deleted',
-        description: 'The task has been successfully removed.',
+        description: `Task "${taskToDelete?.title}" has been successfully removed.`,
     });
   }, [tasks, updateTaskList, toast]);
 
   return { tasks, setTasks, addTask, updateTask, updateTaskStatus, deleteTask, isInitialized };
 }
+
+    
