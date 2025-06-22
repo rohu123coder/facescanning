@@ -57,6 +57,7 @@ type TaskFormValues = z.infer<typeof taskFormSchema>;
 export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const { toast } = useToast();
   const { staffList, isInitialized: staffInitialized } = useStaffStore();
   
@@ -112,8 +113,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
           dueDate: values.dueDate.toISOString(),
           status: 'Pending',
       });
-      form.reset();
-      onOpenChange(false);
+      handleClose();
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -128,6 +128,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
   const handleClose = () => {
     if (isSaving) return;
     form.reset();
+    setPopoverOpen(false);
     onOpenChange(false);
   };
 
@@ -229,12 +230,13 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                             Auto-assign
                         </Button>
                     </div>
-                    <Popover>
+                    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                         <PopoverTrigger asChild>
                             <FormControl>
                                 <Button
                                 variant="outline"
                                 role="combobox"
+                                aria-expanded={popoverOpen}
                                 className={cn("w-full justify-between h-auto", !field.value.length && "text-muted-foreground")}
                                 >
                                 <div className="flex gap-1 flex-wrap">
