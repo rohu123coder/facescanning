@@ -125,7 +125,7 @@ export const initialStaff: Staff[] = [
     { id: 'KM-004', name: 'Priya Singh', email: 'priya.singh@example.com', mobile: '9876543213', whatsapp: '9876543213', address: '101 Design Studio, Delhi', department: 'Design', role: 'UI/UX Designer', salary: 70000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Figma', 'UI Design', 'User Research'] },
 ];
 
-const baseDate = new Date();
+const baseDate = new Date('2024-07-25T10:00:00Z');
 const addDays = (date: Date, days: number): Date => {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
@@ -146,7 +146,7 @@ export const initialTasks: Task[] = [
         activity: [
             { id: 'ACT-001', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDays(baseDate, -2).toISOString() },
             { id: 'ACT-002', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'status_change', oldStatus: 'Pending', newStatus: 'In Progress', createdAt: addDays(baseDate, -1).toISOString() },
-            { id: 'ACT-003', authorId: 'KM-004', authorName: 'Priya Singh', type: 'comment', text: 'Working on the initial wireframes. Will share by EOD.', createdAt: new Date().toISOString() },
+            { id: 'ACT-003', authorId: 'KM-004', authorName: 'Priya Singh', type: 'comment', text: 'Working on the initial wireframes. Will share by EOD.', createdAt: baseDate.toISOString() },
         ] 
     },
     { 
