@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { type Client } from '@/lib/data';
 import { AddClientModal } from '@/components/add-client-modal';
+import { EditClientModal } from '@/components/edit-client-modal';
 import { useClientStore } from '@/hooks/use-client-store';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const getStatusBadge = (status: 'Active' | 'Inactive') => {
   switch (status) {
@@ -31,8 +33,15 @@ const getPlanBadge = (plan: 'Basic' | 'Premium' | 'Enterprise') => {
 }
 
 export default function SuperAdminDashboard() {
-  const { clients, addClient, isInitialized } = useClientStore();
+  const { clients, addClient, updateClient, isInitialized } = useClientStore();
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
+  const [isEditClientModalOpen, setIsEditClientModalOpen] = useState(false);
+  const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
+
+  const handleEditClient = (client: Client) => {
+    setClientToEdit(client);
+    setIsEditClientModalOpen(true);
+  }
 
   return (
     <>
@@ -63,13 +72,14 @@ export default function SuperAdminDashboard() {
                 <TableHead>Plan</TableHead>
                 <TableHead>Staff Count</TableHead>
                 <TableHead>Onboarded</TableHead>
-                <TableHead className="text-right">Status</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {!isInitialized ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center h-24">Loading clients...</TableCell>
+                  <TableCell colSpan={9} className="text-center h-24">Loading clients...</TableCell>
                 </TableRow>
               ) : clients.length > 0 ? (
                 clients.map((client) => (
@@ -83,12 +93,27 @@ export default function SuperAdminDashboard() {
                      <TableCell>
                       {client.isSetupComplete ? <Badge variant="default">Yes</Badge> : <Badge variant="secondary">No</Badge>}
                     </TableCell>
-                    <TableCell className="text-right">{getStatusBadge(client.status)}</TableCell>
+                    <TableCell>{getStatusBadge(client.status)}</TableCell>
+                    <TableCell className="text-right">
+                       <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditClient(client)}>
+                                Edit Client
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center h-24">No clients found.</TableCell>
+                  <TableCell colSpan={9} className="text-center h-24">No clients found.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -100,6 +125,12 @@ export default function SuperAdminDashboard() {
         isOpen={isAddClientModalOpen}
         onOpenChange={setIsAddClientModalOpen}
         onClientAdded={addClient}
+      />
+      <EditClientModal
+        isOpen={isEditClientModalOpen}
+        onOpenChange={setIsEditClientModalOpen}
+        client={clientToEdit}
+        onClientUpdated={updateClient}
       />
     </div>
     </>
