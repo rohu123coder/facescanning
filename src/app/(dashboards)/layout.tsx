@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Briefcase, User, Shield, Gem, LogOut, Mountain } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const navItems = [
   { href: '/client', label: 'Client', icon: Briefcase },
@@ -75,6 +76,7 @@ export default function DashboardLayout({
             </div>
             <div className="flex items-center gap-4">
                 <span className="font-semibold">{navItems.find(item => item.href === pathname)?.label} Portal</span>
+                <ThemeToggle />
             </div>
         </header>
         <main className="p-4 sm:p-6 lg:p-8 bg-background flex-1">
