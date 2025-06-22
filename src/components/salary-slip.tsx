@@ -64,10 +64,11 @@ export function SalarySlip({ staff, salaryData, payPeriod, payDate }: SalarySlip
   const earnings = [
     { description: 'Basic Salary', amount: salaryData.basic },
     { description: 'House Rent Allowance (HRA)', amount: salaryData.hra },
-    ...(salaryData.specialAllowance > 0.01
-      ? [{ description: 'Special Allowance', amount: salaryData.specialAllowance }]
-      : []),
   ];
+
+  if (salaryData.specialAllowance > 0.01) {
+    earnings.push({ description: 'Special Allowance', amount: salaryData.specialAllowance });
+  }
 
   const deductions = [
     { description: 'Standard Deductions', amount: salaryData.deductions },
