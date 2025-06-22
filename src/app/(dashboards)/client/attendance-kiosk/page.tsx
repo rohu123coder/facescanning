@@ -72,14 +72,6 @@ export default function AttendanceKiosk() {
     setScanLogs(prev => [newLog, ...prev]);
   }, []);
 
-  const stopScanning = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setIsScanning(false);
-  }, []);
-
   const handleScanFrame = useCallback(async () => {
     if (isProcessingFrame.current || !videoRef.current || !canvasRef.current || !staffInitialized || !studentInitialized) return;
 
@@ -155,8 +147,17 @@ export default function AttendanceKiosk() {
     intervalRef.current = setInterval(handleScanFrame, 2000);
   }, [handleScanFrame]);
 
+  const stopScanning = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setIsScanning(false);
+  }, []);
+
+  // Effect to manage camera lifecycle. This runs only on mount and unmount.
   useEffect(() => {
-    const initializeKiosk = async () => {
+    const initializeCamera = async () => {
       try {
         const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
         streamRef.current = cameraStream;
@@ -164,14 +165,10 @@ export default function AttendanceKiosk() {
 
         if (videoRef.current) {
           videoRef.current.srcObject = cameraStream;
-           videoRef.current.onloadedmetadata = () => {
-            startScanning();
-          };
         }
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
-        setIsScanning(false);
         toast({
           variant: 'destructive',
           title: 'Camera Access Denied',
@@ -180,10 +177,11 @@ export default function AttendanceKiosk() {
       }
     };
 
-    initializeKiosk();
+    initializeCamera();
 
     return () => {
-      stopScanning();
+      // Cleanup function: runs when the component unmounts.
+      stopScanning(); // Stop the interval
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
@@ -192,7 +190,17 @@ export default function AttendanceKiosk() {
         videoRef.current.srcObject = null;
       }
     };
-  }, [startScanning, stopScanning, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast]);
+
+  // Effect to manage the scanning interval based on permissions and data loading.
+  useEffect(() => {
+    if (hasCameraPermission && staffInitialized && studentInitialized) {
+      startScanning();
+    } else {
+      stopScanning();
+    }
+  }, [hasCameraPermission, staffInitialized, studentInitialized, startScanning, stopScanning]);
 
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-8rem)] gap-8 p-1">
