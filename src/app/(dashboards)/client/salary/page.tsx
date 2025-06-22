@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -27,14 +27,30 @@ export default function SalaryManagementPage() {
   const { toast } = useToast();
   const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<{ staff: Staff, salaryData: SalaryData } | null>(null);
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
 
-  const currentMonth = new Date();
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const totalDaysInMonth = parseInt(format(monthEnd, 'd'), 10);
+  useEffect(() => {
+    setCurrentDate(new Date());
+  }, []);
+
+  const { monthStart, monthEnd, totalDaysInMonth, currentMonthFormatted, currentMonthShortFormatted } = useMemo(() => {
+    if (!currentDate) {
+      return { monthStart: null, monthEnd: null, totalDaysInMonth: 0, currentMonthFormatted: 'Loading...', currentMonthShortFormatted: '...' };
+    }
+    const start = startOfMonth(currentDate);
+    const end = endOfMonth(currentDate);
+    const totalDays = parseInt(format(end, 'd'), 10);
+    return { 
+        monthStart: start, 
+        monthEnd: end, 
+        totalDaysInMonth: totalDays,
+        currentMonthFormatted: format(currentDate, 'MMMM yyyy'),
+        currentMonthShortFormatted: format(currentDate, 'MMMM')
+    };
+  }, [currentDate]);
 
   const salaryData = useMemo(() => {
-    if (!isInitialized) return [];
+    if (!isInitialized || !monthStart || !monthEnd) return [];
 
     return staffList.map(staff => {
       const presentDays = staff.attendanceRecords?.filter(rec => {
@@ -108,7 +124,7 @@ export default function SalaryManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(summaryStats.totalProcessed)}</div>
-            <p className="text-xs text-muted-foreground">For {format(currentMonth, 'MMMM yyyy')}</p>
+            <p className="text-xs text-muted-foreground">For {currentMonthFormatted}</p>
           </CardContent>
         </Card>
         <Card>
@@ -128,7 +144,7 @@ export default function SalaryManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{staffList.length} Employees</div>
-            <p className="text-xs text-muted-foreground">Payroll for {totalDaysInMonth} days</p>
+            <p className="text-xs text-muted-foreground">Payroll for {totalDaysInMonth > 0 ? totalDaysInMonth : '...'} days</p>
           </CardContent>
         </Card>
         <Card>
@@ -138,14 +154,14 @@ export default function SalaryManagementPage() {
             </CardHeader>
             <CardContent className="flex flex-col gap-2 pt-2">
                  <Button size="sm" onClick={() => handleSimulatedAction('Feature not available', 'The salary rules setup wizard is a planned feature.')}>Salary Rules Setup</Button>
-                 <Button size="sm" variant="secondary" onClick={() => handleSimulatedAction('Payroll processing simulated', 'Payroll for all employees has been queued for processing.')}>Run Payroll for {format(currentMonth, 'MMMM')}</Button>
+                 <Button size="sm" variant="secondary" disabled={!currentDate} onClick={() => handleSimulatedAction('Payroll processing simulated', `Payroll for all employees has been queued for processing.`)}>Run Payroll for {currentMonthShortFormatted}</Button>
             </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Employee-wise Salary for {format(currentMonth, 'MMMM yyyy')}</CardTitle>
+          <CardTitle>Employee-wise Salary for {currentMonthFormatted}</CardTitle>
           <CardDescription>Auto-calculated based on attendance data and salary rules.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -163,7 +179,7 @@ export default function SalaryManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!isInitialized ? (
+              {(!isInitialized || !currentDate) ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-24 text-center">
                     Loading salary data...
@@ -212,13 +228,13 @@ export default function SalaryManagementPage() {
         </CardContent>
       </Card>
       
-      {selectedStaff && (
+      {selectedStaff && currentDate && (
          <PayslipModal 
             isOpen={isPayslipModalOpen}
             onOpenChange={setIsPayslipModalOpen}
             staff={selectedStaff.staff}
             salaryData={selectedStaff.salaryData}
-            payPeriod={format(currentMonth, 'MMMM yyyy')}
+            payPeriod={currentMonthFormatted}
          />
       )}
     </div>
