@@ -23,6 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import type { Staff } from '@/lib/data';
@@ -38,10 +39,14 @@ interface AddStaffModalProps {
 
 const staffFormSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  mobile: z.string().min(10, { message: 'Mobile number must be at least 10 digits.' }),
+  whatsapp: z.string().min(10, { message: 'WhatsApp number must be at least 10 digits.' }),
+  address: z.string().min(5, { message: 'Please enter a valid address.' }),
   department: z.string().min(2, { message: 'Department is required.' }),
   role: z.string().min(2, { message: 'Role is required.' }),
   salary: z.coerce.number().min(0, { message: 'Salary must be a positive number.' }),
-  photo: z.string().min(1, { message: 'A staff photo is required.' }),
+  photo: z.string().url({ message: 'A valid staff photo URL is required.' }),
 });
 
 type StaffFormValues = z.infer<typeof staffFormSchema>;
@@ -60,6 +65,10 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
     resolver: zodResolver(staffFormSchema),
     defaultValues: {
       name: '',
+      email: '',
+      mobile: '',
+      whatsapp: '',
+      address: '',
       department: '',
       role: '',
       salary: 0,
@@ -106,7 +115,6 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
       stopCameraStream();
     }
     
-    // Cleanup on unmount or when tab changes away from camera
     return () => {
       stopCameraStream();
     };
@@ -146,10 +154,7 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       onStaffAdded({
-        name: values.name,
-        department: values.department,
-        role: values.role,
-        salary: values.salary,
+        ...values,
         photoUrl: values.photo,
       });
       toast({
@@ -170,61 +175,111 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-headline">Add New Staff Member</DialogTitle>
           <DialogDescription>
-            Enter the details for the new employee and provide a photo.
+            Enter the details for the new employee and provide a photo for facial recognition.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem className="col-span-2">
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Aarav Sharma" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="department"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Department</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Engineering" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Frontend Developer" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-            </div>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Aarav Sharma" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="e.g. aarav.sharma@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+                control={form.control}
+                name="mobile"
+                render={({ field }) => (
+                  <FormItem  className="col-span-2 sm:col-span-1">
+                    <FormLabel>Mobile Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. +919876543210" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <FormField
+                control={form.control}
+                name="whatsapp"
+                render={({ field }) => (
+                  <FormItem className="col-span-2 sm:col-span-1">
+                    <FormLabel>WhatsApp Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. +919876543210" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Address</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Enter full address" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="department"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Department</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Engineering" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Role</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Frontend Developer" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
                 control={form.control}
                 name="salary"
                 render={({ field }) => (
-                <FormItem>
+                <FormItem className="col-span-2 sm:col-span-1">
                     <FormLabel>Salary (INR)</FormLabel>
                     <FormControl>
                     <Input type="number" placeholder="e.g. 75000" {...field} />
@@ -237,7 +292,7 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
               control={form.control}
               name="photo"
               render={() => (
-                <FormItem>
+                <FormItem className="col-span-2">
                   <FormLabel>Staff Photo</FormLabel>
                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
@@ -249,8 +304,8 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
                       <FormControl>
                         <Input 
                           placeholder="https://placehold.co/400x400.png" 
-                          onChange={(e) => form.setValue('photo', e.target.value)} 
-                          value={photoValue.startsWith('http') ? photoValue : ''}
+                          onChange={(e) => form.setValue('photo', e.target.value, { shouldValidate: true })} 
+                          value={photoValue && photoValue.startsWith('http') ? photoValue : ''}
                         />
                       </FormControl>
                     </TabsContent>
@@ -298,7 +353,7 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
             />
 
             {photoValue && (
-                <div className="space-y-2">
+                <div className="col-span-2 space-y-2">
                     <Label>Photo Preview</Label>
                     <div className="w-full flex justify-center p-2 border rounded-md bg-muted">
                         <Image
@@ -314,8 +369,8 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
             )}
             
             <canvas ref={canvasRef} className="hidden" />
-
-             <DialogFooter className="pt-4">
+            
+             <DialogFooter className="pt-4 col-span-2">
                <Button variant="outline" onClick={handleClose} type="button" disabled={isLoading}>
                   Cancel
                </Button>
@@ -336,5 +391,3 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
     </Dialog>
   );
 }
-
-    

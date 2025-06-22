@@ -1,6 +1,10 @@
 export type Staff = {
   id: string;
   name: string;
+  email: string;
+  mobile: string;
+  whatsapp: string;
+  address: string;
   department: string;
   role: string;
   salary: number;
