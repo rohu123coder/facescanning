@@ -39,6 +39,8 @@ export function useSuperAdminAuthStore() {
       if (email === creds.email && password === creds.password) {
         localStorage.setItem(AUTH_KEY, 'true');
         setIsAuthenticated(true);
+        // Add a small delay to ensure state propagates before redirect
+        await new Promise(resolve => setTimeout(resolve, 100));
         return true;
       }
     } catch (error) {
