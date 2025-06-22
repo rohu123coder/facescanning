@@ -237,10 +237,10 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                 variant="outline"
                                 role="combobox"
                                 aria-expanded={popoverOpen}
-                                className={cn("w-full justify-between h-auto", !field.value.length && "text-muted-foreground")}
+                                className={cn("w-full justify-between h-auto", !(field.value && field.value.length > 0) && "text-muted-foreground")}
                                 >
                                 <div className="flex gap-1 flex-wrap">
-                                     {field.value.length > 0 ? (
+                                     {(field.value && field.value.length > 0) ? (
                                         staffList
                                             .filter(staff => field.value.includes(staff.id))
                                             .map(staff => <Badge key={staff.id} variant="secondary">{staff.name}</Badge>)
@@ -258,17 +258,19 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                             <CommandGroup>
                             {staffList.map((staff) => (
                                 <CommandItem
-                                    value={staff.name}
+                                    value={staff.id}
                                     key={staff.id}
-                                    onSelect={() => {
-                                        const selected = field.value.includes(staff.id);
+                                    onSelect={(idToToggle) => {
+                                        const currentSelection = field.value || [];
+                                        const selected = currentSelection.includes(idToToggle);
                                         const newValue = selected
-                                            ? field.value.filter(id => id !== staff.id)
-                                            : [...field.value, staff.id];
+                                            ? currentSelection.filter(id => id !== idToToggle)
+                                            : [...currentSelection, idToToggle];
                                         field.onChange(newValue);
+                                        setPopoverOpen(true); // Keep popover open for multi-select
                                     }}
                                 >
-                                    <Check className={cn("mr-2 h-4 w-4", field.value.includes(staff.id) ? "opacity-100" : "opacity-0")}/>
+                                    <Check className={cn("mr-2 h-4 w-4", (field.value || []).includes(staff.id) ? "opacity-100" : "opacity-0")}/>
                                     {staff.name}
                                 </CommandItem>
                             ))}
