@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -6,19 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { faceScanAttendance } from '@/ai/flows/face-scan-attendance';
-import { AlertCircle, Video, VideoOff, UserCheck } from 'lucide-react';
+import { AlertCircle, Video, VideoOff, UserCheck, GraduationCap } from 'lucide-react';
 import { useStaffStore } from '@/hooks/use-staff-store';
+import { useStudentStore } from '@/hooks/use-student-store';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { sendAttendanceNotification } from '@/services/notification-service';
 
+type Person = {
+  id: string;
+  name: string;
+  photoUrl: string;
+  type: 'Staff' | 'Student';
+};
+
 type LogEntry = {
   id: number;
   message: string;
   timestamp: string;
-  staffName: string;
-  staffPhotoUrl: string;
+  personName: string;
+  personPhotoUrl: string;
+  personType: 'Staff' | 'Student';
 };
 
 export default function AttendanceKiosk() {
@@ -26,49 +34,38 @@ export default function AttendanceKiosk() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [scanLogs, setScanLogs] = useState<LogEntry[]>([]);
   const { toast } = useToast();
-  const { staffList, updateStaffAttendance, isInitialized } = useStaffStore();
+  
+  const { staffList, updateStaffAttendance, isInitialized: staffInitialized } = useStaffStore();
+  const { studentList, updateStudentAttendance, isInitialized: studentInitialized } = useStudentStore();
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastScanTimesRef = useRef(new Map<string, number>());
-  const scanCooldown = 1000 * 60 * 5; // 5 minutes cooldown per person
+  const scanCooldown = 1000 * 10; // 10 seconds cooldown per person
 
   const playBeep = useCallback(() => {
-    // Check if window is defined (runs only on client)
     if (typeof window === 'undefined') return;
-    
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    if (!audioContext) {
-        console.warn('Browser does not support Web Audio API.');
-        return;
-    };
-
-    // Create an oscillator
+    if (!audioContext) return;
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-
-    // Connect oscillator to gain node to control volume
     oscillator.connect(gainNode);
-    // Connect gain node to destination (speakers)
     gainNode.connect(audioContext.destination);
-
-    // Configure oscillator
-    oscillator.type = 'sine'; // A clean tone
-    oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5 pitch, noticeable but not jarring
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime); // Adjust volume
-
-    // Start and stop the tone to create a short beep
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
     oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.15); // 150ms duration
+    oscillator.stop(audioContext.currentTime + 0.15);
   }, []);
 
-  const addLog = useCallback((message: string, staffName: string, staffPhotoUrl: string) => {
+  const addLog = useCallback((message: string, person: Person) => {
     const newLog: LogEntry = {
       id: Date.now(),
       message,
-      staffName,
-      staffPhotoUrl,
+      personName: person.name,
+      personPhotoUrl: person.photoUrl,
+      personType: person.type,
       timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
     };
     setScanLogs(prev => [newLog, ...prev]);
@@ -83,7 +80,7 @@ export default function AttendanceKiosk() {
   }, []);
 
   const handleScanFrame = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current || !isInitialized || staffList.length === 0) return;
+    if (!videoRef.current || !canvasRef.current || !staffInitialized || !studentInitialized) return;
     
     const video = videoRef.current;
     if (video.readyState < video.HAVE_METADATA) return;
@@ -98,49 +95,58 @@ export default function AttendanceKiosk() {
     const dataUri = canvas.toDataURL('image/jpeg');
     const now = Date.now();
 
-    for (const staff of staffList) {
-      const lastScan = lastScanTimesRef.current.get(staff.id) || 0;
+    const allPeople: Person[] = [
+      ...staffList.map(s => ({ ...s, type: 'Staff' as const })),
+      ...studentList.map(s => ({ ...s, type: 'Student' as const }))
+    ];
+
+    for (const person of allPeople) {
+      const lastScan = lastScanTimesRef.current.get(person.id) || 0;
       if (now - lastScan < scanCooldown) {
-        continue; // This person is on cooldown
+        continue;
       }
 
       try {
         const result = await faceScanAttendance({
           photoDataUri: dataUri,
-          staffId: staff.id,
-          referencePhotoUrl: staff.photoUrl,
+          personId: person.id,
+          referencePhotoUrl: person.photoUrl,
         });
 
         if (result.isRecognized) {
-          lastScanTimesRef.current.set(staff.id, now);
-          const statusMsg = updateStaffAttendance(staff.id);
-          toast({ title: `Attendance Logged`, description: `${staff.name} has ${statusMsg.toLowerCase()}.` });
-          playBeep();
-          addLog(statusMsg, staff.name, staff.photoUrl);
+          lastScanTimesRef.current.set(person.id, now);
           
-          // Send simulated push notification (don't block UI thread)
-          sendAttendanceNotification(staff.id, staff.name, statusMsg);
+          let statusMsg = '';
+          if (person.type === 'Staff') {
+            statusMsg = updateStaffAttendance(person.id);
+          } else {
+            statusMsg = updateStudentAttendance(person.id);
+          }
+          
+          toast({ title: `Attendance Logged`, description: `${person.name} has ${statusMsg.toLowerCase()}.` });
+          playBeep();
+          addLog(statusMsg, person);
+          
+          sendAttendanceNotification(person.id, person.name, statusMsg);
 
           return; 
         }
       } catch (error) {
-        console.error(`Face scan API error for ${staff.name}:`, error);
+        console.error(`Face scan API error for ${person.name}:`, error);
       }
     }
-  }, [staffList, isInitialized, updateStaffAttendance, toast, scanCooldown, addLog, playBeep]);
-
+  }, [staffList, studentList, staffInitialized, studentInitialized, updateStaffAttendance, updateStudentAttendance, toast, scanCooldown, addLog, playBeep]);
 
   const startScanning = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsScanning(true);
-    // This is needed on some browsers to allow audio to play without direct user interaction for each sound
     if (typeof window !== 'undefined') {
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         if (audioContext.state === 'suspended') {
-        audioContext.resume();
+          audioContext.resume();
         }
     }
-    intervalRef.current = setInterval(handleScanFrame, 2500); // Scan every 2.5 seconds
+    intervalRef.current = setInterval(handleScanFrame, 2500);
   }, [handleScanFrame]);
 
   useEffect(() => {
@@ -184,7 +190,7 @@ export default function AttendanceKiosk() {
       <Card className="md:w-2/3 flex flex-col">
         <CardHeader>
           <CardTitle>Attendance Kiosk</CardTitle>
-          <CardDescription>The camera is active. Employees can clock in or out by facing the camera.</CardDescription>
+          <CardDescription>The camera is active. Members can log attendance by facing the camera.</CardDescription>
         </CardHeader>
         <CardContent className="flex-grow flex flex-col items-center justify-center relative">
             <div className="w-full aspect-video rounded-md bg-muted overflow-hidden border relative">
@@ -237,13 +243,13 @@ export default function AttendanceKiosk() {
                     {scanLogs.map(log => (
                       <div key={log.id} className="flex items-start gap-4">
                         <Avatar>
-                          <AvatarImage src={log.staffPhotoUrl} alt={log.staffName} data-ai-hint="person portrait" />
-                          <AvatarFallback>{log.staffName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          <AvatarImage src={log.personPhotoUrl} alt={log.personName} data-ai-hint="person portrait" />
+                          <AvatarFallback>{log.personName.slice(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="flex-grow">
-                          <p className="font-semibold">{log.staffName}</p>
+                          <p className="font-semibold">{log.personName}</p>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <UserCheck className="text-green-500" />
+                            {log.personType === 'Student' ? <GraduationCap className="text-blue-500" /> : <UserCheck className="text-green-500" />}
                             <span>{log.message}</span>
                           </div>
                         </div>

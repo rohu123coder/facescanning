@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview AI agent for face scan attendance.
+ * @fileOverview AI agent for face scan attendance for any person (staff/student).
  *
  * - faceScanAttendance - A function that handles the face scan attendance process.
  * - FaceScanAttendanceInput - The input type for the faceScanAttendance function.
@@ -15,12 +15,12 @@ const FaceScanAttendanceInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "A photo of the staff member's face, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A photo of the person's face, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
   referencePhotoUrl: z
     .string()
-    .describe("A URL to a reference photo of the staff member."),
-  staffId: z.string().describe('The unique identifier of the staff member.'),
+    .describe("A URL to a reference photo of the person."),
+  personId: z.string().describe('The unique identifier of the person (staff or student).'),
 });
 export type FaceScanAttendanceInput = z.infer<typeof FaceScanAttendanceInputSchema>;
 
@@ -38,7 +38,7 @@ const prompt = ai.definePrompt({
   name: 'faceScanAttendancePrompt',
   input: {schema: FaceScanAttendanceInputSchema},
   output: {schema: FaceScanAttendanceOutputSchema},
-  prompt: `You are an AI facial recognition system. Your task is to determine if the person in the live photo is the same person as in the reference photo for staff member {{{staffId}}}.
+  prompt: `You are an AI facial recognition system. Your task is to determine if the person in the live photo is the same person as in the reference photo for person with ID {{{personId}}}.
 
 Compare the two images.
 

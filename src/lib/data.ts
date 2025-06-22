@@ -17,6 +17,23 @@ export type Staff = {
   } | null;
 };
 
+export type Student = {
+    id: string;
+    name: string;
+    className: string;
+    rollNumber: string;
+    parentName: string;
+    parentMobile: string;
+    photoUrl: string;
+    attendanceStatus?: {
+        date: string;
+        inTime: string | null;
+        outTime: string | null;
+        totalHours: string | null;
+    } | null;
+};
+
+
 export type Client = {
   id: string;
   organizationName: string;
@@ -35,6 +52,8 @@ export type Attendance = {
 }
 
 export const staff: Staff[] = [];
+
+export const students: Student[] = [];
 
 export const clients: Client[] = [
     { id: 'C-101', organizationName: 'Innovatech Solutions', contactName: 'Rohan Mehra', email: 'contact@innovatech.com', mobile: '+919876543210', whatsapp: '+919876543210', plan: 'Premium', status: 'Active', staffCount: 45 },
