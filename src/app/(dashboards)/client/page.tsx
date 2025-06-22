@@ -31,6 +31,7 @@ export default function ClientDashboard() {
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
   const [activeTab, setActiveTab] = useState('staff');
+  const [studentView, setStudentView] = useState('list');
   const { toast } = useToast();
 
   // Filter states
@@ -109,6 +110,15 @@ export default function ClientDashboard() {
     return list;
   }, [staffList, staffNameFilter, staffDepartmentFilter, date]);
 
+  const studentMasterList = useMemo(() => {
+      if (!studentInitialized) return [];
+      return studentList.filter(student => {
+        const nameMatch = student.name.toLowerCase().includes(studentNameFilter.toLowerCase());
+        const classMatch = studentClassFilter === 'all' || student.className === studentClassFilter;
+        return nameMatch && classMatch;
+      });
+  }, [studentList, studentNameFilter, studentClassFilter, studentInitialized]);
+
   const studentAttendanceList = useMemo(() => {
     const list: { student: Student; record: AttendanceRecord }[] = [];
 
@@ -164,7 +174,7 @@ export default function ClientDashboard() {
       ].join(','));
       csvData = [headers.join(','), ...rows].join('\n');
       fileName = `staff_attendance_${dateStr}.csv`;
-    } else {
+    } else { // activeTab === 'student' and studentView === 'report'
       const headers = ['Student ID', 'Name', 'Email', 'Class', 'Roll Number', 'Gender', 'DOB', 'Religion', 'Father Name', "Mother's Name", 'Parent Mobile', 'Parent WhatsApp', 'Date', 'Arrival Time', 'Departure Time', 'Total Hours'];
       const rows = studentAttendanceList.map(({ student, record }) => [
             student.id, student.name, student.email, student.className, student.rollNumber, student.gender, student.dob,
@@ -286,7 +296,7 @@ export default function ClientDashboard() {
     </Card>
   );
 
-  const renderStudentTable = () => (
+  const renderStudentManagementContent = () => (
      <div className="space-y-4">
         <Card>
             <CardHeader>
@@ -317,74 +327,126 @@ export default function ClientDashboard() {
                 )}
             </CardContent>
         </Card>
-        <Card id="report-table">
-            <CardHeader>
-                <CardTitle>Student Attendance - {renderDateRangeTitle()}</CardTitle>
-                <CardDescription>An overview of student attendance for the selected date range.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                <TableHeader>
-                    <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Class</TableHead>
-                    <TableHead>Roll No.</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Arrival Time</TableHead>
-                    <TableHead>Departure Time</TableHead>
-                    <TableHead>Total Hours</TableHead>
-                    <TableHead className="text-right print-hide">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {!studentInitialized ? (
-                        <TableRow><TableCell colSpan={8} className="text-center h-24">Loading student data...</TableCell></TableRow>
-                    ) : studentAttendanceList.length > 0 ? (
-                    studentAttendanceList.map(({ student, record }) => (
-                        <TableRow key={`${student.id}-${record.date}`}>
-                            <TableCell className="font-medium">{student.name}</TableCell>
-                            <TableCell>{student.className}</TableCell>
-                            <TableCell>{student.rollNumber}</TableCell>
-                            <TableCell>{record.date ? format(new Date(record.date), 'PPP') : 'N/A'}</TableCell>
-                            <TableCell>{record.inTime ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">{record.inTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
-                            <TableCell>{record.outTime ? <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{record.outTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
-                            <TableCell>{record.totalHours ? <Badge variant="outline">{record.totalHours}</Badge> : <Badge variant="secondary">--</Badge>}</TableCell>
-                            <TableCell className="text-right print-hide">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEditStudent(student)}>Edit</DropdownMenuItem>
-                                  <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/90 focus:text-destructive-foreground">
-                                            Delete
-                                          </DropdownMenuItem>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                          <AlertDialogHeader>
-                                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                              <AlertDialogDescription>
-                                                  This action cannot be undone. This will permanently delete the student and all associated attendance data.
-                                              </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                              <AlertDialogAction onClick={() => handleDeleteStudent(student.id)} className={cn(buttonVariants({ variant: "destructive" }))}>Delete</AlertDialogAction>
-                                          </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                  </AlertDialog>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                        ))
-                    ) : (
-                        <TableRow><TableCell colSpan={8} className="text-center h-24">No attendance records match the current filters.</TableCell></TableRow>
-                    )}
-                </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+        
+        <Tabs value={studentView} onValueChange={setStudentView}>
+            <div className="flex justify-between items-center print-hide">
+                <TabsList>
+                    <TabsTrigger value="list">Student Master List</TabsTrigger>
+                    <TabsTrigger value="report">Attendance Report</TabsTrigger>
+                </TabsList>
+                <Button onClick={() => setIsAddStudentModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add Student</Button>
+            </div>
+            
+            <TabsContent value="list">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Student Master List</CardTitle>
+                        <CardDescription>View, edit, and manage all students in the system. This view is not affected by the date filter.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Class</TableHead>
+                                    <TableHead>Roll No.</TableHead>
+                                    <TableHead>Father's Name</TableHead>
+                                    <TableHead>Parent's Mobile</TableHead>
+                                    <TableHead className="text-right print-hide">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {!studentInitialized ? (
+                                    <TableRow><TableCell colSpan={6} className="text-center h-24">Loading student data...</TableCell></TableRow>
+                                ) : studentMasterList.length > 0 ? (
+                                    studentMasterList.map((student) => (
+                                    <TableRow key={student.id}>
+                                        <TableCell className="font-medium">{student.name}</TableCell>
+                                        <TableCell>{student.className}</TableCell>
+                                        <TableCell>{student.rollNumber}</TableCell>
+                                        <TableCell>{student.fatherName}</TableCell>
+                                        <TableCell>{student.parentMobile}</TableCell>
+                                        <TableCell className="text-right print-hide">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => handleEditStudent(student)}>Edit</DropdownMenuItem>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/90 focus:text-destructive-foreground">
+                                                            Delete
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This action cannot be undone. This will permanently delete the student and all associated attendance data.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteStudent(student.id)} className={cn(buttonVariants({ variant: "destructive" }))}>Delete</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow><TableCell colSpan={6} className="text-center h-24">No students match the current filters.</TableCell></TableRow>
+                                )}
+                            </TableBody>
+                       </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="report" id="report-table">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Student Attendance - {renderDateRangeTitle()}</CardTitle>
+                        <CardDescription>An overview of student attendance for the selected date range.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Class</TableHead>
+                            <TableHead>Roll No.</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Arrival Time</TableHead>
+                            <TableHead>Departure Time</TableHead>
+                            <TableHead>Total Hours</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {!studentInitialized ? (
+                                <TableRow><TableCell colSpan={7} className="text-center h-24">Loading student data...</TableCell></TableRow>
+                            ) : studentAttendanceList.length > 0 ? (
+                            studentAttendanceList.map(({ student, record }) => (
+                                <TableRow key={`${student.id}-${record.date}`}>
+                                    <TableCell className="font-medium">{student.name}</TableCell>
+                                    <TableCell>{student.className}</TableCell>
+                                    <TableCell>{student.rollNumber}</TableCell>
+                                    <TableCell>{record.date ? format(new Date(record.date), 'PPP') : 'N/A'}</TableCell>
+                                    <TableCell>{record.inTime ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">{record.inTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
+                                    <TableCell>{record.outTime ? <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{record.outTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
+                                    <TableCell>{record.totalHours ? <Badge variant="outline">{record.totalHours}</Badge> : <Badge variant="secondary">--</Badge>}</TableCell>
+                                </TableRow>
+                                ))
+                            ) : (
+                                <TableRow><TableCell colSpan={7} className="text-center h-24">No attendance records match the current filters.</TableCell></TableRow>
+                            )}
+                        </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
      </div>
   )
 
@@ -396,11 +458,21 @@ export default function ClientDashboard() {
           <p className="text-muted-foreground">Manage your staff, students and view attendance.</p>
         </div>
         <div className="flex gap-2">
-           <Button variant="outline" onClick={handleGenerateCsv} disabled={!date?.from || (activeTab === 'staff' && staffAttendanceList.length === 0) || (activeTab === 'student' && studentAttendanceList.length === 0)}>
+           <Button 
+                variant="outline"
+                onClick={handleGenerateCsv}
+                disabled={!date?.from || (activeTab === 'staff' && staffAttendanceList.length === 0) || (activeTab === 'student' && (studentView !== 'report' || studentAttendanceList.length === 0))}
+            >
             <FileDown className="mr-2 h-4 w-4" />
             Download Report
           </Button>
-          <Button variant="outline" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+          <Button 
+            variant="outline" 
+            onClick={handlePrint}
+            disabled={activeTab === 'student' && studentView !== 'report'}
+          >
+            <Printer className="mr-2 h-4 w-4" /> Print Report
+          </Button>
           <Button asChild><Link href="/client/attendance-kiosk"><Video className="mr-2 h-4 w-4" />Open Attendance Kiosk</Link></Button>
         </div>
       </div>
@@ -435,9 +507,11 @@ export default function ClientDashboard() {
                     id="date"
                     variant={"outline"}
                     className={cn(
-                    "justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
+                        "justify-start text-left font-normal",
+                        !date && "text-muted-foreground",
+                        (activeTab === 'student' && studentView !== 'report') && "opacity-50 cursor-not-allowed"
                     )}
+                    disabled={activeTab === 'student' && studentView !== 'report'}
                 >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {date?.from ? (
@@ -475,11 +549,10 @@ export default function ClientDashboard() {
             <TabsTrigger value="student"><User className="mr-2" /> Student Management</TabsTrigger>
           </TabsList>
           {activeTab === 'staff' && (<Button onClick={() => setIsAddStaffModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add Staff</Button>)}
-          {activeTab === 'student' && (<Button onClick={() => setIsAddStudentModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add Student</Button>)}
         </div>
 
         <TabsContent value="staff">{renderStaffTable()}</TabsContent>
-        <TabsContent value="student">{renderStudentTable()}</TabsContent>
+        <TabsContent value="student">{renderStudentManagementContent()}</TabsContent>
       </Tabs>
 
       <AddStaffModal isOpen={isAddStaffModalOpen} onOpenChange={setIsAddStaffModalOpen} onStaffAdded={handleAddStaff} />
