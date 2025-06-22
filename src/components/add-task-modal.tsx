@@ -240,6 +240,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                       Auto-assign
                     </Button>
                   </div>
+
                   <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -269,6 +270,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
+
                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                       <Command>
                         <CommandInput placeholder="Search staff..." />
@@ -281,16 +283,16 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                 <CommandItem
                                   key={staff.id}
                                   value={staff.name}
-                                  onSelect={() => {
-                                    const currentSelection = field.value || [];
-                                    const newSelection = isSelected
-                                      ? currentSelection.filter((id) => id !== staff.id)
-                                      : [...currentSelection, staff.id];
-                                    field.onChange(newSelection);
-                                  }}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
+                                  onClick={(e) => {
+                                    e.preventDefault(); // Prevent popover from closing
+                                    setPopoverOpen(true); // Keep it open
+
+                                    const current = field.value || [];
+                                    const updated = isSelected
+                                      ? current.filter((id) => id !== staff.id)
+                                      : [...current, staff.id];
+
+                                    form.setValue('assignedTo', updated, { shouldValidate: true });
                                   }}
                                 >
                                   <div
@@ -301,7 +303,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                         : "opacity-50 [&_svg]:invisible"
                                     )}
                                   >
-                                    <Check className={cn("h-4 w-4")} />
+                                    <Check className="h-4 w-4" />
                                   </div>
                                   {staff.name}
                                 </CommandItem>
@@ -312,6 +314,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                       </Command>
                     </PopoverContent>
                   </Popover>
+
                   <FormMessage />
                 </FormItem>
               )}
