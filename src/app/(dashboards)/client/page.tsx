@@ -51,6 +51,19 @@ export default function ClientDashboard() {
     if (!studentInitialized) return [];
     return ['all', ...Array.from(new Set(studentList.map(s => s.className)))];
   }, [studentList, studentInitialized]);
+  
+  const classStrength = useMemo(() => {
+    if (!studentInitialized) return {};
+    return studentList.reduce((acc, student) => {
+      const className = student.className || 'Unassigned';
+      if(acc[className]) {
+        acc[className]++;
+      } else {
+        acc[className] = 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+  }, [studentList, studentInitialized]);
 
   // Memoized filtered lists for display
   const filteredStaffList = useMemo(() => {
@@ -202,46 +215,70 @@ export default function ClientDashboard() {
   );
 
   const renderStudentTable = () => (
-     <Card id="report-table">
-        <CardHeader>
-            <CardTitle>Student Attendance - {renderDateRangeTitle()}</CardTitle>
-            <CardDescription>An overview of student attendance for the selected date range.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Table>
-            <TableHeader>
-                <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead>Roll No.</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Arrival Time</TableHead>
-                <TableHead>Departure Time</TableHead>
-                <TableHead>Total Hours</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {!studentInitialized ? (
-                    <TableRow><TableCell colSpan={7} className="text-center h-24">Loading student data...</TableCell></TableRow>
-                ) : filteredStudentList.length > 0 ? (
-                filteredStudentList.map((student) => (
-                    <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.name}</TableCell>
-                        <TableCell>{student.className}</TableCell>
-                        <TableCell>{student.rollNumber}</TableCell>
-                        <TableCell>{student.attendanceStatus?.date ? format(new Date(student.attendanceStatus.date), 'PPP') : 'N/A'}</TableCell>
-                        <TableCell>{student.attendanceStatus?.inTime ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">{student.attendanceStatus.inTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
-                        <TableCell>{student.attendanceStatus?.outTime ? <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{student.attendanceStatus.outTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
-                        <TableCell>{student.attendanceStatus?.totalHours ? <Badge variant="outline">{student.attendanceStatus.totalHours}</Badge> : <Badge variant="secondary">--</Badge>}</TableCell>
-                    </TableRow>
-                    ))
+     <div className="space-y-4">
+        <Card>
+            <CardHeader>
+                <CardTitle>Class Strength</CardTitle>
+                <CardDescription>Total number of students in each class.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {studentInitialized && Object.keys(classStrength).length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {Object.entries(classStrength).map(([className, count]) => (
+                            <div key={className} className="p-4 bg-muted rounded-lg text-center">
+                                <p className="text-sm font-medium text-muted-foreground truncate" title={className}>{className}</p>
+                                <p className="text-2xl font-bold">{count}</p>
+                            </div>
+                        ))}
+                    </div>
                 ) : (
-                    <TableRow><TableCell colSpan={7} className="text-center h-24">No students match the current filters.</TableCell></TableRow>
+                    <div className="text-center text-muted-foreground py-8">
+                      {studentInitialized ? 'Add students to see class strength.' : 'Loading student data...'}
+                    </div>
                 )}
-            </TableBody>
-            </Table>
-        </CardContent>
-    </Card>
+            </CardContent>
+        </Card>
+        <Card id="report-table">
+            <CardHeader>
+                <CardTitle>Student Attendance - {renderDateRangeTitle()}</CardTitle>
+                <CardDescription>An overview of student attendance for the selected date range.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Class</TableHead>
+                    <TableHead>Roll No.</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Arrival Time</TableHead>
+                    <TableHead>Departure Time</TableHead>
+                    <TableHead>Total Hours</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {!studentInitialized ? (
+                        <TableRow><TableCell colSpan={7} className="text-center h-24">Loading student data...</TableCell></TableRow>
+                    ) : filteredStudentList.length > 0 ? (
+                    filteredStudentList.map((student) => (
+                        <TableRow key={student.id}>
+                            <TableCell className="font-medium">{student.name}</TableCell>
+                            <TableCell>{student.className}</TableCell>
+                            <TableCell>{student.rollNumber}</TableCell>
+                            <TableCell>{student.attendanceStatus?.date ? format(new Date(student.attendanceStatus.date), 'PPP') : 'N/A'}</TableCell>
+                            <TableCell>{student.attendanceStatus?.inTime ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">{student.attendanceStatus.inTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
+                            <TableCell>{student.attendanceStatus?.outTime ? <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{student.attendanceStatus.outTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
+                            <TableCell>{student.attendanceStatus?.totalHours ? <Badge variant="outline">{student.attendanceStatus.totalHours}</Badge> : <Badge variant="secondary">--</Badge>}</TableCell>
+                        </TableRow>
+                        ))
+                    ) : (
+                        <TableRow><TableCell colSpan={7} className="text-center h-24">No students match the current filters.</TableCell></TableRow>
+                    )}
+                </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+     </div>
   )
 
   return (
