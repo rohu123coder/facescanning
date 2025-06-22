@@ -62,36 +62,49 @@ export function useStaffStore() {
     const currentTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
     const updatedList = staffList.map(staff => {
-      if (staff.id === staffId) {
-        const records = staff.attendanceRecords ? [...staff.attendanceRecords] : [];
-        let todayRecord = records.find(r => r.date === today);
-
-        if (todayRecord) {
-          if (!todayRecord.inTime) {
-            // This case should not happen if logic is correct, but as a fallback
-            todayRecord.inTime = currentTime;
-          } else {
-            todayRecord.outTime = currentTime;
-            const inTimeDate = parseTime(today, todayRecord.inTime);
-            const outTimeDate = parseTime(today, currentTime);
-            if (!isNaN(inTimeDate.getTime()) && !isNaN(outTimeDate.getTime())) {
-              todayRecord.totalHours = formatDistanceStrict(outTimeDate, inTimeDate);
-            }
-          }
-        } else {
-          todayRecord = { date: today, inTime: currentTime, outTime: null, totalHours: null };
-          records.push(todayRecord);
-        }
-        return { ...staff, attendanceRecords: records };
+      if (staff.id !== staffId) {
+        return staff;
       }
-      return staff;
+
+      const records = staff.attendanceRecords ? [...staff.attendanceRecords] : [];
+      const todayRecordIndex = records.findIndex(r => r.date === today);
+
+      // This is the first punch of the day, create a new record.
+      if (todayRecordIndex === -1) {
+        const newRecord: AttendanceRecord = { date: today, inTime: currentTime, outTime: null, totalHours: null };
+        return { ...staff, attendanceRecords: [...records, newRecord] };
+      }
+
+      // A record for today exists. Update it without mutation.
+      const updatedRecords = [...records];
+      const existingRecord = updatedRecords[todayRecordIndex];
+      
+      let updatedRecord: AttendanceRecord;
+
+      // This logic ensures if an in-time exists, we're setting/updating the out-time.
+      // If for some reason a record for today exists but without an in-time, this will set it.
+      if (!existingRecord.inTime) {
+        updatedRecord = { ...existingRecord, inTime: currentTime };
+      } else {
+        const inTimeDate = parseTime(today, existingRecord.inTime);
+        const outTimeDate = parseTime(today, currentTime);
+        const totalHours = (!isNaN(inTimeDate.getTime()) && !isNaN(outTimeDate.getTime()))
+          ? formatDistanceStrict(outTimeDate, inTimeDate)
+          : null;
+        
+        updatedRecord = { ...existingRecord, outTime: currentTime, totalHours };
+      }
+      
+      updatedRecords[todayRecordIndex] = updatedRecord;
+
+      return { ...staff, attendanceRecords: updatedRecords };
     });
     
     updateStaffList(updatedList);
     // Return the status message
     const updatedStaff = updatedList.find(s => s.id === staffId);
-    const updatedRecord = updatedStaff?.attendanceRecords?.find(r => r.date === today);
-    if (updatedRecord?.outTime) {
+    const updatedRecordForStatus = updatedStaff?.attendanceRecords?.find(r => r.date === today);
+    if (updatedRecordForStatus?.outTime) {
         return 'Clocked Out';
     }
     return 'Clocked In';
