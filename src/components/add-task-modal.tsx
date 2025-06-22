@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { type Task } from '@/lib/data';
-import { Loader2, Sparkles, CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
+import { Loader2, Sparkles, CalendarIcon, ChevronsUpDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Badge } from '@/components/ui/badge';
 import { autoAssignTask } from '@/ai/flows/auto-assign-task';
 import { useStaffStore } from '@/hooks/use-staff-store';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 interface AddTaskModalProps {
@@ -257,27 +258,32 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                             <CommandList>
                             <CommandEmpty>No staff found.</CommandEmpty>
                             <CommandGroup>
-                            {staffList.map((staff) => (
+                            {staffList.map((staff) => {
+                                const isSelected = (field.value || []).includes(staff.id);
+                                return (
                                 <CommandItem
                                     key={staff.id}
                                     value={staff.name}
                                     onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
+                                        e.preventDefault();
+                                        e.stopPropagation();
                                     }}
                                     onSelect={() => {
-                                        const currentSelection = field.value || [];
-                                        const isSelected = currentSelection.includes(staff.id);
                                         const newValue = isSelected
-                                            ? currentSelection.filter(id => id !== staff.id)
-                                            : [...currentSelection, staff.id];
+                                            ? (field.value || []).filter(id => id !== staff.id)
+                                            : [...(field.value || []), staff.id];
                                         field.onChange(newValue);
                                     }}
+                                    className="cursor-pointer"
                                 >
-                                    <Check className={cn("mr-2 h-4 w-4", (field.value || []).includes(staff.id) ? "opacity-100" : "opacity-0")}/>
+                                    <Checkbox
+                                    checked={isSelected}
+                                    className="mr-2"
+                                    />
                                     {staff.name}
                                 </CommandItem>
-                            ))}
+                                );
+                            })}
                             </CommandGroup>
                            </CommandList>
                            </Command>
