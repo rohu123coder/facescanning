@@ -11,6 +11,7 @@ import { useStaffStore } from '@/hooks/use-staff-store';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { sendAttendanceNotification } from '@/services/notification-service';
 
 type LogEntry = {
   id: number;
@@ -116,6 +117,10 @@ export default function AttendanceKiosk() {
           toast({ title: `Attendance Logged`, description: `${staff.name} has ${statusMsg.toLowerCase()}.` });
           playBeep();
           addLog(statusMsg, staff.name, staff.photoUrl);
+          
+          // Send simulated push notification (don't block UI thread)
+          sendAttendanceNotification(staff.id, staff.name, statusMsg);
+
           return; 
         }
       } catch (error) {
@@ -129,9 +134,11 @@ export default function AttendanceKiosk() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsScanning(true);
     // This is needed on some browsers to allow audio to play without direct user interaction for each sound
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    if (audioContext.state === 'suspended') {
-      audioContext.resume();
+    if (typeof window !== 'undefined') {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        if (audioContext.state === 'suspended') {
+        audioContext.resume();
+        }
     }
     intervalRef.current = setInterval(handleScanFrame, 2500); // Scan every 2.5 seconds
   }, [handleScanFrame]);
