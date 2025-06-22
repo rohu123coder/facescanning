@@ -260,28 +260,25 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                             <CommandGroup>
                             {staffList.map((staff) => {
                                 const isSelected = (field.value || []).includes(staff.id);
-                                
-                                const handleToggleSelection = () => {
-                                    const newValue = isSelected
-                                        ? (field.value || []).filter(id => id !== staff.id)
-                                        : [...(field.value || []), staff.id];
-                                    field.onChange(newValue);
-                                }
-
                                 return (
                                 <CommandItem
                                     key={staff.id}
-                                    value={staff.name}
-                                    onSelect={handleToggleSelection}
+                                    value={staff.id}
+                                    onSelect={() => {
+                                        const newValue = isSelected
+                                            ? (field.value || []).filter(id => id !== staff.id)
+                                            : [...(field.value || []), staff.id];
+                                        field.onChange(newValue);
+                                    }}
                                     onMouseDown={(e) => {
                                         e.preventDefault();
-                                        handleToggleSelection();
+                                        e.stopPropagation();
                                     }}
                                     className="cursor-pointer"
                                 >
                                     <Checkbox
-                                    checked={isSelected}
-                                    className="mr-2"
+                                        checked={isSelected}
+                                        className="mr-2 pointer-events-none"
                                     />
                                     {staff.name}
                                 </CommandItem>
