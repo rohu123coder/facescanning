@@ -78,6 +78,7 @@ export type SalaryData = {
   workingDays: number;
   presentDays: number;
   paidLeaveDays: number;
+  unpaidLeaveDays: number;
   earnedGross: number;
   basic: number;
   hra: number;

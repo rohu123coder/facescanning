@@ -31,21 +31,24 @@ const getStatusBadge = (status: 'Present' | 'Absent' | 'Leave') => {
 const calculateSalary = (staff: Staff | null, rules: any, monthStart: Date, monthEnd: Date): { staff: Staff | null, salaryData: SalaryData | null } => {
     if (!staff) return { staff: null, salaryData: null };
     
+    // In a real app, workingDays would also be calculated here like on the client salary page.
+    // For simplicity, we use total days in month for the denominator.
     const totalDaysInMonth = parseInt(format(monthEnd, 'd'), 10);
+    const workingDays = totalDaysInMonth; // Simplification for employee view
 
     const presentDays = staff.attendanceRecords?.filter(rec => {
         const recDate = new Date(rec.date);
         return isWithinInterval(recDate, { start: monthStart, end: monthEnd });
     }).length ?? 0;
 
-    const leaveDays = totalDaysInMonth - presentDays;
-    
-    // Employee view doesn't handle adjustments, so these are 0
+    // This is a simplified view for the employee. It doesn't account for taken leaves vs quota.
+    // A more complex implementation would fetch leave records.
     const paidLeaveDays = 0;
+    const unpaidLeaveDays = 0;
     const adjustment = 0;
 
     const monthlyGrossSalary = staff.salary;
-    const earnedGross = presentDays > 0 ? (monthlyGrossSalary / totalDaysInMonth) * presentDays : 0;
+    const earnedGross = workingDays > 0 ? (monthlyGrossSalary / workingDays) * presentDays : 0;
     
     const basic = earnedGross * (rules.basicPercentage / 100);
     const hra = earnedGross * (rules.hraPercentage / 100);
@@ -54,9 +57,10 @@ const calculateSalary = (staff: Staff | null, rules: any, monthStart: Date, mont
     const netPay = earnedGross - deductions;
 
     const salaryDetails: SalaryData = {
+        workingDays,
         presentDays,
-        leaveDays,
         paidLeaveDays,
+        unpaidLeaveDays,
         earnedGross,
         basic,
         hra,

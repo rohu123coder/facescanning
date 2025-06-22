@@ -89,6 +89,11 @@ export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPerio
   if (salaryData.adjustment < 0) {
     deductions.push({ description: 'Salary Adjustment', amount: Math.abs(salaryData.adjustment) });
   }
+
+  if (salaryData.unpaidLeaveDays > 0) {
+    const lwpDeduction = (staff.salary / salaryData.workingDays) * salaryData.unpaidLeaveDays;
+    deductions.push({ description: 'Leave Without Pay (LWP)', amount: lwpDeduction });
+  }
   
   const totalEarnings = salaryData.earnedGross + Math.max(0, salaryData.adjustment);
   const totalDeductions = salaryData.deductions + Math.abs(Math.min(0, salaryData.adjustment));
@@ -112,6 +117,7 @@ export function PayslipModal({ isOpen, onOpenChange, staff, salaryData, payPerio
                     </div>
                     <div className="text-center">
                         <p className="font-semibold">Pay Date: {payDate}</p>
+                        <p className="text-muted-foreground">Working Days: {salaryData.workingDays}</p>
                         <p className="text-muted-foreground">Present Days: {salaryData.presentDays}</p>
                         {salaryData.paidLeaveDays > 0 && <p className="text-muted-foreground">Paid Leave Days: {salaryData.paidLeaveDays}</p>}
                     </div>

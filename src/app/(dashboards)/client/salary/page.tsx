@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Wallet, CalendarCheck, Clock, Settings, MoreHorizontal, Mail, FileDown } from 'lucide-react';
+import { Wallet, CalendarCheck, Clock, Settings, MoreHorizontal, Mail, FileDown, AlertCircle } from 'lucide-react';
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { endOfMonth, format, isWithinInterval, startOfMonth, addDays, getDay } from 'date-fns';
 import { PayslipModal } from '@/components/payslip-modal';
@@ -72,7 +72,7 @@ export default function SalaryManagementPage() {
     const isLeave = field === 'casual' || field === 'sick';
     
     if (isAdjustment && value !== '' && !/^-?\d*\.?\d*$/.test(value)) return;
-    if (isLeave && !/^\d*$/.test(value)) return;
+    if (isLeave && !/^\d*\.?\d*$/.test(value)) return;
     
     setLeaveInputs(prev => ({
       ...prev,
@@ -93,11 +93,16 @@ export default function SalaryManagementPage() {
       }).length ?? 0;
 
       const staffLeaveInputs = leaveInputs[staff.id] || {};
-      const casualLeaves = Number(staffLeaveInputs.casual) || 0;
-      const sickLeaves = Number(staffLeaveInputs.sick) || 0;
+      const casualLeavesInput = Number(staffLeaveInputs.casual) || 0;
+      const sickLeavesInput = Number(staffLeaveInputs.sick) || 0;
       const adjustment = Number(staffLeaveInputs.adjustment) || 0;
       
-      const paidLeaveDays = casualLeaves + sickLeaves;
+      const payableCasualLeaves = Math.min(staff.totalCasualLeaves, casualLeavesInput);
+      const payableSickLeaves = Math.min(staff.totalSickLeaves, sickLeavesInput);
+      
+      const unpaidLeaveDays = Math.max(0, casualLeavesInput - staff.totalCasualLeaves) + Math.max(0, sickLeavesInput - staff.totalSickLeaves);
+      
+      const paidLeaveDays = payableCasualLeaves + payableSickLeaves;
       const daysPaidFor = presentDays + paidLeaveDays;
       
       const monthlyGrossSalary = staff.salary;
@@ -114,6 +119,7 @@ export default function SalaryManagementPage() {
         workingDays,
         presentDays,
         paidLeaveDays,
+        unpaidLeaveDays,
         earnedGross,
         basic,
         hra,
@@ -214,7 +220,7 @@ export default function SalaryManagementPage() {
         <Card>
           <CardHeader>
             <CardTitle>Employee-wise Salary for {currentMonthFormatted}</CardTitle>
-            <CardDescription>Auto-calculated based on attendance data and your defined salary rules. You can add paid leave days or manual adjustments below.</CardDescription>
+            <CardDescription>Auto-calculated based on attendance. System checks leave quotas and deducts salary for any unpaid leave (LWP).</CardDescription>
           </CardHeader>
           <CardContent>
             <TooltipProvider>
@@ -226,19 +232,23 @@ export default function SalaryManagementPage() {
                   <TableHead className="text-center">
                      <Tooltip>
                         <TooltipTrigger asChild><span className="cursor-help border-b border-dashed">Casual Leave</span></TooltipTrigger>
-                        <TooltipContent><p>Days to be paid from Casual Leave quota.</p></TooltipContent>
+                        <TooltipContent><p>Paid leaves from Casual quota. Max: Employee's total quota.</p></TooltipContent>
                      </Tooltip>
                   </TableHead>
                   <TableHead className="text-center">
                     <Tooltip>
                         <TooltipTrigger asChild><span className="cursor-help border-b border-dashed">Sick Leave</span></TooltipTrigger>
-                        <TooltipContent><p>Days to be paid from Sick Leave quota.</p></TooltipContent>
+                        <TooltipContent><p>Paid leaves from Sick quota. Max: Employee's total quota.</p></TooltipContent>
+                     </Tooltip>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <Tooltip>
+                        <TooltipTrigger asChild><span className="cursor-help border-b border-dashed">Unpaid (LWP)</span></TooltipTrigger>
+                        <TooltipContent><p>Leave Without Pay. Automatically calculated if inputs exceed quotas.</p></TooltipContent>
                      </Tooltip>
                   </TableHead>
                   <TableHead className="text-center">Adjustment (₹)</TableHead>
-                  <TableHead className="text-right">Gross Pay</TableHead>
-                  <TableHead className="text-right">Deductions</TableHead>
-                  <TableHead className="text-right font-bold">Net Pay</TableHead>
+                  <TableHead className="text-right">Net Pay</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -253,7 +263,7 @@ export default function SalaryManagementPage() {
                   salaryData.map(({ staff, salary }) => (
                     <TableRow key={staff.id}>
                       <TableCell className="font-medium">{staff.name}</TableCell>
-                      <TableCell className="text-center"><Badge variant="default" className="bg-green-600">{salary.presentDays} / {salary.workingDays}</Badge></TableCell>
+                      <TableCell className="text-center"><Badge variant="default" className="bg-green-600">{salary.presentDays} / {workingDays}</Badge></TableCell>
                       <TableCell>
                         <Input
                           type="number"
@@ -276,6 +286,15 @@ export default function SalaryManagementPage() {
                           max={staff.totalSickLeaves}
                         />
                       </TableCell>
+                       <TableCell className="text-center">
+                        {salary.unpaidLeaveDays > 0 ? (
+                           <Badge variant="destructive" className="w-20 justify-center">
+                               <AlertCircle className="mr-1 h-3 w-3"/> {salary.unpaidLeaveDays}
+                           </Badge>
+                        ) : (
+                           <Badge variant="secondary" className="w-20 justify-center">0</Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                          <Input
                           type="number"
@@ -286,8 +305,6 @@ export default function SalaryManagementPage() {
                           step="100"
                         />
                       </TableCell>
-                      <TableCell className="text-right">{formatCurrency(salary.earnedGross)}</TableCell>
-                      <TableCell className="text-right text-destructive">{formatCurrency(salary.deductions)}</TableCell>
                       <TableCell className="text-right font-bold text-primary">{formatCurrency(salary.netPay)}</TableCell>
                       <TableCell className="text-center">
                         <DropdownMenu>
