@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { type Task, initialTasks } from '@/lib/data';
+import { type Task, initialTasks, type TaskActivity } from '@/lib/data';
 import { useToast } from './use-toast';
 
 const STORE_KEY = 'taskList';
@@ -38,14 +38,25 @@ export function useTaskStore() {
     }
   }, []);
 
-  const addTask = useCallback((newTask: Omit<Task, 'id' | 'createdAt' | 'status'>) => {
+  const addTask = useCallback((newTask: Omit<Task, 'id' | 'createdAt' | 'status' | 'activity'>, creator: { id: string, name: string }) => {
     const newIdNumber = tasks.length > 0 ? Math.max(0, ...tasks.map(t => parseInt(t.id.split('-')[1], 10))) + 1 : 1;
     const newId = `TASK-${String(newIdNumber).padStart(3, '0')}`;
+    const now = new Date().toISOString();
+    
+    const creationActivity: TaskActivity = {
+        id: `ACT-${Date.now()}`,
+        authorId: creator.id,
+        authorName: creator.name,
+        type: 'creation',
+        createdAt: now,
+    };
+
     const taskToAdd: Task = { 
         ...newTask, 
         id: newId, 
-        createdAt: new Date().toISOString(),
+        createdAt: now,
         status: 'Pending',
+        activity: [creationActivity],
     };
     
     updateTaskList([taskToAdd, ...tasks]);
@@ -62,10 +73,38 @@ export function useTaskStore() {
     updateTaskList(updatedList);
   }, [tasks, updateTaskList]);
   
-  const updateTaskStatus = useCallback((taskId: string, newStatus: Task['status']) => {
+  const addTaskActivity = useCallback((taskId: string, newActivity: Omit<TaskActivity, 'id' | 'createdAt'>) => {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+          const activityToAdd: TaskActivity = {
+              ...newActivity,
+              id: `ACT-${Date.now()}`,
+              createdAt: new Date().toISOString()
+          };
+          const updatedTask = { ...task, activity: [...task.activity, activityToAdd] };
+          updateTask(updatedTask);
+          toast({
+            title: `New Update on "${task.title}"`,
+            description: `${newActivity.authorName} added a new comment.`,
+          });
+      }
+  }, [tasks, updateTask, toast]);
+
+  const updateTaskStatus = useCallback((taskId: string, newStatus: Task['status'], updater: { id: string, name: string }) => {
     const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      updateTask({ ...task, status: newStatus });
+    if (task && task.status !== newStatus) {
+      const statusChangeActivity: TaskActivity = {
+          id: `ACT-${Date.now()}`,
+          authorId: updater.id,
+          authorName: updater.name,
+          type: 'status_change',
+          oldStatus: task.status,
+          newStatus: newStatus,
+          createdAt: new Date().toISOString(),
+      };
+      
+      const updatedTask = { ...task, status: newStatus, activity: [...task.activity, statusChangeActivity] };
+      updateTask(updatedTask);
        toast({
         title: 'Task Updated',
         description: `Task "${task.title}" moved to ${newStatus}.`,
@@ -84,5 +123,5 @@ export function useTaskStore() {
     });
   }, [tasks, updateTaskList, toast]);
 
-  return { tasks, setTasks, addTask, updateTask, updateTaskStatus, deleteTask, isInitialized };
+  return { tasks, setTasks, addTask, updateTask, updateTaskStatus, deleteTask, addTaskActivity, isInitialized };
 }

@@ -4,17 +4,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { SalarySlip } from '@/components/salary-slip';
-import { CheckCircle, XCircle, Clock, CalendarPlus, Paperclip, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, CalendarPlus, Paperclip, ClipboardCheck } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
-import { useLeaveStore, countLeaveDays } from '@/hooks/use-leave-store';
+import { useLeaveStore } from '@/hooks/use-leave-store';
 import { useHolidayStore } from '@/hooks/use-holiday-store';
-import { type Staff, type AttendanceRecord, type SalaryData, type LeaveRequest } from '@/lib/data';
+import { type Staff, type AttendanceRecord, type SalaryData, type LeaveRequest, type Task } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { ApplyLeaveModal } from '@/components/apply-leave-modal';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useTaskStore } from '@/hooks/use-task-store';
+import { TaskCard } from '@/components/task-card';
+import { TaskDetailsModal } from '@/components/task-details-modal';
 
 const getStatusForRecord = (record: AttendanceRecord) => {
     if (record.inTime) return 'Present';
@@ -83,12 +86,14 @@ const calculateSalary = (staff: Staff | null, rules: any, monthStart: Date, mont
 export default function EmployeeDashboard() {
   const [isClient, setIsClient] = useState(false);
   const [isApplyLeaveModalOpen, setIsApplyLeaveModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
   // --- Data hooks ---
   const { staffList, isInitialized: isStaffInitialized } = useStaffStore();
   const { rules, isInitialized: areRulesInitialized } = useSalaryRulesStore();
   const { leaveRequests, getApprovedLeavesForEmployee, isInitialized: leavesInitialized } = useLeaveStore();
   const { holidays, isInitialized: holidaysInitialized } = useHolidayStore();
+  const { tasks, isInitialized: tasksInitialized } = useTaskStore();
 
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
 
@@ -133,17 +138,15 @@ export default function EmployeeDashboard() {
     return calculateSalary(loggedInEmployee, rules, monthStart, monthEnd, approvedLeavesForMonth.total);
   }, [loggedInEmployee, areRulesInitialized, rules, monthStart, monthEnd, approvedLeavesForMonth]);
 
-  const attendanceForMonth = useMemo(() => {
-    if (!loggedInEmployee?.attendanceRecords || !monthStart || !monthEnd) return [];
-    return loggedInEmployee.attendanceRecords
-        .filter(rec => isWithinInterval(new Date(rec.date), { start: monthStart, end: monthEnd }))
-        .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [loggedInEmployee, monthStart, monthEnd]);
-
   const employeeLeaveRequests = useMemo(() => {
       if (!loggedInEmployee || !leavesInitialized) return [];
       return leaveRequests.filter(r => r.employeeId === loggedInEmployee.id);
   }, [loggedInEmployee, leaveRequests, leavesInitialized]);
+
+  const employeeTasks = useMemo(() => {
+      if (!loggedInEmployee || !tasksInitialized) return [];
+      return tasks.filter(t => t.assignedTo.includes(loggedInEmployee.id));
+  }, [loggedInEmployee, tasks, tasksInitialized]);
 
 
   if (!isClient || !isStaffInitialized) {
@@ -186,6 +189,26 @@ export default function EmployeeDashboard() {
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center"><ClipboardCheck className="mr-2 h-5 w-5" /> My Tasks</CardTitle>
+                    <CardDescription>Tasks assigned to you. Click a task for details.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ScrollArea className="h-72">
+                        {employeeTasks.length > 0 ? (
+                            employeeTasks.map(task => (
+                                <TaskCard key={task.id} task={task} staffList={staffList} onClick={() => setSelectedTask(task)} />
+                            ))
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                                <p>No tasks assigned to you.</p>
+                            </div>
+                        )}
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+
              <Card>
                 <CardHeader>
                     <CardTitle>My Leaves</CardTitle>
@@ -270,6 +293,14 @@ export default function EmployeeDashboard() {
       </div>
     </div>
     <ApplyLeaveModal isOpen={isApplyLeaveModalOpen} onOpenChange={setIsApplyLeaveModalOpen} employeeId={loggedInEmployee.id} />
+    {selectedTask && (
+        <TaskDetailsModal
+            isOpen={!!selectedTask}
+            onOpenChange={() => setSelectedTask(null)}
+            task={selectedTask}
+            currentUser={loggedInEmployee}
+        />
+    )}
     </>
   );
 }

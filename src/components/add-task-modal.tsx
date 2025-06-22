@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { type Task } from '@/lib/data';
-import { Loader2, Sparkles, CalendarIcon, Users, Check } from 'lucide-react';
+import { Loader2, Sparkles, CalendarIcon, Users } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -34,12 +34,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { autoAssignTask } from '@/ai/flows/auto-assign-task';
 import { useStaffStore } from '@/hooks/use-staff-store';
+import { useTaskStore } from '@/hooks/use-task-store';
 import { StaffSelectionModal } from './staff-selection-modal';
 
 interface AddTaskModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onTaskAdded: (task: Omit<Task, 'id' | 'createdAt' | 'status'>) => void;
+  // onTaskAdded is now handled by useTaskStore
 }
 
 const taskFormSchema = z.object({
@@ -53,12 +54,13 @@ const taskFormSchema = z.object({
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
 
-export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModalProps) {
+export function AddTaskModal({ isOpen, onOpenChange }: AddTaskModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const { toast } = useToast();
   const { staffList } = useStaffStore();
+  const { addTask } = useTaskStore();
   
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
@@ -107,13 +109,17 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
   const onSubmit = async (values: TaskFormValues) => {
     setIsSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      onTaskAdded({
+      // Assuming the creator is the admin 'Rohan Mehta'
+      const creator = { id: 'KM-003', name: 'Rohan Mehta' };
+      addTask(
+        {
           ...values,
           description: values.description || '',
           tags: values.tags ? values.tags.split(',').map(tag => tag.trim()) : [],
           dueDate: values.dueDate.toISOString(),
-      });
+        },
+        creator
+      );
       handleClose();
     } catch (error) {
       console.error("Failed to add task:", error);

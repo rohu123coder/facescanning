@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, List, Calendar as CalendarIcon, LayoutDashboard, BarChart2, Loader2 } from 'lucide-react';
+import { PlusCircle, List, Calendar as CalendarIcon, LayoutDashboard, BarChart2, Loader2, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTaskStore } from '@/hooks/use-task-store';
 import { useStaffStore } from '@/hooks/use-staff-store';
@@ -14,14 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, isSameDay, startOfToday } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-} from "@/components/ui/chart"
-import { Pie, PieChart, Cell } from "recharts"
+import { TaskDetailsModal } from '@/components/task-details-modal';
 
 
 const priorityBadgeVariant = {
@@ -32,9 +25,10 @@ const priorityBadgeVariant = {
 
 export default function TaskManagementPage() {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
-  const { tasks, addTask, updateTaskStatus, deleteTask, isInitialized: tasksInitialized } = useTaskStore();
+  const { tasks, isInitialized: tasksInitialized } = useTaskStore();
   const { staffList, isInitialized: staffInitialized } = useStaffStore();
   
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   
   useEffect(() => {
@@ -51,26 +45,8 @@ export default function TaskManagementPage() {
     const completed = tasks.filter(t => t.status === 'Completed').length;
     const dueToday = tasks.filter(t => isSameDay(new Date(t.dueDate), today)).length;
     
-    const statusCounts = tasks.reduce((acc, task) => {
-        acc[task.status] = (acc[task.status] || 0) + 1;
-        return acc;
-    }, {} as Record<Task['status'], number>);
-    
-    return { overdue, completed, dueToday, statusCounts };
+    return { overdue, completed, dueToday };
   }, [tasks]);
-
-  const chartData = useMemo(() => [
-      { name: 'Pending', value: taskStats.statusCounts.Pending || 0, fill: 'hsl(var(--chart-2))' },
-      { name: 'In Progress', value: taskStats.statusCounts['In Progress'] || 0, fill: 'hsl(var(--chart-1))' },
-      { name: 'Completed', value: taskStats.statusCounts.Completed || 0, fill: 'hsl(var(--chart-3))' },
-  ], [taskStats.statusCounts]);
-
-  const chartConfig = {
-      tasks: { label: "Tasks" },
-      Pending: { label: "Pending", color: "hsl(var(--chart-2))" },
-      'In Progress': { label: "In Progress", color: "hsl(var(--chart-1))" },
-      Completed: { label: "Completed", color: "hsl(var(--chart-3))" },
-  };
 
   const kanbanColumns: Task['status'][] = ['Pending', 'In Progress', 'Completed'];
 
@@ -105,6 +81,9 @@ export default function TaskManagementPage() {
         </div>
     );
   }
+
+  // Simulating admin/manager as the current user
+  const currentUser = staffList.find(s => s.id === 'KM-003') || staffList[0];
 
   return (
     <>
@@ -177,7 +156,7 @@ export default function TaskManagementPage() {
                             <div className="space-y-4 h-[60vh] overflow-y-auto">
                                {tasksByStatus[status]?.length > 0 ? (
                                 tasksByStatus[status].map(task => (
-                                    <TaskCard key={task.id} task={task} staffList={staffList} onStatusChange={updateTaskStatus} onDelete={deleteTask} />
+                                    <TaskCard key={task.id} task={task} staffList={staffList} onClick={() => setSelectedTask(task)} />
                                 ))
                                ) : (<p className="text-sm text-center text-muted-foreground pt-10">No tasks here.</p>)}
                             </div>
@@ -201,16 +180,15 @@ export default function TaskManagementPage() {
                         </TableHeader>
                         <TableBody>
                            {tasks.length > 0 ? tasks.map(task => (
-                            <TableRow key={task.id}>
+                            <TableRow key={task.id} onClick={() => setSelectedTask(task)} className="cursor-pointer">
                                 <TableCell className="font-medium">{task.title}</TableCell>
                                 <TableCell><Badge variant="outline">{task.status}</Badge></TableCell>
                                 <TableCell><Badge variant={priorityBadgeVariant[task.priority]}>{task.priority}</Badge></TableCell>
                                 <TableCell>{format(new Date(task.dueDate), 'dd MMM, yyyy')}</TableCell>
                                 <TableCell>
-                                    <div className="flex -space-x-2">
-                                        {staffList.filter(s => task.assignedTo.includes(s.id)).map(s => (
-                                            <Badge key={s.id}>{s.name}</Badge>
-                                        ))}
+                                    <div className="flex items-center gap-1">
+                                         <Users className="h-4 w-4 text-muted-foreground" />
+                                        <span>{task.assignedTo.length} member(s)</span>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -247,7 +225,7 @@ export default function TaskManagementPage() {
                           <div className="space-y-4 h-[60vh] overflow-y-auto">
                                {tasksForSelectedDate.length > 0 ? (
                                 tasksForSelectedDate.map(task => (
-                                    <TaskCard key={task.id} task={task} staffList={staffList} onStatusChange={updateTaskStatus} onDelete={deleteTask} />
+                                    <TaskCard key={task.id} task={task} staffList={staffList} onClick={() => setSelectedTask(task)} />
                                 ))
                                ) : (<p className="text-sm text-center text-muted-foreground pt-10">No tasks due on this date.</p>)}
                             </div>
@@ -261,8 +239,15 @@ export default function TaskManagementPage() {
        <AddTaskModal
         isOpen={isAddTaskModalOpen}
         onOpenChange={setIsAddTaskModalOpen}
-        onTaskAdded={addTask}
       />
+      {selectedTask && currentUser && (
+        <TaskDetailsModal
+            isOpen={!!selectedTask}
+            onOpenChange={() => setSelectedTask(null)}
+            task={selectedTask}
+            currentUser={currentUser}
+        />
+      )}
     </>
   );
 }

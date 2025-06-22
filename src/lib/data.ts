@@ -27,6 +27,24 @@ export type Staff = {
   skills: string[];
 };
 
+export type Attachment = {
+  name: string;
+  url: string; 
+  type: string; 
+};
+
+export type TaskActivity = {
+  id: string;
+  authorId: string;
+  authorName: string;
+  type: 'creation' | 'status_change' | 'comment' | 'attachment';
+  text?: string;
+  attachment?: Attachment;
+  oldStatus?: Task['status'];
+  newStatus?: Task['status'];
+  createdAt: string;
+};
+
 export type Task = {
     id: string;
     title: string;
@@ -37,6 +55,7 @@ export type Task = {
     assignedTo: string[]; // Array of staff IDs
     tags: string[];
     createdAt: string;
+    activity: TaskActivity[];
 }
 
 export type Student = {
@@ -106,7 +125,7 @@ export const initialStaff: Staff[] = [
     { id: 'KM-004', name: 'Priya Singh', email: 'priya.singh@example.com', mobile: '9876543213', whatsapp: '9876543213', address: '101 Design Studio, Delhi', department: 'Design', role: 'UI/UX Designer', salary: 70000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Figma', 'UI Design', 'User Research'] },
 ];
 
-const baseDate = new Date('2024-07-20T10:00:00.000Z');
+const baseDate = new Date();
 const addDays = (date: Date, days: number): Date => {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
@@ -114,12 +133,93 @@ const addDays = (date: Date, days: number): Date => {
 };
 
 export const initialTasks: Task[] = [
-    { id: 'TASK-001', title: 'Design new dashboard homepage', description: 'Create a modern and intuitive design for the main dashboard homepage.', priority: 'High', dueDate: addDays(baseDate, 5).toISOString(), status: 'In Progress', assignedTo: ['KM-004'], tags: ['UI/UX', 'Design'], createdAt: baseDate.toISOString() },
-    { id: 'TASK-002', title: 'Develop login API endpoint', description: 'Build and test the API endpoint for user authentication.', priority: 'High', dueDate: addDays(baseDate, 3).toISOString(), status: 'In Progress', assignedTo: ['KM-002'], tags: ['Backend', 'API'], createdAt: baseDate.toISOString() },
-    { id: 'TASK-003', title: 'Implement frontend for settings page', description: 'Use React and TypeScript to build the settings page UI.', priority: 'Medium', dueDate: addDays(baseDate, 10).toISOString(), status: 'Pending', assignedTo: ['KM-001'], tags: ['Frontend', 'React'], createdAt: baseDate.toISOString() },
-    { id: 'TASK-004', title: 'Conduct user research for new feature', description: 'Interview 5 target users to gather feedback on the proposed feature.', priority: 'Medium', dueDate: addDays(baseDate, 15).toISOString(), status: 'Pending', assignedTo: ['KM-003', 'KM-004'], tags: ['Research', 'Product'], createdAt: baseDate.toISOString() },
-    { id: 'TASK-005', title: 'Fix bug in reporting module', description: 'The CSV export in the reporting module is failing for large datasets.', priority: 'Low', dueDate: addDays(baseDate, -1).toISOString(), status: 'Pending', assignedTo: [], tags: ['Bug', 'Backend'], createdAt: addDays(baseDate, -2).toISOString() },
-    { id: 'TASK-006', title: 'Update documentation for API v2', description: 'Write and publish the updated documentation for all v2 endpoints.', priority: 'Low', dueDate: addDays(baseDate, 20).toISOString(), status: 'Completed', assignedTo: ['KM-002'], tags: ['Docs'], createdAt: addDays(baseDate, -5).toISOString() },
+    { 
+        id: 'TASK-001', 
+        title: 'Design new dashboard homepage', 
+        description: 'Create a modern and intuitive design for the main dashboard homepage. Focus on clear data visualization and easy navigation.', 
+        priority: 'High', 
+        dueDate: addDays(baseDate, 5).toISOString(), 
+        status: 'In Progress', 
+        assignedTo: ['KM-004'], 
+        tags: ['UI/UX', 'Design'], 
+        createdAt: baseDate.toISOString(),
+        activity: [
+            { id: 'ACT-001', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDays(baseDate, -2).toISOString() },
+            { id: 'ACT-002', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'status_change', oldStatus: 'Pending', newStatus: 'In Progress', createdAt: addDays(baseDate, -1).toISOString() },
+            { id: 'ACT-003', authorId: 'KM-004', authorName: 'Priya Singh', type: 'comment', text: 'Working on the initial wireframes. Will share by EOD.', createdAt: new Date().toISOString() },
+        ] 
+    },
+    { 
+        id: 'TASK-002', 
+        title: 'Develop login API endpoint', 
+        description: 'Build and test the API endpoint for user authentication, including JWT generation.', 
+        priority: 'High', 
+        dueDate: addDays(baseDate, 3).toISOString(), 
+        status: 'In Progress', 
+        assignedTo: ['KM-002'], 
+        tags: ['Backend', 'API'], 
+        createdAt: baseDate.toISOString(),
+        activity: [
+            { id: 'ACT-004', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDays(baseDate, -1).toISOString() },
+        ] 
+    },
+    { 
+        id: 'TASK-003', 
+        title: 'Implement frontend for settings page', 
+        description: 'Use React and TypeScript to build the settings page UI components as per the Figma design.', 
+        priority: 'Medium', 
+        dueDate: addDays(baseDate, 10).toISOString(), 
+        status: 'Pending', 
+        assignedTo: ['KM-001'], 
+        tags: ['Frontend', 'React'], 
+        createdAt: baseDate.toISOString(),
+        activity: [
+             { id: 'ACT-005', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: baseDate.toISOString() },
+        ] 
+    },
+    { 
+        id: 'TASK-004', 
+        title: 'Conduct user research for new feature', 
+        description: 'Interview 5 target users to gather feedback on the proposed reporting feature.', 
+        priority: 'Medium', 
+        dueDate: addDays(baseDate, 15).toISOString(), 
+        status: 'Pending', 
+        assignedTo: ['KM-003', 'KM-004'], 
+        tags: ['Research', 'Product'], 
+        createdAt: baseDate.toISOString(),
+        activity: [
+             { id: 'ACT-006', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: baseDate.toISOString() },
+        ] 
+    },
+    { 
+        id: 'TASK-005', 
+        title: 'Fix bug in reporting module', 
+        description: 'The CSV export in the reporting module is failing for large datasets.', 
+        priority: 'Low', 
+        dueDate: addDays(baseDate, -1).toISOString(), 
+        status: 'Pending', 
+        assignedTo: [], 
+        tags: ['Bug', 'Backend'], 
+        createdAt: addDays(baseDate, -2).toISOString(),
+        activity: [
+            { id: 'ACT-007', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDays(baseDate, -2).toISOString() },
+        ] 
+    },
+    { 
+        id: 'TASK-006', 
+        title: 'Update documentation for API v2', 
+        description: 'Write and publish the updated documentation for all v2 endpoints on Confluence.', 
+        priority: 'Low', 
+        dueDate: addDays(baseDate, 20).toISOString(), 
+        status: 'Completed', 
+        assignedTo: ['KM-002'], 
+        tags: ['Docs'], 
+        createdAt: addDays(baseDate, -5).toISOString(),
+        activity: [
+            { id: 'ACT-008', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDays(baseDate, -5).toISOString() },
+             { id: 'ACT-009', authorId: 'KM-002', authorName: 'Diya Patel', type: 'status_change', oldStatus: 'In Progress', newStatus: 'Completed', createdAt: addDays(baseDate, -3).toISOString() },
+        ] 
+    },
 ];
 
 
