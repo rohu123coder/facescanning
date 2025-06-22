@@ -40,7 +40,7 @@ import { useStaffStore } from '@/hooks/use-staff-store';
 interface AddTaskModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onTaskAdded: (task: Omit<Task, 'id' | 'createdAt' | 'status'>) => void;
+  onTaskAdded: (task: Omit<Task, 'id' | 'createdAt'>) => void;
 }
 
 const taskFormSchema = z.object({
@@ -109,12 +109,14 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
       await new Promise(resolve => setTimeout(resolve, 500));
       onTaskAdded({
           ...values,
+          description: values.description || '',
           tags: values.tags ? values.tags.split(',').map(tag => tag.trim()) : [],
           dueDate: values.dueDate.toISOString(),
           status: 'Pending',
       });
       handleClose();
     } catch (error) {
+      console.error("Failed to add task:", error);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -250,7 +252,7 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                 </Button>
                             </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
                            <Command>
                             <CommandInput placeholder="Search staff..." />
                             <CommandList>
@@ -260,17 +262,13 @@ export function AddTaskModal({ isOpen, onOpenChange, onTaskAdded }: AddTaskModal
                                 <CommandItem
                                     value={staff.name}
                                     key={staff.id}
-                                    onSelect={(selectedName) => {
-                                        const staffToToggle = staffList.find(s => s.name === selectedName);
-                                        if (!staffToToggle) return;
-
-                                        const idToToggle = staffToToggle.id;
+                                    onSelect={() => {
                                         const currentSelection = field.value || [];
-                                        const isSelected = currentSelection.includes(idToToggle);
+                                        const isSelected = currentSelection.includes(staff.id);
                                         
                                         const newValue = isSelected
-                                            ? currentSelection.filter(id => id !== idToToggle)
-                                            : [...currentSelection, idToToggle];
+                                            ? currentSelection.filter(id => id !== staff.id)
+                                            : [...currentSelection, staff.id];
                                             
                                         field.onChange(newValue);
                                     }}
