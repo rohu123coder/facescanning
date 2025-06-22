@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, FileDown, Video, User, Users, Printer, Calendar as CalendarIcon, X, Banknote, CalendarDays } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, FileDown, Video, User, Users, Printer, Calendar as CalendarIcon, X, Banknote, CalendarDays, ClipboardCheck, CalendarCheck } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { type Staff, type Student, type AttendanceRecord } from '@/lib/data';
 import { AddStaffModal } from '@/components/add-staff-modal';
@@ -25,6 +25,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { HolidayManagementModal } from '@/components/holiday-management-modal';
+import { useClientStore } from '@/hooks/use-client-store';
+import { planFeatures } from '@/lib/plans';
 
 export default function ClientDashboard() {
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
@@ -35,6 +37,16 @@ export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState('staff');
   const [studentView, setStudentView] = useState('list');
   const { toast } = useToast();
+  
+  const { currentClient } = useClientStore();
+  const clientPlan = currentClient?.plan || 'Basic';
+  const allowedFeatures = useMemo(() => planFeatures[clientPlan], [clientPlan]);
+  
+  const canManageStudents = allowedFeatures.includes('STUDENT_MANAGEMENT');
+  const canManageSalaries = allowedFeatures.includes('SALARY_MANAGEMENT');
+  const canManageTasks = allowedFeatures.includes('TASK_MANAGEMENT');
+  const canManageLeaves = allowedFeatures.includes('LEAVE_MANAGEMENT');
+
 
   // Filter states
   const [staffNameFilter, setStaffNameFilter] = useState('');
@@ -48,7 +60,10 @@ export default function ClientDashboard() {
       from: new Date(),
       to: new Date(),
     });
-  }, []);
+    if (!canManageStudents) {
+      setActiveTab('staff');
+    }
+  }, [canManageStudents]);
   
   const { staffList, addStaff, isInitialized: staffInitialized } = useStaffStore();
   const { studentList, addStudent, updateStudent, deleteStudent, isInitialized: studentInitialized } = useStudentStore();
@@ -472,11 +487,11 @@ export default function ClientDashboard() {
           <h1 className="text-3xl font-bold">Client Dashboard</h1>
           <p className="text-muted-foreground">Manage your staff, students and view attendance.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
            <Button 
                 variant="outline"
                 onClick={handleGenerateCsv}
-                disabled={!date?.from || (activeTab === 'staff' && staffAttendanceList.length === 0) || (activeTab === 'student' && (studentView !== 'report' || studentAttendanceList.length === 0))}
+                disabled={!date?.from || (activeTab === 'staff' && staffAttendanceList.length === 0) || (activeTab === 'student' && (!canManageStudents || studentView !== 'report' || studentAttendanceList.length === 0))}
             >
             <FileDown className="mr-2 h-4 w-4" />
             Download Report
@@ -488,12 +503,13 @@ export default function ClientDashboard() {
           >
             <Printer className="mr-2 h-4 w-4" /> Print Report
           </Button>
-          <Button asChild><Link href="/client/salary"><Banknote className="mr-2 h-4 w-4" />Manage Salaries</Link></Button>
+          {canManageSalaries && <Button asChild><Link href="/client/salary"><Banknote className="mr-2 h-4 w-4" />Manage Salaries</Link></Button>}
+          {canManageTasks && <Button asChild><Link href="/client/tasks"><ClipboardCheck className="mr-2 h-4 w-4" />Manage Tasks</Link></Button>}
+          {canManageLeaves && <Button asChild><Link href="/client/leaves"><CalendarCheck className="mr-2 h-4 w-4" />Leave Requests</Link></Button>}
           <Button variant="outline" onClick={() => setIsHolidayModalOpen(true)}>
             <CalendarDays className="mr-2 h-4 w-4" />
             Holiday Calendar
           </Button>
-          <Button asChild><Link href="/client/attendance-kiosk"><Video className="mr-2 h-4 w-4" />Open Attendance Kiosk</Link></Button>
         </div>
       </div>
       
@@ -511,7 +527,7 @@ export default function ClientDashboard() {
               </Select>
             </>
           ) : (
-            <>
+             canManageStudents && <>
               <Input placeholder="Filter by student name..." value={studentNameFilter} onChange={(e) => setStudentNameFilter(e.target.value)} />
               <Select value={studentClassFilter} onValueChange={setStudentClassFilter}>
                 <SelectTrigger><SelectValue placeholder="Filter by class..." /></SelectTrigger>
@@ -566,23 +582,25 @@ export default function ClientDashboard() {
         <div className="flex justify-between items-end print-hide">
           <TabsList>
             <TabsTrigger value="staff"><Users className="mr-2" /> Staff Management</TabsTrigger>
-            <TabsTrigger value="student"><User className="mr-2" /> Student Management</TabsTrigger>
+            {canManageStudents && <TabsTrigger value="student"><User className="mr-2" /> Student Management</TabsTrigger>}
           </TabsList>
           {activeTab === 'staff' && (<Button onClick={() => setIsAddStaffModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add Staff</Button>)}
         </div>
 
         <TabsContent value="staff">{renderStaffTable()}</TabsContent>
-        <TabsContent value="student">{renderStudentManagementContent()}</TabsContent>
+        {canManageStudents && <TabsContent value="student">{renderStudentManagementContent()}</TabsContent>}
       </Tabs>
 
       <AddStaffModal isOpen={isAddStaffModalOpen} onOpenChange={setIsAddStaffModalOpen} onStaffAdded={handleAddStaff} />
-      <AddStudentModal isOpen={isAddStudentModalOpen} onOpenChange={setIsAddStudentModalOpen} onStudentAdded={handleAddStudent} />
-      <EditStudentModal 
-        isOpen={isEditStudentModalOpen}
-        onOpenChange={setIsEditStudentModalOpen}
-        student={studentToEdit}
-        onStudentUpdated={handleUpdateStudent}
-      />
+      {canManageStudents && <>
+        <AddStudentModal isOpen={isAddStudentModalOpen} onOpenChange={setIsAddStudentModalOpen} onStudentAdded={handleAddStudent} />
+        <EditStudentModal 
+            isOpen={isEditStudentModalOpen}
+            onOpenChange={setIsEditStudentModalOpen}
+            student={studentToEdit}
+            onStudentUpdated={handleUpdateStudent}
+        />
+       </>}
     </div>
      <HolidayManagementModal isOpen={isHolidayModalOpen} onOpenChange={setIsHolidayModalOpen} />
      </>

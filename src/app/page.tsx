@@ -3,31 +3,19 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Briefcase, User, Shield, Gem } from 'lucide-react';
+import { ArrowRight, Gem, Briefcase } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const roles = [
   {
-    name: 'Client',
-    description: 'Manage your staff, track attendance, and automate salaries.',
-    href: '/client',
+    name: 'Client Login',
+    description: 'Access your organization\'s dashboard to manage staff, tasks, and salaries.',
+    href: '/login',
     icon: <Briefcase className="h-8 w-8 text-primary" />,
   },
   {
-    name: 'Employee',
-    description: 'View your attendance, salary slips, and personal details.',
-    href: '/employee',
-    icon: <User className="h-8 w-8 text-primary" />,
-  },
-  {
-    name: 'HR / Admin',
-    description: 'Oversee all employees, manage system settings, and generate reports.',
-    href: '/admin',
-    icon: <Shield className="h-8 w-8 text-primary" />,
-  },
-  {
     name: 'Super Admin',
-    description: 'Manage multiple clients, subscriptions, and platform settings.',
+    description: 'Manage clients, subscriptions, and platform-wide settings.',
     href: '/super-admin',
     icon: <Gem className="h-8 w-8 text-primary" />,
   },
@@ -47,11 +35,11 @@ export default function Home() {
           Karma Manager
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-          An intelligent staff management and salary automation platform. Please select a role to proceed.
+          An intelligent staff management and salary automation platform. Please select a portal to proceed.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-6xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-3xl">
         {roles.map((role) => (
           <Card key={role.name} className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-in-out group bg-card">
             <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">

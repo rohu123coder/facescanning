@@ -30,7 +30,7 @@ import { Loader2 } from 'lucide-react';
 interface AddClientModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onClientAdded: (client: Omit<Client, 'id' | 'status' | 'staffCount'>) => void;
+  onClientAdded: (client: Omit<Client, 'id'>) => void;
 }
 
 const clientFormSchema = z.object({
@@ -63,10 +63,18 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      onClientAdded(values);
+      onClientAdded({
+          ...values,
+          status: 'Active',
+          staffCount: 0,
+          isSetupComplete: false,
+          logoUrl: '',
+          organizationDetails: ''
+      });
       toast({
-        title: 'Client Added',
-        description: `${values.organizationName} has been successfully added. Credentials have been sent.`,
+        title: 'Client Added & Credentials Generated',
+        description: `Login with Email: ${values.email} and Password: ${values.mobile}`,
+        duration: 9000
       });
       form.reset();
       onOpenChange(false);
@@ -129,7 +137,7 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email Address</FormLabel>
+                  <FormLabel>Email Address (Username)</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="e.g. contact@innovatech.com" {...field} />
                   </FormControl>
@@ -143,7 +151,7 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
                 name="mobile"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mobile Number</FormLabel>
+                    <FormLabel>Mobile (Password)</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g. +919876543210" {...field} />
                     </FormControl>
@@ -198,7 +206,7 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
                     Saving...
                   </>
                 ) : (
-                  'Add Client & Send Invite'
+                  'Add Client & Gen. Credentials'
                 )}
               </Button>
             </DialogFooter>

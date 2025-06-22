@@ -79,6 +79,8 @@ export type Student = {
 export type Client = {
   id: string;
   organizationName: string;
+  organizationDetails: string;
+  logoUrl: string;
   contactName: string;
   email: string;
   mobile: string;
@@ -86,6 +88,7 @@ export type Client = {
   plan: 'Basic' | 'Premium' | 'Enterprise';
   status: 'Active' | 'Inactive';
   staffCount: number;
+  isSetupComplete: boolean;
 };
 
 export type Attendance = {
@@ -126,7 +129,7 @@ export const initialStaff: Staff[] = [
 ];
 
 const baseDate = new Date('2024-07-25T10:00:00Z');
-const addDays = (date: Date, days: number): Date => {
+const addDaysToDate = (date: Date, days: number): Date => {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;
@@ -138,14 +141,14 @@ export const initialTasks: Task[] = [
         title: 'Design new dashboard homepage', 
         description: 'Create a modern and intuitive design for the main dashboard homepage. Focus on clear data visualization and easy navigation.', 
         priority: 'High', 
-        dueDate: addDays(baseDate, 5).toISOString(), 
+        dueDate: addDaysToDate(baseDate, 5).toISOString(), 
         status: 'In Progress', 
         assignedTo: ['KM-004'], 
         tags: ['UI/UX', 'Design'], 
         createdAt: baseDate.toISOString(),
         activity: [
-            { id: 'ACT-001', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDays(baseDate, -2).toISOString() },
-            { id: 'ACT-002', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'status_change', oldStatus: 'Pending', newStatus: 'In Progress', createdAt: addDays(baseDate, -1).toISOString() },
+            { id: 'ACT-001', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDaysToDate(baseDate, -2).toISOString() },
+            { id: 'ACT-002', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'status_change', oldStatus: 'Pending', newStatus: 'In Progress', createdAt: addDaysToDate(baseDate, -1).toISOString() },
             { id: 'ACT-003', authorId: 'KM-004', authorName: 'Priya Singh', type: 'comment', text: 'Working on the initial wireframes. Will share by EOD.', createdAt: baseDate.toISOString() },
         ] 
     },
@@ -154,13 +157,13 @@ export const initialTasks: Task[] = [
         title: 'Develop login API endpoint', 
         description: 'Build and test the API endpoint for user authentication, including JWT generation.', 
         priority: 'High', 
-        dueDate: addDays(baseDate, 3).toISOString(), 
+        dueDate: addDaysToDate(baseDate, 3).toISOString(), 
         status: 'In Progress', 
         assignedTo: ['KM-002'], 
         tags: ['Backend', 'API'], 
         createdAt: baseDate.toISOString(),
         activity: [
-            { id: 'ACT-004', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDays(baseDate, -1).toISOString() },
+            { id: 'ACT-004', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDaysToDate(baseDate, -1).toISOString() },
         ] 
     },
     { 
@@ -168,7 +171,7 @@ export const initialTasks: Task[] = [
         title: 'Implement frontend for settings page', 
         description: 'Use React and TypeScript to build the settings page UI components as per the Figma design.', 
         priority: 'Medium', 
-        dueDate: addDays(baseDate, 10).toISOString(), 
+        dueDate: addDaysToDate(baseDate, 10).toISOString(), 
         status: 'Pending', 
         assignedTo: ['KM-001'], 
         tags: ['Frontend', 'React'], 
@@ -182,7 +185,7 @@ export const initialTasks: Task[] = [
         title: 'Conduct user research for new feature', 
         description: 'Interview 5 target users to gather feedback on the proposed reporting feature.', 
         priority: 'Medium', 
-        dueDate: addDays(baseDate, 15).toISOString(), 
+        dueDate: addDaysToDate(baseDate, 15).toISOString(), 
         status: 'Pending', 
         assignedTo: ['KM-003', 'KM-004'], 
         tags: ['Research', 'Product'], 
@@ -196,13 +199,13 @@ export const initialTasks: Task[] = [
         title: 'Fix bug in reporting module', 
         description: 'The CSV export in the reporting module is failing for large datasets.', 
         priority: 'Low', 
-        dueDate: addDays(baseDate, -1).toISOString(), 
+        dueDate: addDaysToDate(baseDate, -1).toISOString(), 
         status: 'Pending', 
         assignedTo: [], 
         tags: ['Bug', 'Backend'], 
-        createdAt: addDays(baseDate, -2).toISOString(),
+        createdAt: addDaysToDate(baseDate, -2).toISOString(),
         activity: [
-            { id: 'ACT-007', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDays(baseDate, -2).toISOString() },
+            { id: 'ACT-007', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDaysToDate(baseDate, -2).toISOString() },
         ] 
     },
     { 
@@ -210,29 +213,26 @@ export const initialTasks: Task[] = [
         title: 'Update documentation for API v2', 
         description: 'Write and publish the updated documentation for all v2 endpoints on Confluence.', 
         priority: 'Low', 
-        dueDate: addDays(baseDate, 20).toISOString(), 
+        dueDate: addDaysToDate(baseDate, 20).toISOString(), 
         status: 'Completed', 
         assignedTo: ['KM-002'], 
         tags: ['Docs'], 
-        createdAt: addDays(baseDate, -5).toISOString(),
+        createdAt: addDaysToDate(baseDate, -5).toISOString(),
         activity: [
-            { id: 'ACT-008', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDays(baseDate, -5).toISOString() },
-             { id: 'ACT-009', authorId: 'KM-002', authorName: 'Diya Patel', type: 'status_change', oldStatus: 'In Progress', newStatus: 'Completed', createdAt: addDays(baseDate, -3).toISOString() },
+            { id: 'ACT-008', authorId: 'KM-003', authorName: 'Rohan Mehta', type: 'creation', createdAt: addDaysToDate(baseDate, -5).toISOString() },
+             { id: 'ACT-009', authorId: 'KM-002', authorName: 'Diya Patel', type: 'status_change', oldStatus: 'In Progress', newStatus: 'Completed', createdAt: addDaysToDate(baseDate, -3).toISOString() },
         ] 
     },
 ];
 
 
-export const staff: Staff[] = [];
+export const initialClients: Client[] = [
+    { id: 'C-101', organizationName: 'Innovatech Solutions', organizationDetails: 'Leading the charge in AI-driven business solutions and cloud computing.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Rohan Mehra', email: 'contact@innovatech.com', mobile: '9876543210', whatsapp: '9876543210', plan: 'Premium', status: 'Active', staffCount: 45, isSetupComplete: true },
+    { id: 'C-102', organizationName: 'Creative Minds Inc.', organizationDetails: 'A digital marketing agency specializing in branding and creative content.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Priya Sharma', email: 'hello@creativeminds.co', mobile: '9876543211', whatsapp: '9876543211', plan: 'Basic', status: 'Active', staffCount: 12, isSetupComplete: true },
+    { id: 'C-103', organizationName: 'TechForward', organizationDetails: 'Enterprise-level software development and IT consulting services.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Amit Singh', email: 'support@techforward.io', mobile: '9876543212', whatsapp: '9876543212', plan: 'Enterprise', status: 'Active', staffCount: 150, isSetupComplete: true },
+    { id: 'C-104', organizationName: 'NextGen Systems', organizationDetails: 'Hardware and software solutions for the next generation of computing.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Sunita Patil', email: 'admin@nextgen.com', mobile: '9876543213', whatsapp: '9876543213', plan: 'Premium', status: 'Inactive', staffCount: 30, isSetupComplete: true },
+];
 
-export const students: Student[] = [];
-
-export const clients: Client[] = [
-    { id: 'C-101', organizationName: 'Innovatech Solutions', contactName: 'Rohan Mehra', email: 'contact@innovatech.com', mobile: '+919876543210', whatsapp: '+919876543210', plan: 'Premium', status: 'Active', staffCount: 45 },
-    { id: 'C-102', organizationName: 'Creative Minds Inc.', contactName: 'Priya Sharma', email: 'hello@creativeminds.co', mobile: '+919876543211', whatsapp: '+919876543211', plan: 'Basic', status: 'Active', staffCount: 12 },
-    { id: 'C-103', organizationName: 'TechForward', contactName: 'Amit Singh', email: 'support@techforward.io', mobile: '+919876543212', whatsapp: '+919876543212', plan: 'Enterprise', status: 'Active', staffCount: 150 },
-    { id: 'C-104', organizationName: 'NextGen Systems', contactName: 'Sunita Patil', email: 'admin@nextgen.com', mobile: '+919876543213', whatsapp: '+919876543213', plan: 'Premium', status: 'Inactive', staffCount: 30 },
-]
 
 export const attendance: Attendance[] = [
     { date: '2024-07-01', status: 'Present' },
