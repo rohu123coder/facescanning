@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
 import { useHolidayStore } from '@/hooks/use-holiday-store';
+import { useLeaveStore } from '@/hooks/use-leave-store';
 import { SalaryRulesModal } from '@/components/salary-rules-modal';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -22,13 +23,14 @@ export default function SalaryManagementPage() {
   const { staffList, isInitialized: isStaffInitialized } = useStaffStore();
   const { rules, isInitialized: areRulesInitialized } = useSalaryRulesStore();
   const { holidays, isInitialized: holidaysInitialized } = useHolidayStore();
+  const { getApprovedLeavesForEmployee, isInitialized: leavesInitialized } = useLeaveStore();
   const { toast } = useToast();
   
   const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<{ staff: Staff, salaryData: SalaryData } | null>(null);
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
-  const [leaveInputs, setLeaveInputs] = useState<Record<string, { casual: string; sick: string; adjustment: string }>>({});
+  const [adjustments, setAdjustments] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setCurrentDate(new Date());
@@ -42,16 +44,12 @@ export default function SalaryManagementPage() {
     const end = endOfMonth(currentDate);
     const daysInMonth = parseInt(format(end, 'd'), 10);
     
-    const holidaysInMonth = new Set(
-        holidays
-        .filter(h => isWithinInterval(new Date(h.date), { start, end }))
-        .map(h => format(new Date(h.date), 'yyyy-MM-dd'))
-    );
+    const holidayDates = holidays.map(h => format(new Date(h.date), 'yyyy-MM-dd'));
+    const holidaysInMonth = new Set(holidayDates);
 
     let calculatedWorkingDays = 0;
     for (let i = 0; i < daysInMonth; i++) {
         const day = addDays(start, i);
-        // getDay() returns 0 for Sunday, 1 for Monday, etc.
         if (!rules.weeklyOffDays.includes(getDay(day)) && !holidaysInMonth.has(format(day, 'yyyy-MM-dd'))) {
             calculatedWorkingDays++;
         }
@@ -67,24 +65,18 @@ export default function SalaryManagementPage() {
     };
   }, [currentDate, holidays, holidaysInitialized, rules, areRulesInitialized]);
 
-  const handleLeaveInputChange = (staffId: string, field: 'casual' | 'sick' | 'adjustment', value: string) => {
-    const isAdjustment = field === 'adjustment';
-    const isLeave = field === 'casual' || field === 'sick';
-    
-    if (isAdjustment && value !== '' && !/^-?\d*\.?\d*$/.test(value)) return;
-    if (isLeave && !/^\d*\.?\d*$/.test(value)) return;
-    
-    setLeaveInputs(prev => ({
+  const handleAdjustmentChange = (staffId: string, value: string) => {
+    if (value !== '' && !/^-?\d*\.?\d*$/.test(value)) return;
+    setAdjustments(prev => ({
       ...prev,
-      [staffId]: {
-        ...(prev[staffId] || { casual: '', sick: '', adjustment: '' }),
-        [field]: value,
-      },
+      [staffId]: value,
     }));
   };
 
   const salaryData = useMemo(() => {
-    if (!isStaffInitialized || !areRulesInitialized || !monthStart || !monthEnd || workingDays === 0) return [];
+    if (!isStaffInitialized || !areRulesInitialized || !leavesInitialized || !monthStart || !monthEnd || workingDays === 0) return [];
+    
+    const holidayDates = holidays.map(h => format(new Date(h.date), 'yyyy-MM-dd'));
 
     return staffList.map(staff => {
       const presentDays = staff.attendanceRecords?.filter(rec => {
@@ -92,18 +84,12 @@ export default function SalaryManagementPage() {
         return isWithinInterval(recDate, { start: monthStart, end: monthEnd });
       }).length ?? 0;
 
-      const staffLeaveInputs = leaveInputs[staff.id] || {};
-      const casualLeavesInput = Number(staffLeaveInputs.casual) || 0;
-      const sickLeavesInput = Number(staffLeaveInputs.sick) || 0;
-      const adjustment = Number(staffLeaveInputs.adjustment) || 0;
+      const adjustment = Number(adjustments[staff.id]) || 0;
+      const approvedLeaves = getApprovedLeavesForEmployee(staff.id, monthStart, monthEnd, rules.weeklyOffDays, holidayDates);
+      const paidLeaveDays = approvedLeaves.total;
       
-      const payableCasualLeaves = Math.min(staff.totalCasualLeaves, casualLeavesInput);
-      const payableSickLeaves = Math.min(staff.totalSickLeaves, sickLeavesInput);
-      
-      const unpaidLeaveDays = Math.max(0, casualLeavesInput - staff.totalCasualLeaves) + Math.max(0, sickLeavesInput - staff.totalSickLeaves);
-      
-      const paidLeaveDays = payableCasualLeaves + payableSickLeaves;
       const daysPaidFor = presentDays + paidLeaveDays;
+      const unpaidLeaveDays = workingDays - daysPaidFor;
       
       const monthlyGrossSalary = staff.salary;
       const earnedGross = workingDays > 0 ? (monthlyGrossSalary / workingDays) * daysPaidFor : 0;
@@ -119,7 +105,7 @@ export default function SalaryManagementPage() {
         workingDays,
         presentDays,
         paidLeaveDays,
-        unpaidLeaveDays,
+        unpaidLeaveDays: Math.max(0, unpaidLeaveDays),
         earnedGross,
         basic,
         hra,
@@ -134,7 +120,7 @@ export default function SalaryManagementPage() {
         salary: salaryDetails
       };
     });
-  }, [staffList, isStaffInitialized, areRulesInitialized, rules, monthStart, monthEnd, workingDays, leaveInputs]);
+  }, [staffList, isStaffInitialized, areRulesInitialized, rules, leavesInitialized, getApprovedLeavesForEmployee, holidays, monthStart, monthEnd, workingDays, adjustments]);
 
   const summaryStats = useMemo(() => {
     const totalSalary = salaryData.reduce((acc, curr) => acc + curr.salary.netPay, 0);
@@ -164,14 +150,14 @@ export default function SalaryManagementPage() {
     }).format(amount);
   };
   
-  const isDataLoading = !isStaffInitialized || !areRulesInitialized || !holidaysInitialized || !currentDate;
+  const isDataLoading = !isStaffInitialized || !areRulesInitialized || !holidaysInitialized || !leavesInitialized || !currentDate;
 
   return (
     <>
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold">Salary Management</h1>
-          <p className="text-muted-foreground">Automate payroll, manage salaries, and generate payslips based on working days and leaves.</p>
+          <p className="text-muted-foreground">Automate payroll, manage salaries, and generate payslips based on attendance & approved leaves.</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -220,7 +206,7 @@ export default function SalaryManagementPage() {
         <Card>
           <CardHeader>
             <CardTitle>Employee-wise Salary for {currentMonthFormatted}</CardTitle>
-            <CardDescription>Auto-calculated based on attendance. System checks leave quotas and deducts salary for any unpaid leave (LWP).</CardDescription>
+            <CardDescription>Auto-calculated based on attendance and approved leaves. LWP is auto-deducted for unapproved absences.</CardDescription>
           </CardHeader>
           <CardContent>
             <TooltipProvider>
@@ -231,20 +217,14 @@ export default function SalaryManagementPage() {
                   <TableHead className="text-center">Present</TableHead>
                   <TableHead className="text-center">
                      <Tooltip>
-                        <TooltipTrigger asChild><span className="cursor-help border-b border-dashed">Casual Leave</span></TooltipTrigger>
-                        <TooltipContent><p>Paid leaves from Casual quota. Max: Employee's total quota.</p></TooltipContent>
-                     </Tooltip>
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <Tooltip>
-                        <TooltipTrigger asChild><span className="cursor-help border-b border-dashed">Sick Leave</span></TooltipTrigger>
-                        <TooltipContent><p>Paid leaves from Sick quota. Max: Employee's total quota.</p></TooltipContent>
+                        <TooltipTrigger asChild><span className="cursor-help border-b border-dashed">Paid Leave</span></TooltipTrigger>
+                        <TooltipContent><p>Total approved Casual and Sick leaves for this month.</p></TooltipContent>
                      </Tooltip>
                   </TableHead>
                   <TableHead className="text-center">
                     <Tooltip>
                         <TooltipTrigger asChild><span className="cursor-help border-b border-dashed">Unpaid (LWP)</span></TooltipTrigger>
-                        <TooltipContent><p>Leave Without Pay. Automatically calculated if inputs exceed quotas.</p></TooltipContent>
+                        <TooltipContent><p>Absences not covered by approved leave (LWP).</p></TooltipContent>
                      </Tooltip>
                   </TableHead>
                   <TableHead className="text-center">Adjustment (₹)</TableHead>
@@ -255,7 +235,7 @@ export default function SalaryManagementPage() {
               <TableBody>
                 {isDataLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       Loading salary data...
                     </TableCell>
                   </TableRow>
@@ -263,30 +243,11 @@ export default function SalaryManagementPage() {
                   salaryData.map(({ staff, salary }) => (
                     <TableRow key={staff.id}>
                       <TableCell className="font-medium">{staff.name}</TableCell>
-                      <TableCell className="text-center"><Badge variant="default" className="bg-green-600">{salary.presentDays} / {workingDays}</Badge></TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          value={leaveInputs[staff.id]?.casual || ''}
-                          onChange={(e) => handleLeaveInputChange(staff.id, 'casual', e.target.value)}
-                          className="h-8 w-20 text-center mx-auto"
-                          min="0"
-                          max={staff.totalCasualLeaves}
-                        />
+                      <TableCell className="text-center"><Badge variant="default" className="bg-green-600 w-20 justify-center">{salary.presentDays} / {workingDays}</Badge></TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="secondary" className="w-20 justify-center">{salary.paidLeaveDays}</Badge>
                       </TableCell>
-                       <TableCell>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          value={leaveInputs[staff.id]?.sick || ''}
-                          onChange={(e) => handleLeaveInputChange(staff.id, 'sick', e.target.value)}
-                          className="h-8 w-20 text-center mx-auto"
-                          min="0"
-                          max={staff.totalSickLeaves}
-                        />
-                      </TableCell>
-                       <TableCell className="text-center">
+                      <TableCell className="text-center">
                         {salary.unpaidLeaveDays > 0 ? (
                            <Badge variant="destructive" className="w-20 justify-center">
                                <AlertCircle className="mr-1 h-3 w-3"/> {salary.unpaidLeaveDays}
@@ -299,8 +260,8 @@ export default function SalaryManagementPage() {
                          <Input
                           type="number"
                           placeholder="0"
-                          value={leaveInputs[staff.id]?.adjustment || ''}
-                          onChange={(e) => handleLeaveInputChange(staff.id, 'adjustment', e.target.value)}
+                          value={adjustments[staff.id] || ''}
+                          onChange={(e) => handleAdjustmentChange(staff.id, e.target.value)}
                           className="h-8 w-24 text-center mx-auto"
                           step="100"
                         />
@@ -329,7 +290,7 @@ export default function SalaryManagementPage() {
                   ))
                 ) : (
                    <TableRow>
-                    <TableCell colSpan={9} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       No staff members found.
                     </TableCell>
                   </TableRow>

@@ -88,6 +88,17 @@ export type SalaryData = {
   netPay: number;
 };
 
+export type LeaveRequest = {
+    id: string;
+    employeeId: string;
+    leaveType: 'Casual' | 'Sick';
+    startDate: string; // ISO string
+    endDate: string; // ISO string
+    reason: string;
+    status: 'Pending' | 'Approved' | 'Rejected';
+    createdAt: string; // ISO string
+};
+
 export const initialStaff: Staff[] = [
     { id: 'KM-001', name: 'Aarav Sharma', email: 'aarav.sharma@example.com', mobile: '9876543210', whatsapp: '9876543210', address: '123 Tech Park, Bangalore', department: 'Engineering', role: 'Frontend Developer', salary: 75000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['React', 'TypeScript', 'Next.js'] },
     { id: 'KM-002', name: 'Diya Patel', email: 'diya.patel@example.com', mobile: '9876543211', whatsapp: '9876543211', address: '456 Innovation Hub, Pune', department: 'Engineering', role: 'Backend Developer', salary: 85000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Node.js', 'Databases', 'API Design'] },
@@ -137,3 +148,4 @@ export const attendance: Attendance[] = [
 ];
 
 export const holidays: Holiday[] = [];
+export const initialLeaveRequests: LeaveRequest[] = [];
