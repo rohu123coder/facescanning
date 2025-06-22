@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, List, Calendar as CalendarIcon, LayoutDashboard, BarChart2 } from 'lucide-react';
+import { PlusCircle, List, Calendar as CalendarIcon, LayoutDashboard, BarChart2, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTaskStore } from '@/hooks/use-task-store';
 import { useStaffStore } from '@/hooks/use-staff-store';
