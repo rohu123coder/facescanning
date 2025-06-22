@@ -199,263 +199,261 @@ export function EditStudentModal({ isOpen, onOpenChange, student, onStudentUpdat
             Update the student's details and photo for facial recognition.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-6 py-4">
-            <Form {...form}>
-            <form id="edit-student-form" onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-4 gap-y-4">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-4">
                 <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
                     <FormItem className="col-span-2">
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
                         <Input placeholder="e.g. Priya Singh" {...field} />
-                    </FormControl>
-                    <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                )}
+                  )}
                 />
                 <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
                     <FormItem className="col-span-2 sm:col-span-1">
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
                         <Input type="email" placeholder="e.g. priya.singh@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                )}
+                  )}
                 />
                 <FormField
-                control={form.control}
-                name="className"
-                render={({ field }) => (
+                  control={form.control}
+                  name="className"
+                  render={({ field }) => (
                     <FormItem className="col-span-2 sm:col-span-1">
-                    <FormLabel>Class</FormLabel>
-                    <FormControl>
+                      <FormLabel>Class</FormLabel>
+                      <FormControl>
                         <Input placeholder="e.g. 10th A" {...field} />
-                    </FormControl>
-                    <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                )}
+                  )}
                 />
                 <FormField
-                    control={form.control}
-                    name="rollNumber"
-                    render={({ field }) => (
+                  control={form.control}
+                  name="rollNumber"
+                  render={({ field }) => (
                     <FormItem  className="col-span-2 sm:col-span-1">
-                        <FormLabel>Roll Number</FormLabel>
-                        <FormControl>
+                      <FormLabel>Roll Number</FormLabel>
+                      <FormControl>
                         <Input placeholder="e.g. 25" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
                 <FormField
-                control={form.control}
-                name="gender"
-                render={({ field }) => (
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
                     <FormItem className="col-span-2 sm:col-span-1">
-                    <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormLabel>Gender</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                        <SelectTrigger>
+                          <SelectTrigger>
                             <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
+                          </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
-                    </Select>
-                    <FormMessage />
+                      </Select>
+                      <FormMessage />
                     </FormItem>
-                )}
+                  )}
                 />
                 <FormField
-                    control={form.control}
-                    name="dob"
-                    render={({ field }) => (
+                  control={form.control}
+                  name="dob"
+                  render={({ field }) => (
                     <FormItem  className="col-span-2 sm:col-span-1">
-                        <FormLabel>Date of Birth</FormLabel>
-                        <FormControl>
+                      <FormLabel>Date of Birth</FormLabel>
+                      <FormControl>
                         <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
                 <FormField
-                    control={form.control}
-                    name="religion"
-                    render={({ field }) => (
+                  control={form.control}
+                  name="religion"
+                  render={({ field }) => (
                     <FormItem  className="col-span-2 sm:col-span-1">
-                        <FormLabel>Religion</FormLabel>
-                        <FormControl>
+                      <FormLabel>Religion</FormLabel>
+                      <FormControl>
                         <Input placeholder="e.g. Hinduism" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
                 <FormField
-                    control={form.control}
-                    name="fatherName"
-                    render={({ field }) => (
+                  control={form.control}
+                  name="fatherName"
+                  render={({ field }) => (
                     <FormItem className="col-span-2 sm:col-span-1">
-                        <FormLabel>Father's Name</FormLabel>
-                        <FormControl>
+                      <FormLabel>Father's Name</FormLabel>
+                      <FormControl>
                         <Input placeholder="e.g. Rajesh Singh" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
                 <FormField
-                    control={form.control}
-                    name="motherName"
-                    render={({ field }) => (
+                  control={form.control}
+                  name="motherName"
+                  render={({ field }) => (
                     <FormItem className="col-span-2 sm:col-span-1">
-                        <FormLabel>Mother's Name</FormLabel>
-                        <FormControl>
+                      <FormLabel>Mother's Name</FormLabel>
+                      <FormControl>
                         <Input placeholder="e.g. Sunita Singh" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
                 <FormField
-                    control={form.control}
-                    name="parentMobile"
-                    render={({ field }) => (
+                  control={form.control}
+                  name="parentMobile"
+                  render={({ field }) => (
                     <FormItem  className="col-span-2 sm:col-span-1">
-                        <FormLabel>Parent's Mobile</FormLabel>
-                        <FormControl>
+                      <FormLabel>Parent's Mobile</FormLabel>
+                      <FormControl>
                         <Input placeholder="e.g. +919876543210" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
                 <FormField
-                    control={form.control}
-                    name="parentWhatsapp"
-                    render={({ field }) => (
+                  control={form.control}
+                  name="parentWhatsapp"
+                  render={({ field }) => (
                     <FormItem  className="col-span-2 sm:col-span-1">
-                        <FormLabel>Parent's WhatsApp</FormLabel>
-                        <FormControl>
+                      <FormLabel>Parent's WhatsApp</FormLabel>
+                      <FormControl>
                         <Input placeholder="e.g. +919876543210" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
                 <FormField
-                control={form.control}
-                name="photo"
-                render={({ field }) => (
+                  control={form.control}
+                  name="photo"
+                  render={({ field }) => (
                     <FormItem className="col-span-2">
-                    <FormLabel>Student Photo</FormLabel>
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                      <FormLabel>Student Photo</FormLabel>
+                      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="url"><LinkIcon className="mr-1" /> URL</TabsTrigger>
-                        <TabsTrigger value="upload"><Upload className="mr-1" /> Upload</TabsTrigger>
-                        <TabsTrigger value="camera"><Camera className="mr-1" /> Camera</TabsTrigger>
+                          <TabsTrigger value="url"><LinkIcon className="mr-1" /> URL</TabsTrigger>
+                          <TabsTrigger value="upload"><Upload className="mr-1" /> Upload</TabsTrigger>
+                          <TabsTrigger value="camera"><Camera className="mr-1" /> Camera</TabsTrigger>
                         </TabsList>
                         <TabsContent value="url">
-                        <FormControl>
+                          <FormControl>
                             <Input 
-                            placeholder="https://placehold.co/400x400.png" 
-                            onChange={(e) => field.onChange(e.target.value)}
-                            value={field.value?.startsWith('data:') ? '' : field.value}
+                              placeholder="https://placehold.co/400x400.png" 
+                              onChange={(e) => field.onChange(e.target.value)}
+                              value={field.value?.startsWith('data:') ? '' : field.value}
                             />
-                        </FormControl>
+                          </FormControl>
                         </TabsContent>
                         <TabsContent value="upload">
-                            <Button type="button" variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                          <Button type="button" variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
                             <Upload className="mr-2"/> Select File
-                            </Button>
-                            <FormControl>
-                                <Input 
-                                    type="file" 
-                                    className="hidden" 
-                                    ref={fileInputRef} 
-                                    accept="image/*" 
-                                    onChange={handleFileChange}
-                                />
-                            </FormControl>
+                          </Button>
+                          <FormControl>
+                            <Input 
+                              type="file" 
+                              className="hidden" 
+                              ref={fileInputRef} 
+                              accept="image/*" 
+                              onChange={handleFileChange}
+                            />
+                          </FormControl>
                         </TabsContent>
                         <TabsContent value="camera">
-                        <div className="space-y-2">
+                          <div className="space-y-2">
                             {hasCameraPermission === false ? (
-                            <Alert variant="destructive">
+                              <Alert variant="destructive">
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertTitle>Camera Access Denied</AlertTitle>
                                 <AlertDescription>
-                                Please enable camera permissions to use this feature.
+                                  Please enable camera permissions to use this feature.
                                 </AlertDescription>
-                            </Alert>
+                              </Alert>
                             ) : (
-                            <>
-                            <div className="w-full aspect-video rounded-md bg-muted overflow-hidden border relative">
-                                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                                {hasCameraPermission === null && <p className="absolute inset-0 flex items-center justify-center text-muted-foreground">Initializing camera...</p>}
-                            </div>
-                            <Button type="button" className="w-full" onClick={handleTakePhoto} disabled={!hasCameraPermission}>
-                                <Camera className="mr-2" /> Take Photo
-                            </Button>
-                            </>
+                              <>
+                                <div className="w-full aspect-video rounded-md bg-muted overflow-hidden border relative">
+                                  <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                                  {hasCameraPermission === null && <p className="absolute inset-0 flex items-center justify-center text-muted-foreground">Initializing camera...</p>}
+                                </div>
+                                <Button type="button" className="w-full" onClick={handleTakePhoto} disabled={!hasCameraPermission}>
+                                  <Camera className="mr-2" /> Take Photo
+                                </Button>
+                              </>
                             )}
-                        </div>
+                          </div>
                         </TabsContent>
-                    </Tabs>
-                    <FormMessage />
+                      </Tabs>
+                      <FormMessage />
                     </FormItem>
-                )}
+                  )}
                 />
-
                 {photoValue && (
-                    <div className="col-span-2 space-y-2">
-                        <Label>Photo Preview</Label>
-                        <div className="w-full flex justify-center p-2 border rounded-md bg-muted">
-                            <Image
-                                src={photoValue}
-                                alt="Student photo preview"
-                                width={128}
-                                height={128}
-                                className="rounded-md object-cover aspect-square"
-                                data-ai-hint="person portrait"
-                                unoptimized
-                            />
-                        </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>Photo Preview</Label>
+                    <div className="w-full flex justify-center p-2 border rounded-md bg-muted">
+                      <Image
+                        src={photoValue}
+                        alt="Student photo preview"
+                        width={128}
+                        height={128}
+                        className="rounded-md object-cover aspect-square"
+                        data-ai-hint="person portrait"
+                        unoptimized
+                      />
                     </div>
+                  </div>
                 )}
-                
                 <canvas ref={canvasRef} className="hidden" />
-            </form>
-            </Form>
-          </div>
-        </div>
-         <DialogFooter className="p-6 pt-4 border-t">
-            <Button variant="outline" onClick={handleClose} type="button" disabled={isLoading}>
+              </div>
+            </div>
+            <DialogFooter className="p-6 pt-4 border-t bg-background">
+              <Button variant="outline" onClick={handleClose} type="button" disabled={isLoading}>
                 Cancel
-            </Button>
-            <Button type="submit" form="edit-student-form" disabled={isLoading}>
-            {isLoading ? (
-                <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-                </>
-            ) : (
-                'Save Changes'
-            )}
-            </Button>
-        </DialogFooter>
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
