@@ -69,7 +69,6 @@ function ClientDashboardLayout({
   
   const handleLogout = () => {
     logout();
-    router.push('/login');
   };
 
   if (!isAuthInitialized || !isAuthenticated || !currentClient) {

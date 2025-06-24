@@ -27,7 +27,6 @@ export default function SuperAdminLayout({
 
   const handleLogout = () => {
     logout();
-    router.push('/super-admin/login');
   };
 
   if (pathname === '/super-admin/login') {

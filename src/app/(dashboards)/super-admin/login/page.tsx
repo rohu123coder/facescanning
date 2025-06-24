@@ -43,13 +43,14 @@ export default function SuperAdminLoginPage() {
           title: 'Login Successful',
           description: `Welcome back, Super Admin!`,
         });
-        router.push('/super-admin');
+        window.location.assign('/super-admin');
       } else {
         toast({
           variant: 'destructive',
           title: 'Login Failed',
           description: 'Invalid email or password.',
         });
+        setIsLoading(false);
       }
     } catch (error) {
       toast({
@@ -57,7 +58,6 @@ export default function SuperAdminLoginPage() {
         title: 'An Error Occurred',
         description: 'Something went wrong. Please try again.',
       });
-    } finally {
       setIsLoading(false);
     }
   };

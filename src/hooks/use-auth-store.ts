@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useClientStore } from './use-client-store';
 import { type Client } from '@/lib/data';
 
 const AUTH_KEY = 'loggedInClientId';
@@ -36,8 +35,6 @@ export function useAuthStore() {
         if (client && client.mobile === password) {
           localStorage.setItem(AUTH_KEY, client.id);
           setIsAuthenticated(true);
-          // Add a small delay to allow other stores to react to the auth change
-          await new Promise(resolve => setTimeout(resolve, 100));
           return { success: true, client: client };
         }
         
@@ -53,6 +50,7 @@ export function useAuthStore() {
     try {
       localStorage.removeItem(AUTH_KEY);
       setIsAuthenticated(false);
+      window.location.assign('/login');
     } catch (error) {
         console.error("Failed to logout", error);
     }

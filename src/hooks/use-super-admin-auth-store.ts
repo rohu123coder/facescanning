@@ -39,8 +39,6 @@ export function useSuperAdminAuthStore() {
       if (email === creds.email && password === creds.password) {
         localStorage.setItem(AUTH_KEY, 'true');
         setIsAuthenticated(true);
-        // Add a small delay to ensure state propagates before redirect
-        await new Promise(resolve => setTimeout(resolve, 100));
         return true;
       }
     } catch (error) {
@@ -53,6 +51,7 @@ export function useSuperAdminAuthStore() {
     try {
       localStorage.removeItem(AUTH_KEY);
       setIsAuthenticated(false);
+      window.location.assign('/super-admin/login');
     } catch (error) {
         console.error("Failed to logout super admin", error);
     }

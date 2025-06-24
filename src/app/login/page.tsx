@@ -43,17 +43,15 @@ export default function LoginPage() {
           title: 'Login Successful',
           description: `Welcome back, ${result.client?.contactName}!`,
         });
-        if (result.client?.isSetupComplete) {
-            router.push('/client');
-        } else {
-            router.push('/setup');
-        }
+        const destination = result.client?.isSetupComplete ? '/client' : '/setup';
+        window.location.assign(destination);
       } else {
         toast({
           variant: 'destructive',
           title: 'Login Failed',
           description: result.message || 'Invalid email or password.',
         });
+        setIsLoading(false);
       }
     } catch (error) {
       toast({
@@ -61,7 +59,6 @@ export default function LoginPage() {
         title: 'An Error Occurred',
         description: 'Something went wrong. Please try again.',
       });
-    } finally {
       setIsLoading(false);
     }
   };
