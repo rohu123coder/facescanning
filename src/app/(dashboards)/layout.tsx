@@ -57,7 +57,10 @@ function ClientDashboardLayout({
   const clientPlan = currentClient?.plan || 'Basic';
   const allowedFeatures = useMemo(() => planFeatures[clientPlan], [clientPlan]);
 
-  const getIsActive = (itemHref: string, currentPath: string) => {
+  const getIsActive = (itemHref: string, currentPath: string | null) => {
+    if (!currentPath) {
+      return false;
+    }
     if (itemHref === '/client') {
       return currentPath === '/client';
     }
@@ -153,7 +156,7 @@ export default function DashboardLayout({
   
   // If the path is for super-admin, we bypass the client layout entirely.
   // This allows the super-admin's own layout to handle its auth and UI.
-  if (pathname.startsWith('/super-admin')) {
+  if (pathname && pathname.startsWith('/super-admin')) {
     return <>{children}</>;
   }
 
