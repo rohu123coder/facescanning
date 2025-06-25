@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, FileDown, Video, User, Users, Printer, Calendar as CalendarIcon, X, Banknote, CalendarDays, ClipboardCheck, CalendarCheck } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, FileDown, Video, User, Users, Printer, Calendar as CalendarIcon, X, Banknote, CalendarDays, ClipboardCheck, CalendarCheck, Clock, List, CheckCircle, AlertTriangle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { type Staff, type Student, type AttendanceRecord } from '@/lib/data';
 import { AddStaffModal } from '@/components/add-staff-modal';
@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format, isWithinInterval, startOfDay } from 'date-fns';
+import { format, isWithinInterval, startOfDay, subDays } from 'date-fns';
 import { type DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { HolidayManagementModal } from '@/components/holiday-management-modal';
 import { useClientStore } from '@/hooks/use-client-store';
 import { planFeatures } from '@/lib/plans';
+import { useTaskStore } from '@/hooks/use-task-store';
+import { StaffAttendanceChart } from '@/components/analytics/staff-attendance-chart';
+import { StudentEnrollmentChart } from '@/components/analytics/student-enrollment-chart';
 
 export default function ClientDashboard() {
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
@@ -67,6 +70,51 @@ export default function ClientDashboard() {
   
   const { staffList, addStaff, isInitialized: staffInitialized } = useStaffStore();
   const { studentList, addStudent, updateStudent, deleteStudent, isInitialized: studentInitialized } = useStudentStore();
+  const { tasks: allTasks, isInitialized: tasksInitialized } = useTaskStore();
+
+  const taskStats = useMemo(() => {
+    if (!tasksInitialized) return { overdue: 0, completed: 0, inProgress: 0, pending: 0 };
+    const today = startOfDay(new Date());
+    return {
+        overdue: allTasks.filter(t => new Date(t.dueDate) < today && t.status !== 'Completed').length,
+        completed: allTasks.filter(t => t.status === 'Completed').length,
+        inProgress: allTasks.filter(t => t.status === 'In Progress').length,
+        pending: allTasks.filter(t => t.status === 'Pending').length,
+    };
+  }, [allTasks, tasksInitialized]);
+  
+  const staffAttendanceData = useMemo(() => {
+    if (!staffInitialized) return [];
+    const last7Days = Array.from({ length: 7 }).map((_, i) => subDays(new Date(), i)).reverse();
+    return last7Days.map(day => {
+        const dateStr = day.toISOString().split('T')[0];
+        const presentCount = staffList.filter(staff => 
+            staff.attendanceRecords?.some(rec => rec.date === dateStr && rec.inTime)
+        ).length;
+        return {
+            date: format(day, 'MMM dd'),
+            present: presentCount
+        };
+    });
+  }, [staffList, staffInitialized]);
+
+  const studentEnrollmentData = useMemo(() => {
+      if (!studentInitialized || !canManageStudents) return [];
+      const classCounts = studentList.reduce((acc, student) => {
+          const className = student.className || 'Unassigned';
+          acc[className] = (acc[className] || 0) + 1;
+          return acc;
+      }, {} as Record<string, number>);
+
+      const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1943'];
+
+      return Object.entries(classCounts).map(([name, value], index) => ({
+          name,
+          value,
+          fill: CHART_COLORS[index % CHART_COLORS.length]
+      }));
+  }, [studentList, studentInitialized, canManageStudents]);
+
   
   // Memoized lists for filter options
   const staffDepartments = useMemo(() => {
@@ -513,6 +561,60 @@ export default function ClientDashboard() {
         </div>
       </div>
       
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{taskStats.pending}</div>
+                <p className="text-xs text-muted-foreground">Tasks waiting to be started</p>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Completed Tasks</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-green-600">{taskStats.completed}</div>
+                <p className="text-xs text-muted-foreground">Total tasks finished</p>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">In Progress Tasks</CardTitle>
+                <List className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{taskStats.inProgress}</div>
+                <p className="text-xs text-muted-foreground">Tasks currently being worked on</p>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Overdue Tasks</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-destructive">{taskStats.overdue}</div>
+                <p className="text-xs text-muted-foreground">Tasks past their due date</p>
+            </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-8">
+        <div className="lg:col-span-4">
+            <StaffAttendanceChart data={staffAttendanceData} />
+        </div>
+        {canManageStudents && studentEnrollmentData.length > 0 && (
+            <div className="lg:col-span-3">
+                <StudentEnrollmentChart data={studentEnrollmentData} />
+            </div>
+        )}
+      </div>
+
       <Card className="print-hide">
         <CardHeader><CardTitle>Filters</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
