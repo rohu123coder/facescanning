@@ -4,9 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { SalarySlip } from '@/components/salary-slip';
-import { CheckCircle, XCircle, Clock, CalendarPlus, Paperclip, ClipboardCheck } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, CalendarPlus, Paperclip, ClipboardCheck, CalendarIcon } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
-import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO, startOfDay } from 'date-fns';
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
 import { useLeaveStore } from '@/hooks/use-leave-store';
@@ -18,22 +18,23 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTaskStore } from '@/hooks/use-task-store';
 import { TaskCard } from '@/components/task-card';
 import { TaskDetailsModal } from '@/components/task-details-modal';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { type DateRange } from 'react-day-picker';
+import { cn } from '@/lib/utils';
+
 
 const getStatusForRecord = (record: AttendanceRecord) => {
     if (record.inTime) return 'Present';
     return 'Absent';
 }
 
-const getStatusBadge = (status: 'Present' | 'Absent' | 'Leave' | 'Holiday') => {
+const getStatusBadge = (status: 'Present' | 'Absent') => {
   switch (status) {
     case 'Present':
       return <Badge variant="default" className="bg-green-600 hover:bg-green-700"><CheckCircle className="mr-1 h-3 w-3" />{status}</Badge>;
     case 'Absent':
       return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />{status}</Badge>;
-    case 'Leave':
-      return <Badge variant="secondary"><Clock className="mr-1 h-3 w-3" />{status}</Badge>;
-    case 'Holiday':
-      return <Badge variant="outline"><Paperclip className="mr-1 h-3 w-3" />{status}</Badge>;
   }
 };
 
@@ -96,10 +97,17 @@ export default function EmployeeDashboard() {
   const { tasks, isInitialized: tasksInitialized } = useTaskStore();
 
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
+  const [attendanceDateRange, setAttendanceDateRange] = useState<DateRange | undefined>();
+
 
   useEffect(() => {
     setIsClient(true);
-    setCurrentDate(new Date());
+    const today = new Date();
+    setCurrentDate(today);
+    setAttendanceDateRange({
+        from: startOfMonth(today),
+        to: endOfMonth(today)
+    });
   }, []);
 
   // --- Logged in employee simulation ---
@@ -147,6 +155,21 @@ export default function EmployeeDashboard() {
       if (!loggedInEmployee || !tasksInitialized) return [];
       return tasks.filter(t => t.assignedTo.includes(loggedInEmployee.id));
   }, [loggedInEmployee, tasks, tasksInitialized]);
+
+  const filteredAttendance = useMemo(() => {
+      if (!loggedInEmployee?.attendanceRecords || !attendanceDateRange?.from) return [];
+      
+      const attendance = loggedInEmployee.attendanceRecords.filter(rec => {
+          const recDate = startOfDay(new Date(rec.date));
+          return isWithinInterval(recDate, {
+              start: startOfDay(attendanceDateRange.from!),
+              end: startOfDay(attendanceDateRange.to ?? attendanceDateRange.from!),
+          });
+      });
+
+      return attendance.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  }, [loggedInEmployee, attendanceDateRange]);
 
 
   if (!isClient || !isStaffInitialized) {
@@ -282,13 +305,90 @@ export default function EmployeeDashboard() {
                 </CardContent>
             </Card>
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-8">
           <SalarySlip 
             staff={loggedInEmployee}
             salaryData={salaryData}
             payPeriod={currentMonthFormatted}
             payDate={payDateFormatted}
           />
+           <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>My Attendance History</CardTitle>
+                            <CardDescription>Your attendance records for the selected period.</CardDescription>
+                        </div>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    id="date"
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-[300px] justify-start text-left font-normal",
+                                        !attendanceDateRange && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {attendanceDateRange?.from ? (
+                                    attendanceDateRange.to ? (
+                                        <>
+                                        {format(attendanceDateRange.from, "LLL dd, y")} - {format(attendanceDateRange.to, "LLL dd, y")}
+                                        </>
+                                    ) : (
+                                        format(attendanceDateRange.from, "LLL dd, y")
+                                    )
+                                    ) : (
+                                    <span>Pick a date range</span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={attendanceDateRange?.from}
+                                selected={attendanceDateRange}
+                                onSelect={setAttendanceDateRange}
+                                numberOfMonths={2}
+                            />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>In-Time</TableHead>
+                                <TableHead>Out-Time</TableHead>
+                                <TableHead>Total Hours</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredAttendance.length > 0 ? (
+                                filteredAttendance.map(record => (
+                                    <TableRow key={record.date}>
+                                        <TableCell>{format(new Date(record.date), 'PPP')}</TableCell>
+                                        <TableCell>{getStatusBadge(getStatusForRecord(record))}</TableCell>
+                                        <TableCell>{record.inTime || '--'}</TableCell>
+                                        <TableCell>{record.outTime || '--'}</TableCell>
+                                        <TableCell>{record.totalHours || '--'}</TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center h-24">
+                                        No attendance records for the selected period.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </div>
       </div>
     </div>
