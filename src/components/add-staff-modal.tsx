@@ -30,6 +30,7 @@ import type { Staff } from '@/lib/data';
 import { Loader2, Camera, Upload, Link as LinkIcon, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface AddStaffModalProps {
   isOpen: boolean;
@@ -44,11 +45,12 @@ const staffFormSchema = z.object({
   whatsapp: z.string().min(10, { message: 'WhatsApp number must be at least 10 digits.' }),
   address: z.string().min(5, { message: 'Please enter a valid address.' }),
   department: z.string().min(2, { message: 'Department is required.' }),
-  role: z.string().min(2, { message: 'Role is required.' }),
+  role: z.enum(['Admin', 'Employee'], { required_error: 'Please select a role.' }),
   salary: z.coerce.number().min(0, { message: 'Salary must be a positive number.' }),
   totalCasualLeaves: z.coerce.number().min(0, { message: 'Casual leaves must be a positive number.' }),
   totalSickLeaves: z.coerce.number().min(0, { message: 'Sick leaves must be a positive number.' }),
   photo: z.string().min(1, { message: 'A valid staff photo is required.' }),
+  skills: z.array(z.string()).optional(),
 });
 
 type StaffFormValues = z.infer<typeof staffFormSchema>;
@@ -72,11 +74,12 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
       whatsapp: '',
       address: '',
       department: '',
-      role: '',
+      role: 'Employee',
       salary: 0,
       totalCasualLeaves: 12,
       totalSickLeaves: 10,
       photo: '',
+      skills: [],
     },
   });
 
@@ -160,6 +163,7 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
       onStaffAdded({
         ...values,
         photoUrl: values.photo,
+        skills: values.skills || [],
       });
       toast({
         title: 'Staff Added',
@@ -274,9 +278,17 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
                   render={({ field }) => (
                     <FormItem className="col-span-2 sm:col-span-1">
                       <FormLabel>Role</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Frontend Developer" {...field} />
-                      </FormControl>
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Admin">Admin</SelectItem>
+                          <SelectItem value="Employee">Employee</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

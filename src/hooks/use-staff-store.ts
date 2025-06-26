@@ -41,10 +41,10 @@ export function useStaffStore() {
     }
   }, []);
   
-  const addStaff = useCallback((newStaff: Omit<Staff, 'id' | 'attendanceRecords' | 'skills'>) => {
+  const addStaff = useCallback((newStaff: Omit<Staff, 'id' | 'attendanceRecords'>) => {
     const newIdNumber = staffList.length > 0 ? Math.max(0, ...staffList.map(s => parseInt(s.id.split('-')[1], 10))) + 1 : 1;
     const newId = `KM-${String(newIdNumber).padStart(3, '0')}`;
-    const staffToAdd: Staff = { ...newStaff, id: newId, attendanceRecords: [], skills: [] };
+    const staffToAdd: Staff = { ...newStaff, id: newId, attendanceRecords: [] };
     
     updateStaffList([...staffList, staffToAdd]);
   }, [staffList, updateStaffList]);
