@@ -30,14 +30,18 @@ import { planFeatures } from '@/lib/plans';
 import { useTaskStore } from '@/hooks/use-task-store';
 import { StaffAttendanceChart } from '@/components/analytics/staff-attendance-chart';
 import { StudentEnrollmentChart } from '@/components/analytics/student-enrollment-chart';
+import { EditStaffModal } from '@/components/edit-staff-modal';
 
 export default function ClientDashboard() {
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [isEditStaffModalOpen, setIsEditStaffModalOpen] = useState(false);
+  const [staffToEdit, setStaffToEdit] = useState<Staff | null>(null);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
   const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
   const [activeTab, setActiveTab] = useState('staff');
+  const [staffView, setStaffView] = useState('list');
   const [studentView, setStudentView] = useState('list');
   const { toast } = useToast();
   
@@ -68,7 +72,7 @@ export default function ClientDashboard() {
     }
   }, [canManageStudents]);
   
-  const { staffList, addStaff, isInitialized: staffInitialized } = useStaffStore();
+  const { staffList, addStaff, updateStaff, deleteStaff, isInitialized: staffInitialized } = useStaffStore();
   const { studentList, addStudent, updateStudent, deleteStudent, isInitialized: studentInitialized } = useStudentStore();
   const { tasks: allTasks, isInitialized: tasksInitialized } = useTaskStore();
 
@@ -139,6 +143,14 @@ export default function ClientDashboard() {
       return acc;
     }, {} as Record<string, number>);
   }, [studentList, studentInitialized]);
+
+  const filteredStaffList = useMemo(() => {
+    return staffList.filter(staff => {
+      const nameMatch = staff.name.toLowerCase().includes(staffNameFilter.toLowerCase());
+      const departmentMatch = staffDepartmentFilter === 'all' || staff.department === staffDepartmentFilter;
+      return nameMatch && departmentMatch;
+    });
+  }, [staffList, staffNameFilter, staffDepartmentFilter]);
 
   const staffAttendanceList = useMemo(() => {
     const list: { staff: Staff; record: AttendanceRecord }[] = [];
@@ -279,6 +291,31 @@ export default function ClientDashboard() {
       description: `${newStaff.name} has been successfully added.`,
     });
   };
+
+  const handleEditStaff = (staff: Staff) => {
+    setStaffToEdit(staff);
+    setIsEditStaffModalOpen(true);
+  };
+
+  const handleUpdateStaff = (updatedStaff: Staff) => {
+    updateStaff(updatedStaff);
+    toast({
+      title: 'Staff Updated',
+      description: `Details for ${updatedStaff.name} have been updated.`,
+    });
+  };
+
+  const handleDeleteStaff = (staffId: string) => {
+    const staffMember = staffList.find(s => s.id === staffId);
+    if (staffMember) {
+        deleteStaff(staffId);
+        toast({
+        variant: 'destructive',
+        title: 'Staff Deleted',
+        description: `${staffMember.name} has been successfully removed.`,
+        });
+    }
+  };
   
   const handleAddStudent = (newStudent: Omit<Student, 'id' | 'attendanceRecords'>) => {
     addStudent(newStudent);
@@ -325,52 +362,124 @@ export default function ClientDashboard() {
       return `${format(date.from, 'PPP')} to ${format(date.to, 'PPP')}`;
   }
 
-  const renderStaffTable = () => (
-    <Card id="report-table">
-      <CardHeader>
-        <CardTitle>Staff Attendance - {renderDateRangeTitle()}</CardTitle>
-        <CardDescription>An overview of staff attendance for the selected date range.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>In-Time</TableHead>
-              <TableHead>Out-Time</TableHead>
-              <TableHead>Hours Worked</TableHead>
-              <TableHead className="text-right print-hide">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!staffInitialized ? (
-              <TableRow><TableCell colSpan={7} className="text-center h-24">Loading staff data...</TableCell></TableRow>
-            ) : staffAttendanceList.length > 0 ? (
-              staffAttendanceList.map(({ staff, record }) => (
-                  <TableRow key={`${staff.id}-${record.date}`}>
-                    <TableCell className="font-medium">{staff.name}</TableCell>
-                    <TableCell>{staff.department}</TableCell>
-                    <TableCell>{record.date ? format(new Date(record.date), 'PPP') : 'N/A'}</TableCell>
-                    <TableCell>{record.inTime ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">{record.inTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
-                    <TableCell>{record.outTime ? <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{record.outTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
-                    <TableCell>{record.totalHours ? <Badge variant="outline">{record.totalHours}</Badge> : <Badge variant="secondary">--</Badge>}</TableCell>
-                    <TableCell className="text-right print-hide">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end"><DropdownMenuItem>Edit</DropdownMenuItem><DropdownMenuItem>View Details</DropdownMenuItem><DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem></DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-            ) : (
-              <TableRow><TableCell colSpan={7} className="text-center h-24">No attendance records match the current filters.</TableCell></TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+  const renderStaffManagementContent = () => (
+     <div className="space-y-4">
+        <Tabs value={staffView} onValueChange={setStaffView}>
+            <div className="flex justify-between items-center print-hide">
+                <TabsList>
+                    <TabsTrigger value="list">Staff List</TabsTrigger>
+                    <TabsTrigger value="report">Attendance Report</TabsTrigger>
+                </TabsList>
+                <Button onClick={() => setIsAddStaffModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add Staff</Button>
+            </div>
+
+            <TabsContent value="list">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Staff Master List</CardTitle>
+                        <CardDescription>View, edit, and manage all staff in the system. This view is not affected by the date filter.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>ID</TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Department</TableHead>
+                                    <TableHead>Role</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {!staffInitialized ? (
+                                    <TableRow><TableCell colSpan={5} className="text-center h-24">Loading staff data...</TableCell></TableRow>
+                                ) : filteredStaffList.length > 0 ? (
+                                    filteredStaffList.map((staff) => (
+                                    <TableRow key={staff.id}>
+                                        <TableCell className="font-medium">{staff.id}</TableCell>
+                                        <TableCell>{staff.name}</TableCell>
+                                        <TableCell><Badge variant="outline">{staff.department}</Badge></TableCell>
+                                        <TableCell>{staff.role}</TableCell>
+                                        <TableCell className="text-right print-hide">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => handleEditStaff(staff)}>Edit Details</DropdownMenuItem>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/90 focus:text-destructive-foreground">
+                                                                Delete
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    This action cannot be undone. This will permanently delete the staff member and all associated data.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteStaff(staff.id)} className={cn(buttonVariants({ variant: "destructive" }))}>Delete</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow><TableCell colSpan={5} className="text-center h-24">No staff match the current filters.</TableCell></TableRow>
+                                )}
+                            </TableBody>
+                       </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            
+            <TabsContent value="report" id="report-table">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Staff Attendance - {renderDateRangeTitle()}</CardTitle>
+                        <CardDescription>An overview of staff attendance for the selected date range.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Department</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>In-Time</TableHead>
+                            <TableHead>Out-Time</TableHead>
+                            <TableHead>Hours Worked</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {!staffInitialized ? (
+                            <TableRow><TableCell colSpan={6} className="text-center h-24">Loading staff data...</TableCell></TableRow>
+                            ) : staffAttendanceList.length > 0 ? (
+                            staffAttendanceList.map(({ staff, record }) => (
+                                <TableRow key={`${staff.id}-${record.date}`}>
+                                    <TableCell className="font-medium">{staff.name}</TableCell>
+                                    <TableCell>{staff.department}</TableCell>
+                                    <TableCell>{record.date ? format(new Date(record.date), 'PPP') : 'N/A'}</TableCell>
+                                    <TableCell>{record.inTime ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">{record.inTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
+                                    <TableCell>{record.outTime ? <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{record.outTime}</Badge> : <Badge variant="secondary">Not Logged</Badge>}</TableCell>
+                                    <TableCell>{record.totalHours ? <Badge variant="outline">{record.totalHours}</Badge> : <Badge variant="secondary">--</Badge>}</TableCell>
+                                </TableRow>
+                                ))
+                            ) : (
+                            <TableRow><TableCell colSpan={6} className="text-center h-24">No attendance records match the current filters.</TableCell></TableRow>
+                            )}
+                        </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
+     </div>
   );
 
   const renderStudentManagementContent = () => (
@@ -539,7 +648,7 @@ export default function ClientDashboard() {
            <Button 
                 variant="outline"
                 onClick={handleGenerateCsv}
-                disabled={!date?.from || (activeTab === 'staff' && staffAttendanceList.length === 0) || (activeTab === 'student' && (!canManageStudents || studentView !== 'report' || studentAttendanceList.length === 0))}
+                disabled={!date?.from || (activeTab === 'staff' && staffView !== 'report' && staffAttendanceList.length === 0) || (activeTab === 'student' && (!canManageStudents || studentView !== 'report' || studentAttendanceList.length === 0))}
             >
             <FileDown className="mr-2 h-4 w-4" />
             Download Report
@@ -547,7 +656,7 @@ export default function ClientDashboard() {
           <Button 
             variant="outline" 
             onClick={handlePrint}
-            disabled={activeTab === 'student' && studentView !== 'report'}
+            disabled={(activeTab === 'staff' && staffView !== 'report') || (activeTab === 'student' && studentView !== 'report')}
           >
             <Printer className="mr-2 h-4 w-4" /> Print Report
           </Button>
@@ -647,9 +756,10 @@ export default function ClientDashboard() {
                     className={cn(
                         "justify-start text-left font-normal",
                         !date && "text-muted-foreground",
+                        (activeTab === 'staff' && staffView !== 'report') && "opacity-50 cursor-not-allowed",
                         (activeTab === 'student' && studentView !== 'report') && "opacity-50 cursor-not-allowed"
                     )}
-                    disabled={activeTab === 'student' && studentView !== 'report'}
+                    disabled={(activeTab === 'staff' && staffView !== 'report') || (activeTab === 'student' && studentView !== 'report')}
                 >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {date?.from ? (
@@ -686,14 +796,19 @@ export default function ClientDashboard() {
             <TabsTrigger value="staff"><Users className="mr-2" /> Staff Management</TabsTrigger>
             {canManageStudents && <TabsTrigger value="student"><User className="mr-2" /> Student Management</TabsTrigger>}
           </TabsList>
-          {activeTab === 'staff' && (<Button onClick={() => setIsAddStaffModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Add Staff</Button>)}
         </div>
 
-        <TabsContent value="staff">{renderStaffTable()}</TabsContent>
+        <TabsContent value="staff">{renderStaffManagementContent()}</TabsContent>
         {canManageStudents && <TabsContent value="student">{renderStudentManagementContent()}</TabsContent>}
       </Tabs>
 
       <AddStaffModal isOpen={isAddStaffModalOpen} onOpenChange={setIsAddStaffModalOpen} onStaffAdded={handleAddStaff} />
+      <EditStaffModal 
+        isOpen={isEditStaffModalOpen}
+        onOpenChange={setIsEditStaffModalOpen}
+        staff={staffToEdit}
+        onStaffUpdated={handleUpdateStaff}
+      />
       {canManageStudents && <>
         <AddStudentModal isOpen={isAddStudentModalOpen} onOpenChange={setIsAddStudentModalOpen} onStudentAdded={handleAddStudent} />
         <EditStudentModal 
