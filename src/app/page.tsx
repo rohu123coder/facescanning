@@ -22,7 +22,7 @@ const roles = [
   {
     name: 'Super Admin',
     description: 'Manage clients, subscriptions, and platform-wide settings.',
-    href: '/super-admin',
+    href: '/dashboards/super-admin/login',
     icon: <Gem className="h-8 w-8 text-primary" />,
   },
 ];
