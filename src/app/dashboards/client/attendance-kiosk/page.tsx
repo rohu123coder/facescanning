@@ -32,7 +32,6 @@ export default function AttendanceKioskPage() {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const isScanningRef = useRef(false);
   const lastScanTimestampsRef = useRef<Record<string, number>>({});
   
@@ -59,13 +58,14 @@ export default function AttendanceKioskPage() {
   useEffect(() => {
     if (!isStudentInitialized || !isAttendanceInitialized) return;
 
+    let stream: MediaStream | null = null;
     let scanIntervalId: NodeJS.Timeout | null = null;
     
     const startKiosk = async () => {
       try {
-        streamRef.current = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
         if (videoRef.current) {
-          videoRef.current.srcObject = streamRef.current;
+          videoRef.current.srcObject = stream;
         }
         setIsCameraOn(true);
         setStatus({ type: 'IDLE', message: 'Ready to scan. Position your face in the frame.' });
@@ -139,9 +139,8 @@ export default function AttendanceKioskPage() {
     return () => {
       if (scanIntervalId) clearInterval(scanIntervalId);
       
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
       if (videoRef.current) {
         videoRef.current.srcObject = null;
