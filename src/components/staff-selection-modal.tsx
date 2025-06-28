@@ -77,7 +77,7 @@ export function StaffSelectionModal({ isOpen, onOpenChange, onSelectStaff, initi
                   onSelect={() => handleToggleStaff(member.id)}
                   className="flex items-center gap-4"
                 >
-                  <Checkbox checked={selectedIds.has(member.id)} />
+                  <Checkbox checked={selectedIds.has(member.id)} className="pointer-events-none" />
                   <Avatar>
                     <AvatarImage src={member.photoUrl} alt={member.name} />
                     <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
