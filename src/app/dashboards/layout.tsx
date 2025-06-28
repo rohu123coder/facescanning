@@ -18,18 +18,18 @@ import { Button } from '@/components/ui/button';
 import { Briefcase, LogOut, Mountain, Users, ScanFace, Star, CheckSquare, GraduationCap, FileText, HandCoins } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/hooks/use-auth-store';
-import { ClientProvider, useClientStore } from '@/hooks/use-client-store';
+import { ClientProvider, useClientStore } from '@/hooks/use-client-store.tsx';
 import { useEffect, type ReactNode } from 'react';
 import Image from 'next/image';
 import { usePlanFeatures } from '@/hooks/use-plan-features';
 
-import { StaffProvider } from '@/hooks/use-staff-store';
-import { StudentProvider } from '@/hooks/use-student-store';
-import { AttendanceProvider } from '@/hooks/use-attendance-store';
-import { StudentAttendanceProvider } from '@/hooks/use-student-attendance-store';
-import { LeaveProvider } from '@/hooks/use-leave-store';
-import { TaskProvider } from '@/hooks/use-task-store';
-import { SalaryRulesProvider } from '@/hooks/use-salary-rules-store';
+import { StaffProvider } from '@/hooks/use-staff-store.tsx';
+import { StudentProvider } from '@/hooks/use-student-store.tsx';
+import { AttendanceProvider } from '@/hooks/use-attendance-store.tsx';
+import { StudentAttendanceProvider } from '@/hooks/use-student-attendance-store.tsx';
+import { LeaveProvider } from '@/hooks/use-leave-store.tsx';
+import { TaskProvider } from '@/hooks/use-task-store.tsx';
+import { SalaryRulesProvider } from '@/hooks/use-salary-rules-store.tsx';
 
 
 const navItems = [
