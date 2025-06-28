@@ -44,6 +44,20 @@ export type Client = {
   isGbpConnected: boolean;
 };
 
+export type Staff = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  department: 'Sales' | 'Marketing' | 'Engineering' | 'HR' | 'Support';
+  role: string;
+  salary: number;
+  joiningDate: string; // ISO string
+  status: 'Active' | 'Inactive';
+  photoUrl: string;
+};
+
+
 export const initialClients: Client[] = [
     { id: 'C-101', organizationName: 'Innovatech Solutions', organizationDetails: 'Leading the charge in AI-driven business solutions and cloud computing.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Rohan Mehra', email: 'contact@innovatech.com', mobile: '9876543210', whatsapp: '9876543210', plan: 'Enterprise', status: 'Active', staffCount: 45, isSetupComplete: true, isGbpConnected: false },
     { id: 'C-102', organizationName: 'Creative Minds Inc.', organizationDetails: 'A digital marketing agency specializing in branding and creative content.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Priya Sharma', email: 'hello@creativeminds.co', mobile: '9876543211', whatsapp: '9876543211', plan: 'Basic', status: 'Active', staffCount: 12, isSetupComplete: true, isGbpConnected: false },
@@ -53,3 +67,5 @@ export const initialClients: Client[] = [
 ];
 
 export const holidays: Holiday[] = [];
+
+export const initialStaff: Staff[] = [];
