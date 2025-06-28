@@ -199,6 +199,18 @@ function ClientDashboardLayout({
   );
 }
 
+function MainDashboard({ children }: { children: React.ReactNode }) {
+    const { currentClient } = useClientStore();
+
+    // The key is crucial. When currentClient.id changes (on login/logout),
+    // React unmounts the old AllAppProviders and mounts a new one,
+    // ensuring all nested stores reset and re-initialize with the new client's data.
+    return (
+        <AllAppProviders key={currentClient?.id}>
+            <ClientDashboardLayout>{children}</ClientDashboardLayout>
+        </AllAppProviders>
+    )
+}
 
 export default function DashboardLayout({
   children,
@@ -216,12 +228,10 @@ export default function DashboardLayout({
     );
   }
 
-  // Client dashboard pages need all providers
+  // Client dashboard pages need all providers, wrapped to handle re-initialization
   return (
     <ClientProvider>
-      <AllAppProviders>
-        <ClientDashboardLayout>{children}</ClientDashboardLayout>
-      </AllAppProviders>
+      <MainDashboard>{children}</MainDashboard>
     </ClientProvider>
   );
 }
