@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, CheckCircle, ListTodo, CircleEllipsis } from 'lucide-react';
+import { PlusCircle, CheckCircle, ListTodo, CircleEllipsis, LayoutGrid, List, CalendarDays } from 'lucide-react';
 import { AddTaskModal } from '@/components/add-task-modal';
 import { TaskDetailsModal } from '@/components/task-details-modal';
 import { useTaskStore } from '@/hooks/use-task-store';
 import { type Task, type TaskStatus } from '@/lib/data';
 import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { TaskColumn } from '@/components/task-column';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TaskListView } from '@/components/task-list-view';
+import { TaskCalendarView } from '@/components/task-calendar-view';
 
 const statusColumns: { status: TaskStatus; title: string; icon: React.ReactNode }[] = [
   { status: 'To Do', title: 'To Do', icon: <ListTodo /> },
@@ -77,23 +80,47 @@ export default function TasksPage() {
           </Button>
         </div>
 
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
-            {isInitialized ? statusColumns.map(({ status, title, icon }) => (
-                <TaskColumn
-                    key={status}
-                    status={status}
-                    title={title}
-                    icon={icon}
-                    tasks={getTasksByStatus(status)}
-                    onSelectTask={handleViewTask}
-                    onUpdateTask={updateTask}
-                />
-            )) : (
-                <p>Loading tasks...</p>
-            )}
-            </div>
-        </DndContext>
+        <Tabs defaultValue="board" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="board"><LayoutGrid className="mr-2"/>Board</TabsTrigger>
+                <TabsTrigger value="list"><List className="mr-2"/>List</TabsTrigger>
+                <TabsTrigger value="calendar"><CalendarDays className="mr-2"/>Calendar</TabsTrigger>
+            </TabsList>
+            <TabsContent value="board" className="mt-6">
+                <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+                    {isInitialized ? statusColumns.map(({ status, title, icon }) => (
+                        <TaskColumn
+                            key={status}
+                            status={status}
+                            title={title}
+                            icon={icon}
+                            tasks={getTasksByStatus(status)}
+                            onSelectTask={handleViewTask}
+                            onUpdateTask={updateTask}
+                        />
+                    )) : (
+                        <p>Loading tasks...</p>
+                    )}
+                    </div>
+                </DndContext>
+            </TabsContent>
+            <TabsContent value="list" className="mt-6">
+                 {isInitialized ? (
+                    <TaskListView tasks={tasks} onSelectTask={handleViewTask} />
+                ) : (
+                    <p>Loading tasks...</p>
+                )}
+            </TabsContent>
+            <TabsContent value="calendar" className="mt-6">
+                  {isInitialized ? (
+                    <TaskCalendarView tasks={tasks} onSelectTask={handleViewTask} />
+                ) : (
+                    <p>Loading tasks...</p>
+                )}
+            </TabsContent>
+        </Tabs>
+        
       </div>
       <AddTaskModal isOpen={isAddTaskModalOpen} onOpenChange={setIsAddTaskModalOpen} />
       <TaskDetailsModal isOpen={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen} task={selectedTask} />

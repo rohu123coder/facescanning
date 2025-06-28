@@ -16,6 +16,7 @@ interface TaskCardProps {
   task: Task;
   onSelectTask: (task: Task) => void;
   onUpdateTask: (updatedTask: Task) => void;
+  showActions?: boolean;
 }
 
 const priorityStyles: Record<Task['priority'], string> = {
@@ -25,7 +26,7 @@ const priorityStyles: Record<Task['priority'], string> = {
     Urgent: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800',
 };
 
-export function TaskCard({ task, onSelectTask, onUpdateTask }: TaskCardProps) {
+export function TaskCard({ task, onSelectTask, onUpdateTask, showActions = true }: TaskCardProps) {
   const { staff } = useStaffStore();
   const assignees = staff.filter(s => task.assignedTo.includes(s.id));
   const dueDate = new Date(task.dueDate);
@@ -39,25 +40,27 @@ export function TaskCard({ task, onSelectTask, onUpdateTask }: TaskCardProps) {
     <Card className="hover:shadow-md transition-shadow" onClick={() => onSelectTask(task)}>
       <CardHeader className="flex-row justify-between items-start">
         <CardTitle className="text-base pr-2">{task.title}</CardTitle>
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <span className="sr-only">Change Status</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                <DropdownMenuItem disabled={task.status === 'To Do'} onClick={() => handleStatusChange('To Do')}>
-                    To Do
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled={task.status === 'In Progress'} onClick={() => handleStatusChange('In Progress')}>
-                    In Progress
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled={task.status === 'Done'} onClick={() => handleStatusChange('Done')}>
-                    Done
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+        {showActions && (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <span className="sr-only">Change Status</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuItem disabled={task.status === 'To Do'} onClick={() => handleStatusChange('To Do')}>
+                        To Do
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled={task.status === 'In Progress'} onClick={() => handleStatusChange('In Progress')}>
+                        In Progress
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled={task.status === 'Done'} onClick={() => handleStatusChange('Done')}>
+                        Done
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-2">
