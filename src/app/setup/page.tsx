@@ -47,7 +47,7 @@ export default function SetupPage() {
       if (!isAuthenticated) {
         router.push('/login');
       } else if (currentClient?.isSetupComplete) {
-        router.push('/client');
+        router.push('/dashboards/client');
       } else if (currentClient) {
         form.reset({
             organizationName: currentClient.organizationName,
@@ -86,7 +86,7 @@ export default function SetupPage() {
         title: 'Setup Complete!',
         description: `Welcome to Karma Manager, ${currentClient.organizationName}!`,
       });
-      router.push('/client');
+      router.push('/dashboards/client');
     } catch (error) {
       toast({
         variant: 'destructive',
