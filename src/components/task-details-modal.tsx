@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogFooter,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useForm } from 'react-hook-form';
@@ -159,6 +160,7 @@ export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModa
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <DialogHeader>
+              <DialogTitle className="sr-only">Edit Task Details</DialogTitle>
               <FormField
                   control={form.control}
                   name="title"
