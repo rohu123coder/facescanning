@@ -61,6 +61,14 @@ export type Staff = {
   photoUrl: string;
 };
 
+export type Attendance = {
+  staffId: string;
+  staffName: string;
+  date: string; // 'YYYY-MM-DD'
+  inTime: string | null; // ISO string
+  outTime: string | null; // ISO string
+};
+
 
 export const initialClients: Client[] = [
     { id: 'C-101', organizationName: 'Innovatech Solutions', organizationDetails: 'Leading the charge in AI-driven business solutions and cloud computing.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Rohan Mehra', email: 'contact@innovatech.com', mobile: '9876543210', whatsapp: '9876543210', plan: 'Enterprise', status: 'Active', staffCount: 45, isSetupComplete: true, isGbpConnected: false },
