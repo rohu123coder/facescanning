@@ -13,7 +13,7 @@ export default function SalaryPage() {
         <CardHeader>
           <CardTitle className="font-headline">Coming Soon</CardTitle>
           <CardDescription>This feature is under construction.</CardDescription>
-        </Header>
+        </CardHeader>
         <CardContent>
           <p>The salary automation dashboard will be available here shortly.</p>
         </CardContent>
