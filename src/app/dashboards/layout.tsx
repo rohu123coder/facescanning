@@ -15,13 +15,16 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Briefcase, LogOut, Mountain, Users, ScanFace, Star, CheckSquare, GraduationCap, FileText, HandCoins } from 'lucide-react';
+import { Briefcase, LogOut, Mountain, Users, ScanFace, Star, CheckSquare, GraduationCap, FileText, HandCoins, CalendarDays } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/hooks/use-auth-store';
 import { ClientProvider, useClientStore } from '@/hooks/use-client-store.tsx';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, type ReactNode, useRef } from 'react';
 import Image from 'next/image';
 import { usePlanFeatures } from '@/hooks/use-plan-features';
+import { useToast } from '@/hooks/use-toast';
+import { useHolidayStore, HolidayProvider } from '@/hooks/use-holiday-store.tsx';
+import { isToday, isTomorrow, parseISO, startOfDay, format } from 'date-fns';
 
 import { StaffProvider } from '@/hooks/use-staff-store.tsx';
 import { StudentProvider } from '@/hooks/use-student-store.tsx';
@@ -38,6 +41,7 @@ const navItems = [
     { href: '/dashboards/client/students', label: 'Students', icon: <GraduationCap />, feature: 'STUDENT_MANAGEMENT' },
     { href: '/dashboards/client/tasks', label: 'Tasks', icon: <CheckSquare />, feature: 'TASK_MANAGEMENT' },
     { href: '/dashboards/client/leaves', label: 'Leaves', icon: <FileText />, feature: 'LEAVE_MANAGEMENT' },
+    { href: '/dashboards/client/holidays', label: 'Holidays', icon: <CalendarDays />, feature: 'HOLIDAY_MANAGEMENT' },
     { href: '/dashboards/client/salary', label: 'Salary', icon: <HandCoins />, feature: 'SALARY_AUTOMATION' },
     { href: '/dashboards/client/attendance-kiosk', label: 'Attendance Kiosk', icon: <ScanFace />, feature: 'ATTENDANCE_KIOSK' },
     { href: '/dashboards/client/reputation', label: 'Reputation', icon: <Star />, feature: 'REPUTATION_MANAGEMENT' },
@@ -53,7 +57,9 @@ function AllAppProviders({ children }: { children: ReactNode }) {
                         <LeaveProvider>
                             <TaskProvider>
                                 <SalaryRulesProvider>
-                                    {children}
+                                    <HolidayProvider>
+                                        {children}
+                                    </HolidayProvider>
                                 </SalaryRulesProvider>
                             </TaskProvider>
                         </LeaveProvider>
@@ -74,6 +80,9 @@ function ClientDashboardLayout({
   const { isAuthenticated, logout, isAuthInitialized } = useAuthStore();
   const { currentClient } = useClientStore();
   const { hasFeature } = usePlanFeatures();
+  const { holidays, isInitialized: holidaysInitialized } = useHolidayStore();
+  const { toast } = useToast();
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (isAuthInitialized) {
@@ -84,6 +93,31 @@ function ClientDashboardLayout({
       }
     }
   }, [isAuthenticated, isAuthInitialized, router, currentClient, pathname]);
+
+  useEffect(() => {
+    if (!holidaysInitialized) return;
+
+    const checkHolidays = () => {
+        const upcomingHolidays = holidays.filter(h => {
+            const holidayDate = startOfDay(parseISO(h.date));
+            return isToday(holidayDate) || isTomorrow(holidayDate);
+        });
+
+        upcomingHolidays.forEach(holiday => {
+            const notificationKey = `notified_holiday_${holiday.id}`;
+            if (!sessionStorage.getItem(notificationKey)) {
+                toast({
+                    title: 'Upcoming Holiday Reminder',
+                    description: `${holiday.name} on ${format(parseISO(holiday.date), 'PPP')}.`,
+                });
+                audioRef.current?.play().catch(e => console.error("Audio playback failed", e));
+                sessionStorage.setItem(notificationKey, 'true');
+            }
+        });
+    };
+
+    checkHolidays();
+  }, [holidaysInitialized, holidays, toast]);
   
   const handleLogout = () => {
     logout();
@@ -148,6 +182,7 @@ function ClientDashboardLayout({
         </header>
         <main className="p-4 sm:p-6 lg:p-8 bg-background flex-1">
             {children}
+            <audio ref={audioRef} src="https://actions.google.com/sounds/v1/alarms/notification_sound.ogg" preload="auto" />
         </main>
       </SidebarInset>
     </SidebarProvider>

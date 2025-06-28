@@ -10,6 +10,7 @@ import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { useAttendanceStore } from '@/hooks/use-attendance-store.tsx';
 import { useLeaveStore } from '@/hooks/use-leave-store.tsx';
 import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store.tsx';
+import { useHolidayStore } from '@/hooks/use-holiday-store.tsx';
 import { getDaysInMonth, getYear, getMonth, format, isWithinInterval, parseISO } from 'date-fns';
 import { SalaryRulesModal } from '@/components/salary-rules-modal';
 import { PayslipModal } from '@/components/payslip-modal';
@@ -20,6 +21,7 @@ export default function SalaryPage() {
   const { attendance } = useAttendanceStore();
   const { requests: leaveRequests } = useLeaveStore();
   const { rules } = useSalaryRulesStore();
+  const { holidays } = useHolidayStore();
 
   const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth()));
   const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
@@ -48,14 +50,25 @@ export default function SalaryPage() {
       const monthEndDate = new Date(year, month + 1, 0);
       const totalDaysInMonth = getDaysInMonth(monthStartDate);
 
+      const monthHolidays = holidays
+        .filter(h => {
+            const holidayDate = parseISO(h.date);
+            return getYear(holidayDate) === year && getMonth(holidayDate) === month;
+        })
+        .map(h => format(parseISO(h.date), 'yyyy-MM-dd'));
+
       const workingDaysInMonth = Array.from({ length: totalDaysInMonth }, (_, i) => i + 1)
         .map(day => new Date(year, month, day))
-        .filter(date => !rules.offDays.includes(String(date.getDay()) as "0"|"1"|"2"|"3"|"4"|"5"|"6"))
+        .filter(date => {
+            const isOffDay = rules.offDays.includes(String(date.getDay()) as "0"|"1"|"2"|"3"|"4"|"5"|"6");
+            const isHoliday = monthHolidays.includes(format(date, 'yyyy-MM-dd'));
+            return !isOffDay && !isHoliday;
+        })
         .length;
 
       const slips = staff.map(employee => {
           const employeeAttendance = attendance.filter(a => 
-            a.staffId === employee.id && 
+            a.personId === employee.id && 
             getMonth(parseISO(a.date)) === month && 
             getYear(parseISO(a.date)) === year
           );
@@ -79,7 +92,7 @@ export default function SalaryPage() {
 
           const presentDays = employeeAttendance.length;
           const totalPaidDays = Math.min(workingDaysInMonth, presentDays + paidLeaveDays);
-          const lopDays = workingDaysInMonth - totalPaidDays;
+          const lopDays = Math.max(0, workingDaysInMonth - totalPaidDays);
 
           const perDaySalary = employee.salary / workingDaysInMonth;
           const earnedGross = totalPaidDays * perDaySalary;

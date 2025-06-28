@@ -9,7 +9,8 @@ export type Feature =
     | 'LEAVE_MANAGEMENT'
     | 'SALARY_AUTOMATION'
     | 'TASK_MANAGEMENT'
-    | 'REPUTATION_MANAGEMENT';
+    | 'REPUTATION_MANAGEMENT'
+    | 'HOLIDAY_MANAGEMENT';
 
 export const planFeatures: Record<Client['plan'], Feature[]> = {
   Basic: [
@@ -35,5 +36,6 @@ export const planFeatures: Record<Client['plan'], Feature[]> = {
     'SALARY_AUTOMATION',
     'TASK_MANAGEMENT',
     'REPUTATION_MANAGEMENT',
+    'HOLIDAY_MANAGEMENT',
   ],
 };

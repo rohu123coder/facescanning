@@ -1,5 +1,6 @@
 
 export type Holiday = {
+    id: string;
     date: string; // ISO string for date 'yyyy-MM-dd'
     name: string;
 };
@@ -126,7 +127,7 @@ export const initialClients: Client[] = [
     { id: 'C-105', organizationName: 'egyan solutions', organizationDetails: 'Innovative e-learning and educational technology provider.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Rohit Jha', email: 'rohit.1702jha@gmail.com', mobile: '9876543214', whatsapp: '9876543214', plan: 'Enterprise', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: false },
 ];
 
-export const holidays: Holiday[] = [];
+export const initialHolidays: Holiday[] = [];
 
 export const initialStudents: Student[] = [
     {
