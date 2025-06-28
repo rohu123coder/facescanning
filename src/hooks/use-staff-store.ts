@@ -1,13 +1,23 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { type Staff, initialStaff } from '@/lib/data';
 import { useClientStore } from './use-client-store';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `staffList_${clientId}` : null;
 
-export function useStaffStore() {
+interface StaffContextType {
+  staff: Staff[];
+  addStaff: (newStaffData: Omit<Staff, 'id'>) => void;
+  updateStaff: (updatedStaffData: Staff) => void;
+  deleteStaff: (staffId: string) => void;
+  isInitialized: boolean;
+}
+
+const StaffContext = createContext<StaffContextType | undefined>(undefined);
+
+export function StaffProvider({ children }: { children: ReactNode }) {
   const { currentClient } = useClientStore();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -17,12 +27,7 @@ export function useStaffStore() {
     if (storeKey) {
       try {
         const storedStaff = localStorage.getItem(storeKey);
-        if (storedStaff) {
-          setStaff(JSON.parse(storedStaff));
-        } else {
-          setStaff(initialStaff);
-          localStorage.setItem(storeKey, JSON.stringify(initialStaff));
-        }
+        setStaff(storedStaff ? JSON.parse(storedStaff) : initialStaff);
       } catch (error) {
         console.error("Failed to load staff from localStorage", error);
         setStaff(initialStaff);
@@ -33,35 +38,46 @@ export function useStaffStore() {
     setIsInitialized(true);
   }, [storeKey]);
 
-  const updateStaffList = useCallback((newList: Staff[]) => {
-    if (storeKey) {
-        setStaff(newList);
-        try {
-            localStorage.setItem(storeKey, JSON.stringify(newList));
-        } catch (error) {
-            console.error("Failed to save staff to localStorage", error);
-        }
-    }
+  const addStaff = useCallback((newStaffData: Omit<Staff, 'id'>) => {
+    setStaff((prevStaff) => {
+        const newIdNumber = prevStaff.length > 0 ? Math.max(0, ...prevStaff.map(s => parseInt(s.id.split('-')[1], 10))) + 1 : 1;
+        const newId = `S-${String(newIdNumber).padStart(3, '0')}`;
+        const staffToAdd: Staff = { ...newStaffData, id: newId };
+        const newList = [...prevStaff, staffToAdd];
+        if(storeKey) localStorage.setItem(storeKey, JSON.stringify(newList));
+        return newList;
+    });
   }, [storeKey]);
 
-  const addStaff = useCallback((newStaffData: Omit<Staff, 'id'>) => {
-    const newIdNumber = staff.length > 0 ? Math.max(0, ...staff.map(s => parseInt(s.id.split('-')[1], 10))) + 1 : 1;
-    const newId = `S-${String(newIdNumber).padStart(3, '0')}`;
-    const staffToAdd: Staff = { ...newStaffData, id: newId };
-    updateStaffList([...staff, staffToAdd]);
-  }, [staff, updateStaffList]);
-
   const updateStaff = useCallback((updatedStaffData: Staff) => {
-    const updatedList = staff.map(member =>
-      member.id === updatedStaffData.id ? updatedStaffData : member
-    );
-    updateStaffList(updatedList);
-  }, [staff, updateStaffList]);
+    setStaff((prevStaff) => {
+        const updatedList = prevStaff.map(member =>
+          member.id === updatedStaffData.id ? updatedStaffData : member
+        );
+        if(storeKey) localStorage.setItem(storeKey, JSON.stringify(updatedList));
+        return updatedList;
+    });
+  }, [storeKey]);
   
   const deleteStaff = useCallback((staffId: string) => {
-    const updatedList = staff.filter(member => member.id !== staffId);
-    updateStaffList(updatedList);
-  }, [staff, updateStaffList]);
+    setStaff((prevStaff) => {
+        const updatedList = prevStaff.filter(member => member.id !== staffId);
+        if(storeKey) localStorage.setItem(storeKey, JSON.stringify(updatedList));
+        return updatedList;
+    });
+  }, [storeKey]);
 
-  return { staff, addStaff, updateStaff, deleteStaff, isInitialized };
+  return (
+    <StaffContext.Provider value={{ staff, addStaff, updateStaff, deleteStaff, isInitialized }}>
+      {children}
+    </StaffContext.Provider>
+  );
+}
+
+export function useStaffStore() {
+  const context = useContext(StaffContext);
+  if (context === undefined) {
+    throw new Error('useStaffStore must be used within a StaffProvider');
+  }
+  return context;
 }

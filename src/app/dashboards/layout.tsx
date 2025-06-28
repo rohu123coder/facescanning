@@ -18,10 +18,19 @@ import { Button } from '@/components/ui/button';
 import { Briefcase, LogOut, Mountain, Users, ScanFace, Star, CheckSquare, GraduationCap, FileText, HandCoins } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/hooks/use-auth-store';
-import { useClientStore } from '@/hooks/use-client-store';
-import { useEffect } from 'react';
+import { ClientProvider, useClientStore } from '@/hooks/use-client-store';
+import { useEffect, type ReactNode } from 'react';
 import Image from 'next/image';
 import { usePlanFeatures } from '@/hooks/use-plan-features';
+
+import { StaffProvider } from '@/hooks/use-staff-store';
+import { StudentProvider } from '@/hooks/use-student-store';
+import { AttendanceProvider } from '@/hooks/use-attendance-store';
+import { StudentAttendanceProvider } from '@/hooks/use-student-attendance-store';
+import { LeaveProvider } from '@/hooks/use-leave-store';
+import { TaskProvider } from '@/hooks/use-task-store';
+import { SalaryRulesProvider } from '@/hooks/use-salary-rules-store';
+
 
 const navItems = [
     { href: '/dashboards/client', label: 'Dashboard', icon: <Briefcase />, feature: 'DASHBOARD' },
@@ -33,6 +42,27 @@ const navItems = [
     { href: '/dashboards/client/attendance-kiosk', label: 'Attendance Kiosk', icon: <ScanFace />, feature: 'ATTENDANCE_KIOSK' },
     { href: '/dashboards/client/reputation', label: 'Reputation', icon: <Star />, feature: 'REPUTATION_MANAGEMENT' },
 ];
+
+
+function AllAppProviders({ children }: { children: ReactNode }) {
+    return (
+        <StaffProvider>
+            <StudentProvider>
+                <AttendanceProvider>
+                    <StudentAttendanceProvider>
+                        <LeaveProvider>
+                            <TaskProvider>
+                                <SalaryRulesProvider>
+                                    {children}
+                                </SalaryRulesProvider>
+                            </TaskProvider>
+                        </LeaveProvider>
+                    </StudentAttendanceProvider>
+                </AttendanceProvider>
+            </StudentProvider>
+        </StaffProvider>
+    );
+}
 
 function ClientDashboardLayout({
   children,
@@ -133,8 +163,20 @@ export default function DashboardLayout({
   const pathname = usePathname();
   
   if (pathname && pathname.startsWith('/dashboards/super-admin')) {
-    return <>{children}</>;
+    // Super-admin pages only need the ClientProvider for managing clients
+    return (
+      <ClientProvider>
+          {children}
+      </ClientProvider>
+    );
   }
 
-  return <ClientDashboardLayout>{children}</ClientDashboardLayout>;
+  // Client dashboard pages need all providers
+  return (
+    <ClientProvider>
+      <AllAppProviders>
+        <ClientDashboardLayout>{children}</ClientDashboardLayout>
+      </AllAppProviders>
+    </ClientProvider>
+  );
 }

@@ -1,14 +1,22 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { type Student, type Attendance } from '@/lib/data';
 import { useClientStore } from './use-client-store';
 import { format } from 'date-fns';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `student_attendance_${clientId}` : null;
 
-export function useStudentAttendanceStore() {
+interface StudentAttendanceContextType {
+  attendance: Attendance[];
+  markAttendance: (student: Student) => 'in' | 'out';
+  isInitialized: boolean;
+}
+
+const StudentAttendanceContext = createContext<StudentAttendanceContextType | undefined>(undefined);
+
+export function StudentAttendanceProvider({ children }: { children: ReactNode }) {
   const { currentClient } = useClientStore();
   const storeKey = getStoreKey(currentClient?.id);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -18,11 +26,7 @@ export function useStudentAttendanceStore() {
     if (storeKey) {
       try {
         const storedData = localStorage.getItem(storeKey);
-        if (storedData) {
-          setAttendance(JSON.parse(storedData));
-        } else {
-          setAttendance([]);
-        }
+        setAttendance(storedData ? JSON.parse(storedData) : []);
       } catch (error) {
         console.error("Failed to load student attendance from localStorage", error);
         setAttendance([]);
@@ -33,55 +37,60 @@ export function useStudentAttendanceStore() {
     setIsInitialized(true);
   }, [storeKey]);
 
-  const updateAttendanceList = useCallback((newList: Attendance[]) => {
-    if (storeKey) {
-        setAttendance(newList);
-        try {
-            localStorage.setItem(storeKey, JSON.stringify(newList));
-        } catch (error) {
-            console.error("Failed to save student attendance to localStorage", error);
-        }
-    }
-  }, [storeKey]);
-
-
   const markAttendance = useCallback((student: Student): 'in' | 'out' => {
-      const now = new Date();
-      const today = format(now, 'yyyy-MM-dd');
-      const time = now.toISOString();
       let punchTypeResult: 'in' | 'out' = 'in';
       
-      const currentAttendance = [...attendance];
-      const existingRecordIndex = currentAttendance.findIndex(
-        record => record.personId === student.id && record.date === today
-      );
+      setAttendance(prevAttendance => {
+        const now = new Date();
+        const today = format(now, 'yyyy-MM-dd');
+        const time = now.toISOString();
+        
+        const currentAttendance = [...prevAttendance];
+        const existingRecordIndex = currentAttendance.findIndex(
+          record => record.personId === student.id && record.date === today
+        );
 
-      if (existingRecordIndex > -1) {
-          const existingRecord = currentAttendance[existingRecordIndex];
-          // If inTime is present and outTime is not, mark outTime
-          if(existingRecord.inTime && !existingRecord.outTime) {
-            currentAttendance[existingRecordIndex].outTime = time;
-            punchTypeResult = 'out';
-          } else {
-            // If already marked out, or something is wrong, just mark in again (override)
-            currentAttendance[existingRecordIndex].inTime = time;
-            currentAttendance[existingRecordIndex].outTime = null;
+        if (existingRecordIndex > -1) {
+            const existingRecord = currentAttendance[existingRecordIndex];
+            if(existingRecord.inTime && !existingRecord.outTime) {
+              currentAttendance[existingRecordIndex].outTime = time;
+              punchTypeResult = 'out';
+            } else {
+              currentAttendance[existingRecordIndex].inTime = time;
+              currentAttendance[existingRecordIndex].outTime = null;
+              punchTypeResult = 'in';
+            }
+        } else {
+            const newRecord: Attendance = {
+                personId: student.id,
+                date: today,
+                inTime: time,
+                outTime: null,
+            };
+            currentAttendance.push(newRecord);
             punchTypeResult = 'in';
-          }
-      } else {
-          const newRecord: Attendance = {
-              personId: student.id,
-              date: today,
-              inTime: time,
-              outTime: null,
-          };
-          currentAttendance.push(newRecord);
-          punchTypeResult = 'in';
-      }
-      
-      updateAttendanceList(currentAttendance);
-      return punchTypeResult;
-  }, [attendance, updateAttendanceList]);
+        }
+        
+        if (storeKey) {
+            localStorage.setItem(storeKey, JSON.stringify(currentAttendance));
+        }
+        return currentAttendance;
+      });
 
-  return { attendance, markAttendance, isInitialized };
+      return punchTypeResult;
+  }, [storeKey]);
+  
+  return (
+    <StudentAttendanceContext.Provider value={{ attendance, markAttendance, isInitialized }}>
+      {children}
+    </StudentAttendanceContext.Provider>
+  );
+}
+
+export function useStudentAttendanceStore() {
+  const context = useContext(StudentAttendanceContext);
+  if (context === undefined) {
+    throw new Error('useStudentAttendanceStore must be used within a StudentAttendanceProvider');
+  }
+  return context;
 }

@@ -1,28 +1,31 @@
-
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { type Staff, type Attendance, initialAttendance } from '@/lib/data';
 import { useClientStore } from './use-client-store';
 import { format } from 'date-fns';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `attendance_${clientId}` : null;
 
-export function useAttendanceStore() {
+interface AttendanceContextType {
+  attendance: Attendance[];
+  markAttendance: (staffMember: Staff) => 'in' | 'out';
+  isInitialized: boolean;
+}
+
+const AttendanceContext = createContext<AttendanceContextType | undefined>(undefined);
+
+export function AttendanceProvider({ children }: { children: ReactNode }) {
   const { currentClient } = useClientStore();
-  const storeKey = getStoreKey(currentClient?.id);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const storeKey = getStoreKey(currentClient?.id);
 
   useEffect(() => {
     if (storeKey) {
       try {
         const storedData = localStorage.getItem(storeKey);
-        if (storedData) {
-          setAttendance(JSON.parse(storedData));
-        } else {
-          setAttendance(initialAttendance);
-        }
+        setAttendance(storedData ? JSON.parse(storedData) : initialAttendance);
       } catch (error) {
         console.error("Failed to load attendance from localStorage", error);
         setAttendance(initialAttendance);
@@ -33,55 +36,58 @@ export function useAttendanceStore() {
     setIsInitialized(true);
   }, [storeKey]);
 
-  const updateAttendanceList = useCallback((newList: Attendance[]) => {
-    if (storeKey) {
-        setAttendance(newList);
-        try {
-            localStorage.setItem(storeKey, JSON.stringify(newList));
-        } catch (error) {
-            console.error("Failed to save attendance to localStorage", error);
-        }
-    }
-  }, [storeKey]);
-
-
   const markAttendance = useCallback((staffMember: Staff): 'in' | 'out' => {
-      const now = new Date();
-      const today = format(now, 'yyyy-MM-dd');
-      const time = now.toISOString();
-      let punchTypeResult: 'in' | 'out' = 'in';
-      
-      const currentAttendance = [...attendance];
-      const existingRecordIndex = currentAttendance.findIndex(
-        record => record.personId === staffMember.id && record.date === today
-      );
+    const todayString = format(new Date(), 'yyyy-MM-dd');
+    const now = new Date().toISOString();
 
-      if (existingRecordIndex > -1) {
-          const existingRecord = currentAttendance[existingRecordIndex];
-          // If inTime is present and outTime is not, mark outTime
-          if(existingRecord.inTime && !existingRecord.outTime) {
-            currentAttendance[existingRecordIndex].outTime = time;
-            punchTypeResult = 'out';
-          } else {
-            // If already marked out, or something is wrong, just mark in again (override)
-            currentAttendance[existingRecordIndex].inTime = time;
-            currentAttendance[existingRecordIndex].outTime = null;
-            punchTypeResult = 'in';
-          }
+    const existingRecordIndex = attendance.findIndex(
+      (record) => record.personId === staffMember.id && record.date === todayString
+    );
+
+    let punchType: 'in' | 'out';
+    const newAttendance = [...attendance];
+
+    if (existingRecordIndex !== -1) {
+      const record = newAttendance[existingRecordIndex];
+      if (record.inTime && !record.outTime) {
+        // Clocking out
+        punchType = 'out';
+        newAttendance[existingRecordIndex] = { ...record, outTime: now };
       } else {
-          const newRecord: Attendance = {
-              personId: staffMember.id,
-              date: today,
-              inTime: time,
-              outTime: null,
-          };
-          currentAttendance.push(newRecord);
-          punchTypeResult = 'in';
+        // Clocking in again
+        punchType = 'in';
+        newAttendance[existingRecordIndex] = { ...record, inTime: now, outTime: null };
       }
-      
-      updateAttendanceList(currentAttendance);
-      return punchTypeResult;
-  }, [attendance, updateAttendanceList]);
+    } else {
+      // First clock-in of the day
+      punchType = 'in';
+      newAttendance.push({
+        personId: staffMember.id,
+        date: todayString,
+        inTime: now,
+        outTime: null,
+      });
+    }
 
-  return { attendance, markAttendance, isInitialized };
+    setAttendance(newAttendance);
+    if (storeKey) {
+      localStorage.setItem(storeKey, JSON.stringify(newAttendance));
+    }
+    return punchType;
+  }, [attendance, storeKey]);
+
+
+  return (
+    <AttendanceContext.Provider value={{ attendance, markAttendance, isInitialized }}>
+      {children}
+    </AttendanceContext.Provider>
+  );
+}
+
+export function useAttendanceStore() {
+  const context = useContext(AttendanceContext);
+  if (context === undefined) {
+    throw new Error('useAttendanceStore must be used within an AttendanceProvider');
+  }
+  return context;
 }

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { type SalaryRules } from '@/lib/data';
 import { useClientStore } from './use-client-store';
 
@@ -14,7 +14,15 @@ const defaultRules: SalaryRules = {
   standardDeduction: 5,
 };
 
-export function useSalaryRulesStore() {
+interface SalaryRulesContextType {
+  rules: SalaryRules;
+  setRules: (newRules: SalaryRules) => void;
+  isInitialized: boolean;
+}
+
+const SalaryRulesContext = createContext<SalaryRulesContextType | undefined>(undefined);
+
+export function SalaryRulesProvider({ children }: { children: ReactNode }) {
   const { currentClient } = useClientStore();
   const storeKey = getStoreKey(currentClient?.id);
   const [rules, setRulesState] = useState<SalaryRules>(defaultRules);
@@ -46,5 +54,17 @@ export function useSalaryRulesStore() {
     }
   }, [storeKey]);
 
-  return { rules, setRules, isInitialized };
+  return (
+    <SalaryRulesContext.Provider value={{ rules, setRules, isInitialized }}>
+      {children}
+    </SalaryRulesContext.Provider>
+  );
+}
+
+export function useSalaryRulesStore() {
+  const context = useContext(SalaryRulesContext);
+  if (context === undefined) {
+    throw new Error('useSalaryRulesStore must be used within a SalaryRulesProvider');
+  }
+  return context;
 }

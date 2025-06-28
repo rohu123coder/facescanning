@@ -1,11 +1,22 @@
+
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { type Client, initialClients } from '@/lib/data';
 
 const STORE_KEY = 'clientList';
 
-export function useClientStore() {
+interface ClientContextType {
+  clients: Client[];
+  currentClient: Client | null;
+  addClient: (newClientData: Omit<Client, 'id'>) => void;
+  updateClient: (updatedClientData: Client) => Promise<void>;
+  isInitialized: boolean;
+}
+
+const ClientContext = createContext<ClientContextType | undefined>(undefined);
+
+export function ClientProvider({ children }: { children: ReactNode }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
@@ -13,11 +24,16 @@ export function useClientStore() {
   useEffect(() => {
     try {
       const storedClients = localStorage.getItem(STORE_KEY);
-      if (storedClients) {
-        setClients(JSON.parse(storedClients));
-      } else {
-        setClients(initialClients);
-        localStorage.setItem(STORE_KEY, JSON.stringify(initialClients));
+      const loadedClients = storedClients ? JSON.parse(storedClients) : initialClients;
+      setClients(loadedClients);
+      if (!storedClients) {
+          localStorage.setItem(STORE_KEY, JSON.stringify(initialClients));
+      }
+
+      const loggedInClientId = localStorage.getItem('loggedInClientId');
+      if (loggedInClientId) {
+          const clientData = loadedClients.find((c: Client) => c.id === loggedInClientId);
+          setCurrentClient(clientData || null);
       }
     } catch (error) {
       console.error("Failed to load clients from localStorage", error);
@@ -25,45 +41,44 @@ export function useClientStore() {
     }
     setIsInitialized(true);
   }, []);
-  
-  useEffect(() => {
-      try {
-        const loggedInClientId = localStorage.getItem('loggedInClientId');
-        if (loggedInClientId) {
-            const clientData = clients.find(c => c.id === loggedInClientId);
-            setCurrentClient(clientData || null);
-        } else {
-            setCurrentClient(null);
-        }
-      } catch (error) {
-          console.error("Failed to get current client", error);
-          setCurrentClient(null);
-      }
-  }, [clients]);
-
-  const updateClientList = useCallback((newList: Client[]) => {
-    setClients(newList);
-    try {
-      localStorage.setItem(STORE_KEY, JSON.stringify(newList));
-    } catch (error) {
-      console.error("Failed to save clients to localStorage", error);
-    }
-  }, []);
 
   const addClient = useCallback((newClientData: Omit<Client, 'id'>) => {
-    const newIdNumber = clients.length > 0 ? Math.max(0, ...clients.map(c => parseInt(c.id.split('-')[1], 10))) + 1 : 1;
-    const newId = `C-${String(newIdNumber).padStart(3, '0')}`;
-    const clientToAdd: Client = { ...newClientData, id: newId };
-    updateClientList([...clients, clientToAdd]);
-  }, [clients, updateClientList]);
+    setClients(prevClients => {
+      const newIdNumber = prevClients.length > 0 ? Math.max(0, ...prevClients.map(c => parseInt(c.id.split('-')[1], 10))) + 1 : 1;
+      const newId = `C-${String(newIdNumber).padStart(3, '0')}`;
+      const clientToAdd: Client = { ...newClientData, id: newId };
+      const newList = [...prevClients, clientToAdd];
+      localStorage.setItem(STORE_KEY, JSON.stringify(newList));
+      return newList;
+    });
+  }, []);
   
   const updateClient = useCallback(async (updatedClientData: Client) => {
-    const updatedList = clients.map(client => 
-      client.id === updatedClientData.id ? updatedClientData : client
-    );
-    updateClientList(updatedList);
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }, [clients, updateClientList]);
+    setClients(prevClients => {
+      const updatedList = prevClients.map(client => 
+        client.id === updatedClientData.id ? updatedClientData : client
+      );
+      localStorage.setItem(STORE_KEY, JSON.stringify(updatedList));
+      return updatedList;
+    });
+    // Update current client if it's the one being updated
+    if (currentClient?.id === updatedClientData.id) {
+        setCurrentClient(updatedClientData);
+    }
+    await new Promise(resolve => setTimeout(resolve, 100)); // Simulate async
+  }, [currentClient?.id]);
 
-  return { clients, currentClient, addClient, updateClient, isInitialized };
+  return (
+    <ClientContext.Provider value={{ clients, currentClient, addClient, updateClient, isInitialized }}>
+      {children}
+    </ClientContext.Provider>
+  );
+}
+
+export function useClientStore() {
+  const context = useContext(ClientContext);
+  if (context === undefined) {
+    throw new Error('useClientStore must be used within a ClientProvider');
+  }
+  return context;
 }

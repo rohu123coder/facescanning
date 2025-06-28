@@ -1,14 +1,24 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { type LeaveRequest, initialLeaves } from '@/lib/data';
 import { useClientStore } from './use-client-store';
 import { useStaffStore } from './use-staff-store';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `leaveRequests_${clientId}` : null;
 
-export function useLeaveStore() {
+interface LeaveContextType {
+  requests: LeaveRequest[];
+  addRequest: (newRequestData: Omit<LeaveRequest, 'id' | 'status' | 'requestDate'>) => void;
+  approveRequest: (requestId: string) => void;
+  rejectRequest: (requestId: string) => void;
+  isInitialized: boolean;
+}
+
+const LeaveContext = createContext<LeaveContextType | undefined>(undefined);
+
+export function LeaveProvider({ children }: { children: ReactNode }) {
   const { currentClient } = useClientStore();
   const { staff, updateStaff } = useStaffStore();
   const storeKey = getStoreKey(currentClient?.id);
@@ -30,26 +40,19 @@ export function useLeaveStore() {
     setIsInitialized(true);
   }, [storeKey]);
 
-  const updateRequestList = useCallback((newList: LeaveRequest[]) => {
-    if (storeKey) {
-      setRequests(newList);
-      try {
-        localStorage.setItem(storeKey, JSON.stringify(newList));
-      } catch (error) {
-        console.error("Failed to save leave requests to localStorage", error);
-      }
-    }
-  }, [storeKey]);
-
   const addRequest = useCallback((newRequestData: Omit<LeaveRequest, 'id' | 'status' | 'requestDate'>) => {
-    const newRequest: LeaveRequest = {
-      ...newRequestData,
-      id: `L-${Date.now()}`,
-      status: 'Pending',
-      requestDate: new Date().toISOString(),
-    };
-    updateRequestList([...requests, newRequest]);
-  }, [requests, updateRequestList]);
+    setRequests(prevRequests => {
+      const newRequest: LeaveRequest = {
+        ...newRequestData,
+        id: `L-${Date.now()}`,
+        status: 'Pending',
+        requestDate: new Date().toISOString(),
+      };
+      const newList = [...prevRequests, newRequest];
+      if (storeKey) localStorage.setItem(storeKey, JSON.stringify(newList));
+      return newList;
+    });
+  }, [storeKey]);
 
   const approveRequest = useCallback((requestId: string) => {
     const request = requests.find(r => r.id === requestId);
@@ -58,34 +61,51 @@ export function useLeaveStore() {
     const staffMember = staff.find(s => s.id === request.staffId);
     if (!staffMember) return;
     
-    // This is a simplified leave deduction. A real app would handle date ranges better.
     const leaveDays = 1; 
-
     let canApprove = false;
-    if (request.leaveType === 'Casual' && staffMember.annualCasualLeaves > 0) {
-        staffMember.annualCasualLeaves -= leaveDays;
+    let updatedStaffMember = { ...staffMember };
+
+    if (request.leaveType === 'Casual' && updatedStaffMember.annualCasualLeaves >= leaveDays) {
+        updatedStaffMember.annualCasualLeaves -= leaveDays;
         canApprove = true;
-    } else if (request.leaveType === 'Sick' && staffMember.annualSickLeaves > 0) {
-        staffMember.annualSickLeaves -= leaveDays;
+    } else if (request.leaveType === 'Sick' && updatedStaffMember.annualSickLeaves >= leaveDays) {
+        updatedStaffMember.annualSickLeaves -= leaveDays;
         canApprove = true;
     }
 
     if(canApprove) {
-        updateStaff(staffMember);
-        const updatedRequests = requests.map(r => 
-          r.id === requestId ? { ...r, status: 'Approved' as const } : r
-        );
-        updateRequestList(updatedRequests);
+        updateStaff(updatedStaffMember);
+        setRequests(prevRequests => {
+          const updatedRequests = prevRequests.map(r => 
+            r.id === requestId ? { ...r, status: 'Approved' as const } : r
+          );
+          if (storeKey) localStorage.setItem(storeKey, JSON.stringify(updatedRequests));
+          return updatedRequests;
+        });
     }
-
-  }, [requests, staff, updateRequestList, updateStaff]);
+  }, [requests, staff, updateStaff, storeKey]);
 
   const rejectRequest = useCallback((requestId: string) => {
-    const updatedRequests = requests.map(r =>
-      r.id === requestId ? { ...r, status: 'Rejected' as const } : r
-    );
-    updateRequestList(updatedRequests);
-  }, [requests, updateRequestList]);
+    setRequests(prevRequests => {
+      const updatedRequests = prevRequests.map(r =>
+        r.id === requestId ? { ...r, status: 'Rejected' as const } : r
+      );
+      if (storeKey) localStorage.setItem(storeKey, JSON.stringify(updatedRequests));
+      return updatedRequests;
+    });
+  }, [storeKey]);
+  
+  return (
+    <LeaveContext.Provider value={{ requests, addRequest, approveRequest, rejectRequest, isInitialized }}>
+      {children}
+    </LeaveContext.Provider>
+  );
+}
 
-  return { requests, addRequest, approveRequest, rejectRequest, isInitialized };
+export function useLeaveStore() {
+  const context = useContext(LeaveContext);
+  if (context === undefined) {
+    throw new Error('useLeaveStore must be used within a LeaveProvider');
+  }
+  return context;
 }
