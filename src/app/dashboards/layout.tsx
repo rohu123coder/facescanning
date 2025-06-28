@@ -14,20 +14,12 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Briefcase, LogOut, Mountain, User, Video, Star } from 'lucide-react';
+import { Briefcase, LogOut, Mountain } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/hooks/use-auth-store';
 import { useClientStore } from '@/hooks/use-client-store';
-import { planFeatures, type Feature } from '@/lib/plans';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import Image from 'next/image';
-
-const navConfig: { feature: Feature, href: string, label: string, icon: React.ElementType }[] = [
-  { feature: 'DASHBOARD', href: '/dashboards/client', label: 'Dashboard', icon: Briefcase },
-  { feature: 'ATTENDANCE_KIOSK', href: '/dashboards/client/attendance-kiosk', label: 'Attendance Kiosk', icon: Video },
-  { feature: 'REPUTATION_MANAGEMENT', href: '/dashboards/client/reputation', label: 'Reputation', icon: Star },
-];
-
 
 function ClientDashboardLayout({
   children,
@@ -48,19 +40,6 @@ function ClientDashboardLayout({
       }
     }
   }, [isAuthenticated, isAuthInitialized, router, currentClient, pathname]);
-
-  const clientPlan = currentClient?.plan || 'Basic';
-  const allowedFeatures = useMemo(() => planFeatures[clientPlan], [clientPlan]);
-
-  const getIsActive = (itemHref: string, currentPath: string | null) => {
-    if (!currentPath) {
-      return false;
-    }
-    if (itemHref === '/dashboards/client') {
-      return currentPath === '/dashboards/client';
-    }
-    return currentPath.startsWith(itemHref);
-  };
   
   const handleLogout = () => {
     logout();
@@ -92,25 +71,14 @@ function ClientDashboardLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {navConfig.map((item) => {
-              if (allowedFeatures.includes(item.feature)) {
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={getIsActive(item.href, pathname)}
-                      tooltip={item.label}
-                    >
-                      <Link href={item.href}>
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              }
-              return null;
-            })}
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/dashboards/client'} tooltip="Dashboard">
+                <Link href="/dashboards/client">
+                  <Briefcase />
+                  <span>Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
          <SidebarHeader className="p-4 mt-auto">
@@ -146,12 +114,9 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   
-  // If the path is for super-admin, we bypass the client layout entirely.
-  // This allows the super-admin's own layout to handle its auth and UI.
   if (pathname && pathname.startsWith('/dashboards/super-admin')) {
     return <>{children}</>;
   }
 
-  // All other routes under (dashboards) get the client-side layout.
   return <ClientDashboardLayout>{children}</ClientDashboardLayout>;
 }

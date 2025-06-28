@@ -33,7 +33,7 @@ export type Client = {
   organizationName: string;
   organizationDetails: string;
   logoUrl: string;
-  contactName: string;
+  contactName:string;
   email: string;
   mobile: string;
   whatsapp: string;
