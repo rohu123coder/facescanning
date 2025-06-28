@@ -1,2 +1,1 @@
-// This file is intentionally left blank to resolve a Next.js build error caused by a routing conflict.
-// Do not add any code here.
+// This file has been cleared to remove the employee login feature and resolve a server startup error.
