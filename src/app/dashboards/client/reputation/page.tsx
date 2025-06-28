@@ -61,7 +61,7 @@ function GbpConnectCard({ onConnect }: { onConnect: () => Promise<void> }) {
         <Card className="max-w-2xl mx-auto mt-10">
             <CardHeader className="text-center">
                 <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M21.8 10c0-3.9-2-6.9-5.2-8.4C14.4.4,12.8,0,11,0H9.5C4.2,0,0,4.2,0,9.5S4.2,19,9.5,19h2c1.8,0,3.3-.4,4.9-1.6 3.2-1.5,5.1-4.5,5.1-8.4zM9.5,4.6c2.4,0,4.4,2,4.4,4.4s-2,4.4-4.4,4.4-4.4-2-4.4-4.4 2-4.4,4.4-4.4zm7.6,9.3c-1.3,1.3-3,2.1-4.9,2.1h-2C5.9,16,3,13.1,3,9.5S5.9,3,9.5,3H11c1.2,0,2.3,.3,3.3,.8.8,.4,1.4,1,1.8,1.8.5,1,.8,2.1,.8,3.2v.2h-4.3c-.6,0-1.1,.5-1.1,1.1s.5,1.1,1.1,1.1h4.3z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M21.8 10c0-3.9-2-6.9-5.2-8.4C14.4.4,12.8,0,11,0H9.5C4.2,0,0,4.2,0,9.5S4.2,19,9.5,19h2c1.8,0,3.3-.4,4.9-1.6 3.2-1.5,5.1-4.5,5.1-8.4zM9.5,4.6c2.4,0,4.4,2,4.4,4.4s-2,4.4-4.4,4.4-4.4-2-4.4-4.4 2-4.4,4.4,4.4zm7.6,9.3c-1.3,1.3-3,2.1-4.9,2.1h-2C5.9,16,3,13.1,3,9.5S5.9,3,9.5,3H11c1.2,0,2.3,.3,3.3,.8.8,.4,1.4,1,1.8,1.8.5,1,.8,2.1,.8,3.2v.2h-4.3c-.6,0-1.1,.5-1.1,1.1s.5,1.1,1.1,1.1h4.3z"/></svg>
                 </div>
                 <CardTitle>Connect your Google Business Profile</CardTitle>
                 <CardDescription>
