@@ -1,1 +1,1 @@
-// This file has been cleared to remove the employee login feature and resolve a server startup error.
+// This file has been intentionally cleared to resolve a persistent Next.js server startup error.
