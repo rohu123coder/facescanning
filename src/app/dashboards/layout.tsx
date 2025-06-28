@@ -200,13 +200,24 @@ function ClientDashboardLayout({
 }
 
 function MainDashboard({ children }: { children: React.ReactNode }) {
-    const { currentClient } = useClientStore();
+    const { currentClient, isInitialized } = useClientStore();
 
-    // The key is crucial. When currentClient.id changes (on login/logout),
+    // This is a critical guard. It prevents any data-dependent components (like StaffProvider)
+    // from rendering until the correct client context is fully loaded and available.
+    // This solves the data leak/caching issue between client logins.
+    if (!isInitialized || !currentClient) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <Mountain className="h-8 w-8 text-primary animate-pulse" />
+            </div>
+        );
+    }
+    
+    // The key prop is also crucial. When currentClient.id changes (on login/logout),
     // React unmounts the old AllAppProviders and mounts a new one,
     // ensuring all nested stores reset and re-initialize with the new client's data.
     return (
-        <AllAppProviders key={currentClient?.id}>
+        <AllAppProviders key={currentClient.id}>
             <ClientDashboardLayout>{children}</ClientDashboardLayout>
         </AllAppProviders>
     )
