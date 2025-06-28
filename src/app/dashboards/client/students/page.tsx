@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useStudentStore } from '@/hooks/use-student-store';
+import { useStudentStore } from '@/hooks/use-student-store.tsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';

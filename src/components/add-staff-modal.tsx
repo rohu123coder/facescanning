@@ -18,7 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useStaffStore } from '@/hooks/use-staff-store';
+import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { Loader2, Camera, Upload } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';

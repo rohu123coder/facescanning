@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -19,8 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, User, Calendar as CalendarIcon, Sparkles } from 'lucide-react';
 import { Textarea } from './ui/textarea';
-import { useTaskStore } from '@/hooks/use-task-store';
-import { useStaffStore } from '@/hooks/use-staff-store';
+import { useTaskStore } from '@/hooks/use-task-store.tsx';
+import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { StaffSelectionModal } from './staff-selection-modal';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -266,7 +267,7 @@ export function AddTaskModal({ isOpen, onOpenChange }: AddTaskModalProps) {
                    <Button type="button" variant="outline" size="icon" onClick={handleAiSuggestion} disabled={isAiLoading}>
                       {isAiLoading ? <Loader2 className="animate-spin" /> : <Sparkles />}
                       <span className="sr-only">Get AI Suggestion</span>
-                  </Button>
+                   </Button>
               </div>
             </FormItem>
 

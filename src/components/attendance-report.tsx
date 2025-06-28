@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -7,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon, FileSpreadsheet, FileText, Search } from 'lucide-react';
-import { useAttendanceStore } from '@/hooks/use-attendance-store';
-import { useStaffStore } from '@/hooks/use-staff-store';
+import { useAttendanceStore } from '@/hooks/use-attendance-store.tsx';
+import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { addDays, format, differenceInHours, parseISO } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { type Attendance } from '@/lib/data';

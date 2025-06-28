@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { useLeaveStore } from '@/hooks/use-leave-store';
-import { useStaffStore } from '@/hooks/use-staff-store';
+import { useLeaveStore } from '@/hooks/use-leave-store.tsx';
+import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { format, parseISO } from 'date-fns';
 import { ApplyLeaveModal } from '@/components/apply-leave-modal';
 import { Check, ThumbsDown, UserCheck } from 'lucide-react';

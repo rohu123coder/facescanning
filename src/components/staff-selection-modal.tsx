@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useStaffStore } from '@/hooks/use-staff-store';
+import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import {
   Dialog,
   DialogContent,

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,8 +13,8 @@ import { Button } from '@/components/ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useTaskStore } from '@/hooks/use-task-store';
-import { useStaffStore } from '@/hooks/use-staff-store';
+import { useTaskStore } from '@/hooks/use-task-store.tsx';
+import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { useToast } from '@/hooks/use-toast';
 import type { Task } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';

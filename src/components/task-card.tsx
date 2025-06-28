@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Calendar, User, Flag, MoreHorizontal } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
-import { useStaffStore } from '@/hooks/use-staff-store';
+import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { cn } from '@/lib/utils';
 import type { Task, TaskStatus } from '@/lib/data';
 import { Button } from './ui/button';

@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
+import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store.tsx';
 import { Loader2 } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { Slider } from './ui/slider';

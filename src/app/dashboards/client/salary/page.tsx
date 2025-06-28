@@ -6,10 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useStaffStore } from '@/hooks/use-staff-store';
-import { useAttendanceStore } from '@/hooks/use-attendance-store';
-import { useLeaveStore } from '@/hooks/use-leave-store';
-import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
+import { useStaffStore } from '@/hooks/use-staff-store.tsx';
+import { useAttendanceStore } from '@/hooks/use-attendance-store.tsx';
+import { useLeaveStore } from '@/hooks/use-leave-store.tsx';
+import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store.tsx';
 import { getDaysInMonth, getYear, getMonth, format, isWithinInterval, parseISO } from 'date-fns';
 import { SalaryRulesModal } from '@/components/salary-rules-modal';
 import { PayslipModal } from '@/components/payslip-modal';

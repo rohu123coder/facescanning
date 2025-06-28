@@ -3,8 +3,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { type LeaveRequest, initialLeaves } from '@/lib/data';
-import { useClientStore } from './use-client-store';
-import { useStaffStore } from './use-staff-store';
+import { useClientStore } from './use-client-store.tsx';
+import { useStaffStore } from './use-staff-store.tsx';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `leaveRequests_${clientId}` : null;
 

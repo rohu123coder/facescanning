@@ -1,8 +1,9 @@
+
 'use client';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
-import { useStaffStore } from '@/hooks/use-staff-store';
+import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { type Task } from '@/lib/data';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';

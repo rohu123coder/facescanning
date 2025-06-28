@@ -19,8 +19,8 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useStaffStore } from '@/hooks/use-staff-store';
-import { useLeaveStore } from '@/hooks/use-leave-store';
+import { useStaffStore } from '@/hooks/use-staff-store.tsx';
+import { useLeaveStore } from '@/hooks/use-leave-store.tsx';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { Textarea } from './ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';

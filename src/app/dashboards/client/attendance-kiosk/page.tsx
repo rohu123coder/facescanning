@@ -1,15 +1,16 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Camera, UserCheck, UserX, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useStudentStore } from '@/hooks/use-student-store';
+import { useStudentStore } from '@/hooks/use-student-store.tsx';
 import { recognizeStaffFace } from '@/ai/flows/face-scan-attendance';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { type Student, type Attendance } from '@/lib/data';
-import { useStudentAttendanceStore } from '@/hooks/use-student-attendance-store';
+import { useStudentAttendanceStore } from '@/hooks/use-student-attendance-store.tsx';
 
 
 type ScanStatusType = 'IDLE' | 'SCANNING' | 'SUCCESS' | 'NO_MATCH' | 'ERROR';

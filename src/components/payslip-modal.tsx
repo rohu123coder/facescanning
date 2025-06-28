@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
-import { useClientStore } from '@/hooks/use-client-store';
+import { useClientStore } from '@/hooks/use-client-store.tsx';
 import { type SalarySlipData } from '@/lib/data';
 import Image from 'next/image';
 
