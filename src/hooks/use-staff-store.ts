@@ -1,66 +1,67 @@
+// This file has been repurposed as use-student-store.ts
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { type Staff, initialStaff } from '@/lib/data';
+import { type Student, initialStudents } from '@/lib/data';
 import { useClientStore } from './use-client-store';
 
-const getStoreKey = (clientId: string | undefined) => clientId ? `staffList_${clientId}` : null;
+const getStoreKey = (clientId: string | undefined) => clientId ? `studentList_${clientId}` : null;
 
-export function useStaffStore() {
+export function useStudentStore() {
   const { currentClient } = useClientStore();
-  const [staff, setStaff] = useState<Staff[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const storeKey = getStoreKey(currentClient?.id);
 
   useEffect(() => {
     if (storeKey) {
       try {
-        const storedStaff = localStorage.getItem(storeKey);
-        if (storedStaff) {
-          setStaff(JSON.parse(storedStaff));
+        const storedStudents = localStorage.getItem(storeKey);
+        if (storedStudents) {
+          setStudents(JSON.parse(storedStudents));
         } else {
-          setStaff(initialStaff);
-          localStorage.setItem(storeKey, JSON.stringify(initialStaff));
+          setStudents(initialStudents);
+          localStorage.setItem(storeKey, JSON.stringify(initialStudents));
         }
       } catch (error) {
-        console.error("Failed to load staff from localStorage", error);
-        setStaff(initialStaff);
+        console.error("Failed to load students from localStorage", error);
+        setStudents(initialStudents);
       }
     } else {
-        setStaff([]);
+        setStudents([]);
     }
     setIsInitialized(true);
   }, [storeKey]);
 
-  const updateStaffList = useCallback((newList: Staff[]) => {
+  const updateStudentList = useCallback((newList: Student[]) => {
     if (storeKey) {
-        setStaff(newList);
+        setStudents(newList);
         try {
             localStorage.setItem(storeKey, JSON.stringify(newList));
         } catch (error) {
-            console.error("Failed to save staff to localStorage", error);
+            console.error("Failed to save students to localStorage", error);
         }
     }
   }, [storeKey]);
 
-  const addStaff = useCallback((newStaffData: Omit<Staff, 'id'>) => {
-    const newIdNumber = staff.length > 0 ? Math.max(0, ...staff.map(s => parseInt(s.id.split('-')[1], 10))) + 1 : 1;
-    const newId = `S-${String(newIdNumber).padStart(3, '0')}`;
-    const staffToAdd: Staff = { ...newStaffData, id: newId };
-    updateStaffList([...staff, staffToAdd]);
-  }, [staff, updateStaffList]);
+  const addStudent = useCallback((newStudentData: Omit<Student, 'id'>) => {
+    const newIdNumber = students.length > 0 ? Math.max(0, ...students.map(s => parseInt(s.id.split('-')[1], 10))) + 1 : 1;
+    const newId = `STU-${String(newIdNumber).padStart(3, '0')}`;
+    const studentToAdd: Student = { ...newStudentData, id: newId };
+    updateStudentList([...students, studentToAdd]);
+  }, [students, updateStudentList]);
 
-  const updateStaff = useCallback((updatedStaffData: Staff) => {
-    const updatedList = staff.map(member =>
-      member.id === updatedStaffData.id ? updatedStaffData : member
+  const updateStudent = useCallback((updatedStudentData: Student) => {
+    const updatedList = students.map(member =>
+      member.id === updatedStudentData.id ? updatedStudentData : member
     );
-    updateStaffList(updatedList);
-  }, [staff, updateStaffList]);
+    updateStudentList(updatedList);
+  }, [students, updateStudentList]);
   
-  const deleteStaff = useCallback((staffId: string) => {
-    const updatedList = staff.filter(member => member.id !== staffId);
-    updateStaffList(updatedList);
-  }, [staff, updateStaffList]);
+  const deleteStudent = useCallback((studentId: string) => {
+    const updatedList = students.filter(member => member.id !== studentId);
+    updateStudentList(updatedList);
+  }, [students, updateStudentList]);
 
-  return { staff, addStaff, updateStaff, deleteStaff, isInitialized };
+  return { students, addStudent, updateStudent, deleteStudent, isInitialized };
 }

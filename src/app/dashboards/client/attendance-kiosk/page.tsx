@@ -1,25 +1,25 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Camera, UserCheck, UserX, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useStaffStore } from '@/hooks/use-staff-store';
+import { useStudentStore } from '@/hooks/use-student-store';
 import { recognizeStaffFace } from '@/ai/flows/face-scan-attendance';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
-import { type Staff, type Attendance } from '@/lib/data';
-import { useAttendanceStore } from '@/hooks/use-attendance-store';
+import { type Student, type Attendance } from '@/lib/data';
+import { useStudentAttendanceStore } from '@/hooks/use-student-attendance-store';
 
 
 type ScanStatusType = 'IDLE' | 'SCANNING' | 'SUCCESS' | 'NO_MATCH' | 'ERROR';
 const SCAN_INTERVAL_MS = 3000; // Scan every 3 seconds
-const EMPLOYEE_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const STUDENT_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
 export default function AttendanceKioskPage() {
-  const { staff, isInitialized: isStaffInitialized } = useStaffStore();
+  const { students, isInitialized: isStudentInitialized } = useStudentStore();
   const { toast } = useToast();
-  const { attendance, markAttendance, isInitialized: isAttendanceInitialized } = useAttendanceStore();
+  const { attendance, markAttendance, isInitialized: isAttendanceInitialized } = useStudentAttendanceStore();
 
   const [currentTime, setCurrentTime] = useState('');
   const [status, setStatus] = useState<{
@@ -35,8 +35,8 @@ export default function AttendanceKioskPage() {
   const isScanningRef = useRef(false);
   const lastScanTimestampsRef = useRef<Record<string, number>>({});
   
-  const getStaffName = (staffId: string) => {
-    return staff.find(s => s.id === staffId)?.name || 'Unknown Staff';
+  const getStudentName = (studentId: string) => {
+    return students.find(s => s.id === studentId)?.name || 'Unknown Student';
   };
   
   // Update today's log when the full attendance list changes
@@ -56,7 +56,7 @@ export default function AttendanceKioskPage() {
 
   // Main camera and scanning loop effect
   useEffect(() => {
-    if (!isStaffInitialized || !isAttendanceInitialized) return;
+    if (!isStudentInitialized || !isAttendanceInitialized) return;
 
     let scanIntervalId: NodeJS.Timeout | null = null;
     
@@ -76,7 +76,7 @@ export default function AttendanceKioskPage() {
       }
       
       const performScan = async () => {
-        if (isScanningRef.current || !videoRef.current?.srcObject || !canvasRef.current || staff.length === 0 || document.hidden) {
+        if (isScanningRef.current || !videoRef.current?.srcObject || !canvasRef.current || students.length === 0 || document.hidden) {
           return;
         }
 
@@ -91,28 +91,29 @@ export default function AttendanceKioskPage() {
         const capturedPhotoDataUri = canvas.toDataURL('image/jpeg');
 
         try {
-          const staffListForRecognition = staff.map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl }));
-          const result = await recognizeStaffFace({ capturedPhotoDataUri, staffList: staffListForRecognition });
+          const studentListForRecognition = students.map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl }));
+          // The AI flow is generic and can be used for students as well.
+          const result = await recognizeStaffFace({ capturedPhotoDataUri, staffList: studentListForRecognition });
 
           if (result.matchedStaffId) {
-            const matchedStaff = staff.find(s => s.id === result.matchedStaffId);
-            if (matchedStaff) {
+            const matchedStudent = students.find(s => s.id === result.matchedStaffId);
+            if (matchedStudent) {
               const now = Date.now();
-              const lastScanTime = lastScanTimestampsRef.current[matchedStaff.id] || 0;
+              const lastScanTime = lastScanTimestampsRef.current[matchedStudent.id] || 0;
 
-              if (now - lastScanTime < EMPLOYEE_COOLDOWN_MS) {
-                 setStatus(s => s.type !== 'SUCCESS' ? { type: 'IDLE', message: `${matchedStaff.name} already checked in recently.` } : s);
+              if (now - lastScanTime < STUDENT_COOLDOWN_MS) {
+                 setStatus(s => s.type !== 'SUCCESS' ? { type: 'IDLE', message: `${matchedStudent.name} already checked in recently.` } : s);
               } else {
-                lastScanTimestampsRef.current[matchedStaff.id] = now;
-                const punchType = markAttendance(matchedStaff);
+                lastScanTimestampsRef.current[matchedStudent.id] = now;
+                const punchType = markAttendance(matchedStudent);
                 const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
                 
                 toast({
                   title: `Attendance Marked: ${punchType === 'in' ? 'Clock In' : 'Clock Out'}`,
-                  description: `${welcomeMessage}, ${matchedStaff.name}!`,
+                  description: `${welcomeMessage}, ${matchedStudent.name}!`,
                 });
                 
-                setStatus({ type: 'SUCCESS', message: `${welcomeMessage}, ${matchedStaff.name}!` });
+                setStatus({ type: 'SUCCESS', message: `${welcomeMessage}, ${matchedStudent.name}!` });
                 setTimeout(() => setStatus({ type: 'IDLE', message: 'Ready to scan. Position your face in the frame.' }), 2000);
               }
             } else {
@@ -135,7 +136,6 @@ export default function AttendanceKioskPage() {
     startKiosk();
 
     return () => {
-      console.log('Cleaning up attendance kiosk...');
       if (scanIntervalId) clearInterval(scanIntervalId);
       
       if (streamRef.current) {
@@ -146,9 +146,8 @@ export default function AttendanceKioskPage() {
         videoRef.current.srcObject = null;
       }
       setIsCameraOn(false);
-      console.log('Camera cleanup complete.');
     };
-  }, [isStaffInitialized, isAttendanceInitialized, staff, toast, markAttendance]);
+  }, [isStudentInitialized, isAttendanceInitialized, students, toast, markAttendance]);
 
   const StatusIcon = () => {
     switch (status.type) {
@@ -171,7 +170,7 @@ export default function AttendanceKioskPage() {
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">AI Face Scan</CardTitle>
-            <CardDescription>The system will automatically detect and record attendance.</CardDescription>
+            <CardDescription>The system will automatically detect and record student attendance.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="aspect-video bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
@@ -208,14 +207,14 @@ export default function AttendanceKioskPage() {
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Today's Attendance Log</CardTitle>
-            <CardDescription>Live log of staff clock-ins and clock-outs for {format(new Date(), 'PP')}.</CardDescription>
+            <CardDescription>Live log of student clock-ins and clock-outs for {format(new Date(), 'PP')}.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="max-h-[25rem] overflow-auto">
               <Table>
                 <TableHeader className="sticky top-0 bg-card">
                   <TableRow>
-                    <TableHead>Staff Name</TableHead>
+                    <TableHead>Student Name</TableHead>
                     <TableHead>In Time</TableHead>
                     <TableHead>Out Time</TableHead>
                   </TableRow>
@@ -223,8 +222,8 @@ export default function AttendanceKioskPage() {
                 <TableBody>
                   {todaysLog.length > 0 ? (
                     [...todaysLog].sort((a,b) => (b.inTime ?? '').localeCompare(a.inTime ?? '')).map(record => (
-                      <TableRow key={record.staffId}>
-                        <TableCell className="font-medium">{getStaffName(record.staffId)}</TableCell>
+                      <TableRow key={record.personId}>
+                        <TableCell className="font-medium">{getStudentName(record.personId)}</TableCell>
                         <TableCell>{record.inTime ? format(new Date(record.inTime), 'p') : 'N/A'}</TableCell>
                         <TableCell>{record.outTime ? format(new Date(record.outTime), 'p') : 'N/A'}</TableCell>
                       </TableRow>

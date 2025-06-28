@@ -1,13 +1,14 @@
+// This file has been repurposed as use-student-attendance-store.ts
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { type Staff, type Attendance } from '@/lib/data';
+import { type Student, type Attendance, initialAttendance } from '@/lib/data';
 import { useClientStore } from './use-client-store';
 import { format } from 'date-fns';
 
-const getStoreKey = (clientId: string | undefined) => clientId ? `attendance_${clientId}` : null;
+const getStoreKey = (clientId: string | undefined) => clientId ? `student_attendance_${clientId}` : null;
 
-export function useAttendanceStore() {
+export function useStudentAttendanceStore() {
   const { currentClient } = useClientStore();
   const storeKey = getStoreKey(currentClient?.id);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -20,11 +21,11 @@ export function useAttendanceStore() {
         if (storedData) {
           setAttendance(JSON.parse(storedData));
         } else {
-          setAttendance([]);
+          setAttendance(initialAttendance);
         }
       } catch (error) {
         console.error("Failed to load attendance from localStorage", error);
-        setAttendance([]);
+        setAttendance(initialAttendance);
       }
     } else {
         setAttendance([]);
@@ -44,7 +45,7 @@ export function useAttendanceStore() {
   }, [storeKey]);
 
 
-  const markAttendance = useCallback((staffMember: Staff): 'in' | 'out' => {
+  const markAttendance = useCallback((student: Student): 'in' | 'out' => {
       const now = new Date();
       const today = format(now, 'yyyy-MM-dd');
       const time = now.toISOString();
@@ -52,15 +53,24 @@ export function useAttendanceStore() {
       
       const currentAttendance = [...attendance];
       const existingRecordIndex = currentAttendance.findIndex(
-        record => record.staffId === staffMember.id && record.date === today
+        record => record.personId === student.id && record.date === today
       );
 
       if (existingRecordIndex > -1) {
-          currentAttendance[existingRecordIndex].outTime = time;
-          punchTypeResult = 'out';
+          const existingRecord = currentAttendance[existingRecordIndex];
+          // If inTime is present and outTime is not, mark outTime
+          if(existingRecord.inTime && !existingRecord.outTime) {
+            currentAttendance[existingRecordIndex].outTime = time;
+            punchTypeResult = 'out';
+          } else {
+            // If already marked out, or something is wrong, just mark in again (override)
+            currentAttendance[existingRecordIndex].inTime = time;
+            currentAttendance[existingRecordIndex].outTime = null;
+            punchTypeResult = 'in';
+          }
       } else {
           const newRecord: Attendance = {
-              staffId: staffMember.id,
+              personId: student.id,
               date: today,
               inTime: time,
               outTime: null,

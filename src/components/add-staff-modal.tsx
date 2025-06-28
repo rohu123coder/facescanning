@@ -1,3 +1,4 @@
+// This component has been repurposed as AddStudentModal
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -17,113 +18,61 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import type { Staff } from '@/lib/data';
-import { Loader2, Camera, Upload, Link as LinkIcon } from 'lucide-react';
+import { useStudentStore } from '@/hooks/use-student-store';
+import type { Student } from '@/lib/data';
+import { Loader2, Camera, Upload, Link as LinkIcon, CalendarIcon } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
-import { Textarea } from './ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import Image from 'next/image';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Calendar } from './ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
-interface AddStaffModalProps {
+
+interface AddStudentModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onStaffAdded: (staff: Omit<Staff, 'id'>) => void;
-  existingStaffCount: number;
 }
 
-const staffFormSchema = z.object({
+const studentFormSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
-  mobile: z.string().min(10, { message: 'Please enter a valid mobile number.' }),
-  whatsapp: z.string().min(10, { message: 'Please enter a valid WhatsApp number.' }),
-  address: z.string().min(10, { message: 'Please enter a detailed address.' }),
-  department: z.enum(['Sales', 'Marketing', 'Engineering', 'HR', 'Support'], { required_error: 'Please select a department.' }),
-  role: z.string().min(2, { message: 'Role is required.' }),
-  salary: z.coerce.number().min(0, { message: 'Salary must be a positive number.' }),
-  annualCasualLeaves: z.coerce.number().min(0),
-  annualSickLeaves: z.coerce.number().min(0),
+  className: z.string().min(1, { message: 'Class name is required.' }),
+  rollNumber: z.string().min(1, { message: 'Roll number is required.' }),
+  gender: z.enum(['Male', 'Female', 'Other']),
+  dob: z.date({ required_error: 'Date of birth is required.' }),
+  religion: z.string().min(2, { message: 'Religion is required.' }),
+  fatherName: z.string().min(2, { message: 'Father\'s name is required.' }),
+  motherName: z.string().min(2, { message: 'Mother\'s name is required.' }),
+  parentMobile: z.string().min(10, { message: 'Parent mobile number is required.' }),
+  parentWhatsapp: z.string().min(10, { message: 'Parent WhatsApp number is required.' }),
   photoUrl: z.string().min(1, { message: 'A photo is required for facial recognition.' }),
 });
 
-export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffModalProps) {
+export function AddStudentModal({ isOpen, onOpenChange }: AddStudentModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { addStudent } = useStudentStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [isCameraOn, setIsCameraOn] = useState(false);
   
-  const form = useForm<z.infer<typeof staffFormSchema>>({
-    resolver: zodResolver(staffFormSchema),
+  const form = useForm<z.infer<typeof studentFormSchema>>({
+    resolver: zodResolver(studentFormSchema),
     defaultValues: {
       name: '',
       email: '',
-      mobile: '',
-      whatsapp: '',
-      address: '',
-      role: '',
-      salary: 0,
-      annualCasualLeaves: 12,
-      annualSickLeaves: 10,
+      className: '',
+      rollNumber: '',
+      gender: 'Male',
+      religion: '',
+      fatherName: '',
+      motherName: '',
+      parentMobile: '',
+      parentWhatsapp: '',
       photoUrl: '',
     },
   });
 
   const photoUrlValue = form.watch('photoUrl');
-
-  useEffect(() => {
-    // Cleanup camera stream on component unmount or modal close
-    return () => {
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, []);
-
-  const handleCameraAccess = async () => {
-    if (isCameraOn) {
-      setIsCameraOn(false);
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      setHasCameraPermission(true);
-      setIsCameraOn(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      setHasCameraPermission(false);
-      toast({
-        variant: 'destructive',
-        title: 'Camera Access Denied',
-        description: 'Please enable camera permissions in your browser settings.',
-      });
-    }
-  };
-
-  const handleCapture = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const context = canvas.getContext('2d');
-      context?.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUri = canvas.toDataURL('image/png');
-      form.setValue('photoUrl', dataUri, { shouldValidate: true });
-      handleCameraAccess(); // Turn off camera after capture
-    }
-  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -137,25 +86,26 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
     }
   };
 
-  const onSubmit = async (values: z.infer<typeof staffFormSchema>) => {
+  const onSubmit = async (values: z.infer<typeof studentFormSchema>) => {
     setIsLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
-      onStaffAdded({
+      addStudent({
         ...values,
+        dob: values.dob.toISOString(),
         joiningDate: new Date().toISOString(),
         status: 'Active',
       });
       toast({
-        title: 'Staff Member Added',
-        description: `${values.name} has been added to your team.`,
+        title: 'Student Added',
+        description: `${values.name} has been added successfully.`,
       });
       handleClose();
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to add staff member. Please try again.',
+        description: 'Failed to add student. Please try again.',
       });
     } finally {
       setIsLoading(false);
@@ -165,12 +115,6 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
   const handleClose = () => {
     if (isLoading) return;
     form.reset();
-    setIsCameraOn(false);
-    if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-    }
-    setHasCameraPermission(null);
     onOpenChange(false);
   };
 
@@ -178,15 +122,49 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-headline">Add New Staff Member</DialogTitle>
+          <DialogTitle className="font-headline">Add New Student</DialogTitle>
           <DialogDescription>
-            Enter the details for the new employee and provide a photo for facial recognition.
+            Enter the details for the new student.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <ScrollArea className="h-[65vh] pr-6">
               <div className="space-y-4 py-4">
+                 <FormField
+                  control={form.control}
+                  name="photoUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Student Photo</FormLabel>
+                      <div className="flex items-center gap-4">
+                          <div className="w-24 h-24 rounded-md border bg-muted flex items-center justify-center">
+                              {photoUrlValue ? (
+                                  <Image src={photoUrlValue} alt="Student Preview" width={96} height={96} className="object-contain rounded-md" data-ai-hint="person portrait" />
+                              ) : (
+                                  <Camera className="w-8 h-8 text-muted-foreground" />
+                              )}
+                          </div>
+                          <div className='space-y-2'>
+                             <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                    <Upload className="mr-2"/> Upload Photo
+                              </Button>
+                              <Input 
+                                    type="file" 
+                                    className="hidden" 
+                                    ref={fileInputRef} 
+                                    accept="image/*" 
+                                    onChange={handleFileChange}
+                                />
+                            <FormControl>
+                                <Input placeholder="Or paste image URL" value={field.value ?? ''} onChange={field.onChange} />
+                            </FormControl>
+                          </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="name"
@@ -200,79 +178,51 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="e.g. aarav.sharma@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="mobile"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mobile Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. +919876543210" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <FormField
+                      control={form.control}
+                      name="className"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Class</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. 10 A" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="rollNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Roll Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. 21" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                 </div>
-                <FormField
-                  control={form.control}
-                  name="whatsapp"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>WhatsApp Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. +919876543210" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Enter full address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <FormField
                     control={form.control}
-                    name="department"
+                    name="gender"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Department</FormLabel>
+                        <FormLabel>Gender</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a department" />
+                              <SelectValue placeholder="Select gender" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Sales">Sales</SelectItem>
-                            <SelectItem value="Marketing">Marketing</SelectItem>
-                            <SelectItem value="Engineering">Engineering</SelectItem>
-                            <SelectItem value="HR">HR</SelectItem>
-                            <SelectItem value="Support">Support</SelectItem>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">Female</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -281,121 +231,129 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
                   />
                   <FormField
                     control={form.control}
-                    name="role"
+                    name="dob"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Role / Designation</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. Frontend Developer" {...field} />
-                        </FormControl>
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Date of Birth</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                      control={form.control}
+                      name="religion"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Religion</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Hinduism" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Student Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="e.g. aarav.sharma@example.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <FormField
-                    control={form.control}
-                    name="salary"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Salary (INR)</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="e.g. 50000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="annualCasualLeaves"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Annual Casual Leaves</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="annualSickLeaves"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Annual Sick Leaves</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      control={form.control}
+                      name="fatherName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Father's Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Manish Sharma" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="motherName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mother's Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Sunita Sharma" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <FormField
+                      control={form.control}
+                      name="parentMobile"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Parent's Mobile</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. +919876543210" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="parentWhatsapp"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Parent's WhatsApp</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. +919876543210" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="photoUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Staff Photo</FormLabel>
-                      <div className="flex items-center gap-4">
-                          <div className="w-24 h-24 rounded-md border bg-muted flex items-center justify-center">
-                              {photoUrlValue ? (
-                                  <Image src={photoUrlValue} alt="Staff Preview" width={96} height={96} className="object-contain rounded-md" data-ai-hint="person portrait" />
-                              ) : (
-                                  <Camera className="w-8 h-8 text-muted-foreground" />
-                              )}
-                          </div>
-                           <Tabs defaultValue="upload" className="w-full">
-                            <TabsList className='grid w-full grid-cols-3'>
-                                <TabsTrigger value="upload"><Upload className="mr-2" />Upload</TabsTrigger>
-                                <TabsTrigger value="camera"><Camera className="mr-2" />Camera</TabsTrigger>
-                                <TabsTrigger value="url"><LinkIcon className="mr-2" />URL</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="upload" className="mt-4">
-                               <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                    <Upload className="mr-2"/> Select Image
-                                </Button>
-                               <Input 
-                                    type="file" 
-                                    className="hidden" 
-                                    ref={fileInputRef} 
-                                    accept="image/*" 
-                                    onChange={handleFileChange}
-                                />
-                            </TabsContent>
-                            <TabsContent value="camera" className="mt-4">
-                                <div className="space-y-2">
-                                    <video ref={videoRef} className={`w-full aspect-video rounded-md bg-muted ${isCameraOn ? 'block' : 'hidden'}`} autoPlay muted playsInline />
-                                    {isCameraOn && <Button type="button" onClick={handleCapture} className="w-full">Capture Photo</Button>}
-                                    <Button type="button" onClick={handleCameraAccess} variant="outline" className="w-full">
-                                        <Camera className="mr-2" /> {isCameraOn ? 'Close Camera' : 'Open Camera'}
-                                    </Button>
-                                    <canvas ref={canvasRef} className="hidden" />
-                                     {hasCameraPermission === false && (
-                                        <Alert variant="destructive">
-                                          <AlertTitle>Camera Access Required</AlertTitle>
-                                          <AlertDescription>
-                                            Please allow camera access to use this feature.
-                                          </AlertDescription>
-                                        </Alert>
-                                    )}
-                                </div>
-                            </TabsContent>
-                            <TabsContent value="url" className="mt-4">
-                                <FormControl>
-                                  <Input placeholder="https://example.com/photo.jpg" value={field.value ?? ''} onChange={field.onChange} />
-                                </FormControl>
-                            </TabsContent>
-                           </Tabs>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
             </ScrollArea>
             <DialogFooter className="pt-4 mt-4 border-t">
@@ -403,7 +361,7 @@ export function AddStaffModal({ isOpen, onOpenChange, onStaffAdded }: AddStaffMo
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Staff'}
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Student'}
               </Button>
             </DialogFooter>
           </form>

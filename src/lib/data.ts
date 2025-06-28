@@ -3,13 +3,6 @@ export type Holiday = {
     name: string;
 };
 
-export type AttendanceRecord = {
-    date: string;
-    inTime: string | null;
-    outTime: string | null;
-    totalHours: string | null;
-};
-
 export type Student = {
     id: string;
     name: string;
@@ -17,14 +10,15 @@ export type Student = {
     className: string;
     rollNumber: string;
     gender: 'Male' | 'Female' | 'Other';
-    dob: string;
+    dob: string; // ISO String
     religion: string;
     fatherName: string;
     motherName: string;
     parentMobile: string;
     parentWhatsapp: string;
     photoUrl: string;
-    attendanceRecords?: AttendanceRecord[];
+    status: 'Active' | 'Inactive';
+    joiningDate: string; // ISO string
 };
 
 
@@ -62,7 +56,7 @@ export type Staff = {
 };
 
 export type Attendance = {
-  staffId: string;
+  personId: string; // Can be staffId or studentId
   date: string; // 'YYYY-MM-DD'
   inTime: string | null; // ISO string
   outTime: string | null; // ISO string
@@ -104,39 +98,44 @@ export const initialClients: Client[] = [
 
 export const holidays: Holiday[] = [];
 
-export const initialStaff: Staff[] = [];
-
-export const initialLeaves: LeaveRequest[] = [
+export const initialStudents: Student[] = [
     {
-        id: 'L-1',
-        staffId: 'S-001',
-        leaveType: 'Casual',
-        startDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(),
-        endDate: new Date(new Date().setDate(new Date().getDate() + 6)).toISOString(),
-        reason: 'Family function in another city.',
-        status: 'Pending',
-        requestDate: new Date().toISOString()
+        id: 'STU-001',
+        name: 'Aarav Sharma',
+        email: 'aarav.sharma@example.com',
+        className: '10 A',
+        rollNumber: '21',
+        gender: 'Male',
+        dob: '2008-05-15T00:00:00.000Z',
+        religion: 'Hinduism',
+        fatherName: 'Manish Sharma',
+        motherName: 'Sunita Sharma',
+        parentMobile: '9876543210',
+        parentWhatsapp: '9876543210',
+        photoUrl: 'https://placehold.co/200x200.png',
+        status: 'Active',
+        joiningDate: new Date().toISOString()
     },
     {
-        id: 'L-2',
-        staffId: 'S-002',
-        leaveType: 'Sick',
-        startDate: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(),
-        endDate: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(),
-        reason: 'Fever and cold.',
-        status: 'Approved',
-        requestDate: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString()
-    },
-     {
-        id: 'L-3',
-        staffId: 'S-003',
-        leaveType: 'Casual',
-        startDate: new Date(new Date().setDate(new Date().getDate() - 10)).toISOString(),
-        endDate: new Date(new Date().setDate(new Date().getDate() - 9)).toISOString(),
-        reason: 'Personal work.',
-        status: 'Rejected',
-        requestDate: new Date(new Date().setDate(new Date().getDate() - 12)).toISOString()
+        id: 'STU-002',
+        name: 'Diya Patel',
+        email: 'diya.patel@example.com',
+        className: '9 B',
+        rollNumber: '15',
+        gender: 'Female',
+        dob: '2009-08-22T00:00:00.000Z',
+        religion: 'Hinduism',
+        fatherName: 'Rajesh Patel',
+        motherName: 'Priya Patel',
+        parentMobile: '9876543211',
+        parentWhatsapp: '9876543211',
+        photoUrl: 'https://placehold.co/200x200.png',
+        status: 'Active',
+        joiningDate: new Date().toISOString()
     }
 ];
 
+export const initialStaff: Staff[] = [];
+export const initialLeaves: LeaveRequest[] = [];
 export const initialTasks: Task[] = [];
+export const initialAttendance: Attendance[] = [];
