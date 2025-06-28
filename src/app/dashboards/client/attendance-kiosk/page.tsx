@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Camera, UserCheck, UserX, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -25,17 +25,18 @@ export default function AttendanceKioskPage() {
   const { staff, isInitialized: isStaffInitialized } = useStaffStore();
   const { toast } = useToast();
 
-  const [isScanning, setIsScanning] = useState(false); // To prevent concurrent scans
   const [currentTime, setCurrentTime] = useState('');
-  const [isCameraOn, setIsCameraOn] = useState(false);
   const [status, setStatus] = useState<{
     type: ScanStatusType;
     message: string;
   }>({ type: 'IDLE', message: 'Initializing Camera...' });
-  const [lastScanTimestamps, setLastScanTimestamps] = useState<Record<string, number>>({});
+  const [isCameraOn, setIsCameraOn] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const isScanningRef = useRef(false);
+  const lastScanTimestampsRef = useRef<Record<string, number>>({});
   
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const { currentClient } = useClientStore();
@@ -47,6 +48,8 @@ export default function AttendanceKioskPage() {
       const storedAttendance = localStorage.getItem(storeKey);
       if (storedAttendance) {
         setAttendance(JSON.parse(storedAttendance));
+      } else {
+        setAttendance([]); // Ensure it's reset if key changes and no data exists
       }
     }
   }, [storeKey]);
@@ -58,51 +61,50 @@ export default function AttendanceKioskPage() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
-  
-  const updateAttendanceList = (newList: Attendance[]) => {
-    setAttendance(newList);
-    if (storeKey) {
-      localStorage.setItem(storeKey, JSON.stringify(newList));
-    }
-  };
 
-  const markAttendance = (staffMember: Staff): 'in' | 'out' => {
-    const now = new Date();
-    const today = format(now, 'yyyy-MM-dd');
-    const time = now.toISOString();
-    const existingRecordIndex = attendance.findIndex(record => record.staffId === staffMember.id);
-    if (existingRecordIndex > -1) {
-      const updatedList = [...attendance];
-      updatedList[existingRecordIndex].outTime = time;
-      updateAttendanceList(updatedList);
-      return 'out';
-    } else {
-      const newRecord: Attendance = {
-        staffId: staffMember.id,
-        staffName: staffMember.name,
-        date: today,
-        inTime: time,
-        outTime: null,
-      };
-      updateAttendanceList([...attendance, newRecord]);
-      return 'in';
-    }
-  };
+  const markAttendance = useCallback((staffMember: Staff): 'in' | 'out' => {
+      const now = new Date();
+      const today = format(now, 'yyyy-MM-dd');
+      const time = now.toISOString();
+      let punchTypeResult: 'in' | 'out' = 'in';
+  
+      if (storeKey) {
+          const storedData = localStorage.getItem(storeKey);
+          const currentAttendance: Attendance[] = storedData ? JSON.parse(storedData) : [];
+          
+          const existingRecordIndex = currentAttendance.findIndex(record => record.staffId === staffMember.id);
+  
+          if (existingRecordIndex > -1) {
+              currentAttendance[existingRecordIndex].outTime = time;
+              punchTypeResult = 'out';
+          } else {
+              const newRecord: Attendance = {
+                  staffId: staffMember.id,
+                  staffName: staffMember.name,
+                  date: today,
+                  inTime: time,
+                  outTime: null,
+              };
+              currentAttendance.push(newRecord);
+              punchTypeResult = 'in';
+          }
+          localStorage.setItem(storeKey, JSON.stringify(currentAttendance));
+          setAttendance(currentAttendance);
+      }
+      return punchTypeResult;
+  }, [storeKey]);
 
   // Main camera and scanning loop effect
   useEffect(() => {
-    let stream: MediaStream | null = null;
-    let scanIntervalId: NodeJS.Timeout | null = null;
+    if (!isStaffInitialized) return;
 
+    let scanIntervalId: NodeJS.Timeout | null = null;
+    
     const startKiosk = async () => {
-      // 1. Get camera permission
       try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error('Camera not supported');
-        }
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        streamRef.current = await navigator.mediaDevices.getUserMedia({ video: true });
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          videoRef.current.srcObject = streamRef.current;
         }
         setIsCameraOn(true);
         setStatus({ type: 'IDLE', message: 'Ready to scan. Position your face in the frame.' });
@@ -112,15 +114,14 @@ export default function AttendanceKioskPage() {
         setIsCameraOn(false);
         return;
       }
-
-      // 2. Define the scan function
+      
       const performScan = async () => {
-        if (isScanning || !videoRef.current || !canvasRef.current || !isStaffInitialized || staff.length === 0) {
+        if (isScanningRef.current || !videoRef.current?.srcObject || !canvasRef.current || staff.length === 0 || document.hidden) {
           return;
         }
 
-        setIsScanning(true);
-        setStatus({ type: 'SCANNING', message: 'Scanning...' });
+        isScanningRef.current = true;
+        setStatus(s => s.type !== 'SCANNING' ? { type: 'SCANNING', message: 'Scanning...' } : s);
 
         const video = videoRef.current;
         const canvas = canvasRef.current;
@@ -137,14 +138,14 @@ export default function AttendanceKioskPage() {
             const matchedStaff = staff.find(s => s.id === result.matchedStaffId);
             if (matchedStaff) {
               const now = Date.now();
-              const lastScanTime = lastScanTimestamps[matchedStaff.id] || 0;
+              const lastScanTime = lastScanTimestampsRef.current[matchedStaff.id] || 0;
 
               if (now - lastScanTime < EMPLOYEE_COOLDOWN_MS) {
-                setStatus({ type: 'IDLE', message: `${matchedStaff.name} already marked in recently.` });
+                 setStatus(s => s.type !== 'SUCCESS' ? { type: 'IDLE', message: `${matchedStaff.name} already checked in recently.` } : s);
               } else {
+                lastScanTimestampsRef.current[matchedStaff.id] = now;
                 const punchType = markAttendance(matchedStaff);
                 const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
-                setLastScanTimestamps(prev => ({ ...prev, [matchedStaff.id]: now }));
                 
                 toast({
                   title: `Attendance Marked: ${punchType === 'in' ? 'Clock In' : 'Clock Out'}`,
@@ -154,39 +155,40 @@ export default function AttendanceKioskPage() {
                 setStatus({ type: 'SUCCESS', message: `${welcomeMessage}, ${matchedStaff.name}!` });
                 setTimeout(() => setStatus({ type: 'IDLE', message: 'Ready to scan. Position your face in the frame.' }), 2000);
               }
+            } else {
+                 setStatus({ type: 'IDLE', message: 'No match found. Please try again.' });
             }
           } else {
-            setStatus({ type: 'IDLE', message: 'No match found. Please position your face clearly.' });
+             setStatus({ type: 'IDLE', message: 'No match found. Please position your face clearly.' });
           }
         } catch (error) {
           console.error('AI Recognition Error:', error);
           setStatus({ type: 'IDLE', message: 'An error occurred. Retrying automatically.' });
           toast({ variant: 'destructive', title: 'An Error Occurred', description: 'AI recognition failed.' });
         } finally {
-          setIsScanning(false);
+          isScanningRef.current = false;
         }
       };
-
-      // 3. Start the scanning interval
-      if (document.visibilityState === 'visible') {
-        scanIntervalId = setInterval(performScan, SCAN_INTERVAL_MS);
-      }
+      scanIntervalId = setInterval(performScan, SCAN_INTERVAL_MS);
     };
     
     startKiosk();
 
-    // 4. Cleanup function
     return () => {
       console.log('Cleaning up attendance kiosk...');
       if (scanIntervalId) clearInterval(scanIntervalId);
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      streamRef.current = null;
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
       setIsCameraOn(false);
+      console.log('Camera cleanup complete.');
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStaffInitialized, staff, currentClient?.id]);
-
+  }, [isStaffInitialized, staff, toast, markAttendance, storeKey]);
 
   const StatusIcon = () => {
     switch (status.type) {
@@ -215,11 +217,17 @@ export default function AttendanceKioskPage() {
             <div className="aspect-video bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
               <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
               <canvas ref={canvasRef} className="hidden" />
-              {!isCameraOn && status.type === 'ERROR' && (
+              {(!isCameraOn && status.type === 'ERROR') && (
                 <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white p-4 text-center">
                     <Camera className="h-16 w-16 mb-4" />
                     <h3 className="text-lg font-bold">Camera Access Denied</h3>
                     <p>Please enable camera permissions in your browser settings to use the kiosk.</p>
+                </div>
+              )}
+              {(!isCameraOn && status.type !== 'ERROR') && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                    <Loader2 className="h-16 w-16 mb-4 animate-spin text-primary" />
+                    <p className="text-muted-foreground">Starting camera...</p>
                 </div>
               )}
             </div>
@@ -254,7 +262,7 @@ export default function AttendanceKioskPage() {
                 </TableHeader>
                 <TableBody>
                   {attendance.length > 0 ? (
-                    attendance.sort((a,b) => (b.inTime ?? '').localeCompare(a.inTime ?? '')).map(record => (
+                    [...attendance].sort((a,b) => (b.inTime ?? '').localeCompare(a.inTime ?? '')).map(record => (
                       <TableRow key={record.staffId}>
                         <TableCell className="font-medium">{record.staffName}</TableCell>
                         <TableCell>{record.inTime ? format(new Date(record.inTime), 'p') : 'N/A'}</TableCell>
