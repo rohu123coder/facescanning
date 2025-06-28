@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useClientStore } from './use-client-store';
+import { useClientStore } from '@/hooks/use-client-store.tsx';
 import { planFeatures, type Feature } from '@/lib/plans';
 
 export function usePlanFeatures() {
