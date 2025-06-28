@@ -6,14 +6,27 @@ import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import { AddStaffModal } from '@/components/add-staff-modal';
 import { EditStaffModal } from '@/components/edit-staff-modal';
 import type { Staff } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AttendanceReport } from '@/components/attendance-report';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
+
 
 const getStatusBadge = (status: 'Active' | 'Inactive') => {
   switch (status) {
@@ -27,7 +40,8 @@ const getStatusBadge = (status: 'Active' | 'Inactive') => {
 };
 
 export default function StaffPage() {
-  const { staff, isInitialized } = useStaffStore();
+  const { staff, isInitialized, deleteStaff } = useStaffStore();
+  const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [staffToEdit, setStaffToEdit] = useState<Staff | null>(null);
@@ -35,6 +49,14 @@ export default function StaffPage() {
   const handleEdit = (staffMember: Staff) => {
     setStaffToEdit(staffMember);
     setIsEditModalOpen(true);
+  };
+
+  const handleDelete = (staffMember: Staff) => {
+    deleteStaff(staffMember.id);
+    toast({
+      title: "Staff Member Deleted",
+      description: `${staffMember.name} has been removed successfully.`,
+    });
   };
 
   return (
@@ -90,19 +112,48 @@ export default function StaffPage() {
                                 <TableCell>{staffMember.mobile}</TableCell>
                                 <TableCell>{getStatusBadge(staffMember.status)}</TableCell>
                                 <TableCell className="text-right">
-                                    <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                        <span className="sr-only">Open menu</span>
-                                        <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => handleEdit(staffMember)}>
-                                        Edit
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                    </DropdownMenu>
+                                    <AlertDialog>
+                                        <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                            <span className="sr-only">Open menu</span>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleEdit(staffMember)}>
+                                            Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <AlertDialogTrigger asChild>
+                                                <DropdownMenuItem
+                                                    onSelect={(e) => e.preventDefault()}
+                                                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                        </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently delete {staffMember.name} and all their associated data.
+                                            </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                className="bg-destructive hover:bg-destructive/90"
+                                                onClick={() => handleDelete(staffMember)}
+                                            >
+                                                Continue
+                                            </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </TableCell>
                                 </TableRow>
                             ))

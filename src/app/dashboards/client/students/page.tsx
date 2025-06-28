@@ -6,15 +6,28 @@ import { useStudentStore } from '@/hooks/use-student-store.tsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import { AddStudentModal } from '@/components/add-student-modal';
 import { EditStudentModal } from '@/components/edit-student-modal';
 import type { Student } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StudentAttendanceReport } from '@/components/student-attendance-report';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+
 
 const getStatusBadge = (status: 'Active' | 'Inactive') => {
   switch (status) {
@@ -28,7 +41,8 @@ const getStatusBadge = (status: 'Active' | 'Inactive') => {
 };
 
 export default function StudentsPage() {
-  const { students, isInitialized } = useStudentStore();
+  const { students, isInitialized, deleteStudent } = useStudentStore();
+  const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
@@ -41,6 +55,14 @@ export default function StudentsPage() {
     setIsEditModalOpen(true);
   };
   
+  const handleDelete = (student: Student) => {
+    deleteStudent(student.id);
+    toast({
+      title: "Student Deleted",
+      description: `${student.name} has been removed successfully.`,
+    });
+  };
+
   const filteredStudents = classFilter === 'All' ? students : students.filter(s => s.className === classFilter);
 
   return (
@@ -108,19 +130,48 @@ export default function StudentsPage() {
                                 <TableCell>{student.parentMobile}</TableCell>
                                 <TableCell>{getStatusBadge(student.status)}</TableCell>
                                 <TableCell className="text-right">
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" className="h-8 w-8 p-0">
-                                            <span className="sr-only">Open menu</span>
-                                            <MoreHorizontal className="h-4 w-4" />
-                                          </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                          <DropdownMenuItem onClick={() => handleEdit(student)}>
-                                          Edit
-                                          </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
+                                    <AlertDialog>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                              <span className="sr-only">Open menu</span>
+                                              <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleEdit(student)}>
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <AlertDialogTrigger asChild>
+                                                <DropdownMenuItem
+                                                onSelect={(e) => e.preventDefault()}
+                                                className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete {student.name} and all associated data.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            className="bg-destructive hover:bg-destructive/90"
+                                            onClick={() => handleDelete(student)}
+                                        >
+                                            Continue
+                                        </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
                                 </TableCell>
                                 </TableRow>
                             ))
