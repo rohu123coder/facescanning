@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -14,19 +15,23 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Briefcase, LogOut, Mountain, Users, ScanFace, Star, CheckSquare, GraduationCap } from 'lucide-react';
+import { Briefcase, LogOut, Mountain, Users, ScanFace, Star, CheckSquare, GraduationCap, FileText, HandCoins } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/hooks/use-auth-store';
 import { useClientStore } from '@/hooks/use-client-store';
 import { useEffect } from 'react';
 import Image from 'next/image';
+import { usePlanFeatures } from '@/hooks/use-plan-features';
 
 const navItems = [
-    { href: '/dashboards/client', label: 'Dashboard', icon: <Briefcase /> },
-    { href: '/dashboards/client/staff', label: 'Students', icon: <GraduationCap /> },
-    { href: '/dashboards/client/tasks', label: 'Tasks', icon: <CheckSquare /> },
-    { href: '/dashboards/client/attendance-kiosk', label: 'Attendance Kiosk', icon: <ScanFace /> },
-    { href: '/dashboards/client/reputation', label: 'Reputation', icon: <Star /> },
+    { href: '/dashboards/client', label: 'Dashboard', icon: <Briefcase />, feature: 'DASHBOARD' },
+    { href: '/dashboards/client/staff', label: 'Staff', icon: <Users />, feature: 'STAFF_MANAGEMENT' },
+    { href: '/dashboards/client/students', label: 'Students', icon: <GraduationCap />, feature: 'STUDENT_MANAGEMENT' },
+    { href: '/dashboards/client/tasks', label: 'Tasks', icon: <CheckSquare />, feature: 'TASK_MANAGEMENT' },
+    { href: '/dashboards/client/leaves', label: 'Leaves', icon: <FileText />, feature: 'LEAVE_MANAGEMENT' },
+    { href: '/dashboards/client/salary', label: 'Salary', icon: <HandCoins />, feature: 'SALARY_AUTOMATION' },
+    { href: '/dashboards/client/attendance-kiosk', label: 'Attendance Kiosk', icon: <ScanFace />, feature: 'ATTENDANCE_KIOSK' },
+    { href: '/dashboards/client/reputation', label: 'Reputation', icon: <Star />, feature: 'REPUTATION_MANAGEMENT' },
 ];
 
 function ClientDashboardLayout({
@@ -38,6 +43,7 @@ function ClientDashboardLayout({
   const router = useRouter();
   const { isAuthenticated, logout, isAuthInitialized } = useAuthStore();
   const { currentClient } = useClientStore();
+  const { hasFeature } = usePlanFeatures();
 
   useEffect(() => {
     if (isAuthInitialized) {
@@ -80,14 +86,16 @@ function ClientDashboardLayout({
         <SidebarContent>
           <SidebarMenu>
             {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)} tooltip={item.label}>
-                        <Link href={item.href}>
-                            {item.icon}
-                            <span>{item.label}</span>
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
+                hasFeature(item.feature as any) && (
+                    <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)} tooltip={item.label}>
+                            <Link href={item.href}>
+                                {item.icon}
+                                <span>{item.label}</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                )
             ))}
           </SidebarMenu>
         </SidebarContent>

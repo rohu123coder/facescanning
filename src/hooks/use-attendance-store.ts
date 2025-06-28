@@ -1,14 +1,14 @@
-// This file has been repurposed as use-student-attendance-store.ts
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { type Student, type Attendance, initialAttendance } from '@/lib/data';
+import { type Staff, type Attendance, initialAttendance } from '@/lib/data';
 import { useClientStore } from './use-client-store';
 import { format } from 'date-fns';
 
-const getStoreKey = (clientId: string | undefined) => clientId ? `student_attendance_${clientId}` : null;
+const getStoreKey = (clientId: string | undefined) => clientId ? `attendance_${clientId}` : null;
 
-export function useStudentAttendanceStore() {
+export function useAttendanceStore() {
   const { currentClient } = useClientStore();
   const storeKey = getStoreKey(currentClient?.id);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -45,7 +45,7 @@ export function useStudentAttendanceStore() {
   }, [storeKey]);
 
 
-  const markAttendance = useCallback((student: Student): 'in' | 'out' => {
+  const markAttendance = useCallback((staffMember: Staff): 'in' | 'out' => {
       const now = new Date();
       const today = format(now, 'yyyy-MM-dd');
       const time = now.toISOString();
@@ -53,7 +53,7 @@ export function useStudentAttendanceStore() {
       
       const currentAttendance = [...attendance];
       const existingRecordIndex = currentAttendance.findIndex(
-        record => record.personId === student.id && record.date === today
+        record => record.personId === staffMember.id && record.date === today
       );
 
       if (existingRecordIndex > -1) {
@@ -70,7 +70,7 @@ export function useStudentAttendanceStore() {
           }
       } else {
           const newRecord: Attendance = {
-              personId: student.id,
+              personId: staffMember.id,
               date: today,
               inTime: time,
               outTime: null,
