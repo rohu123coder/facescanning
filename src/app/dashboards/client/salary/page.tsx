@@ -7,7 +7,8 @@ import { Cog, FileText, Loader2 } from 'lucide-react';
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { useAttendanceStore } from '@/hooks/use-attendance-store';
 import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
-import { getDaysInMonth, getDay, format } from 'date-fns';
+import { useLeaveStore } from '@/hooks/use-leave-store';
+import { getDaysInMonth, getDay, format, isWithinInterval, startOfDay, endOfDay, parseISO } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SalaryRulesModal } from '@/components/salary-rules-modal';
@@ -48,6 +49,7 @@ export default function SalaryPage() {
   const { staff } = useStaffStore();
   const { attendance } = useAttendanceStore();
   const { rules } = useSalaryRulesStore();
+  const { leaves } = useLeaveStore();
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false);
@@ -67,28 +69,47 @@ export default function SalaryPage() {
     const totalDaysInMonth = getDaysInMonth(date);
     
     let totalWorkingDays = 0;
+    const workingDaysMap: Record<string, boolean> = {};
     for (let day = 1; day <= totalDaysInMonth; day++) {
         const currentDate = new Date(parseInt(selectedYear), monthIndex, day);
         const dayOfWeek = getDay(currentDate); // 0=Sun, 1=Mon, ..., 6=Sat
         if (rules.workingDays.includes(dayOfWeek.toString())) {
             totalWorkingDays++;
+            workingDaysMap[format(currentDate, 'yyyy-MM-dd')] = true;
         }
     }
     
     const generatedPayslips = staff.map(employee => {
-        const monthStartDate = format(new Date(parseInt(selectedYear), monthIndex, 1), 'yyyy-MM-dd');
-        const monthEndDate = format(new Date(parseInt(selectedYear), monthIndex, totalDaysInMonth), 'yyyy-MM-dd');
+        const approvedLeavesForEmployee = leaves.filter(l => l.staffId === employee.id && l.status === 'Approved');
+        
+        let paidDays = 0;
+        const monthStart = new Date(parseInt(selectedYear), monthIndex, 1);
+        const monthEnd = new Date(parseInt(selectedYear), monthIndex, totalDaysInMonth);
 
-        const daysPresent = attendance.filter(record => 
-            record.staffId === employee.id &&
-            record.date >= monthStartDate &&
-            record.date <= monthEndDate &&
-            record.inTime !== null
-        ).length;
+        for (let day = 1; day <= totalDaysInMonth; day++) {
+          const currentDate = new Date(parseInt(selectedYear), monthIndex, day);
+          const formattedCurrentDate = format(currentDate, 'yyyy-MM-dd');
+
+          if (workingDaysMap[formattedCurrentDate]) {
+            const hasAttendance = attendance.some(record => 
+              record.staffId === employee.id &&
+              record.date === formattedCurrentDate &&
+              record.inTime !== null
+            );
+
+            const isOnApprovedLeave = approvedLeavesForEmployee.some(leave => 
+              isWithinInterval(currentDate, { start: startOfDay(parseISO(leave.startDate)), end: endOfDay(parseISO(leave.endDate)) })
+            );
+
+            if (hasAttendance || isOnApprovedLeave) {
+              paidDays++;
+            }
+          }
+        }
         
         const grossSalaryRate = employee.salary;
         const perDayRate = totalWorkingDays > 0 ? grossSalaryRate / totalWorkingDays : 0;
-        const lopDays = Math.max(0, totalWorkingDays - daysPresent);
+        const lopDays = Math.max(0, totalWorkingDays - paidDays);
         const lopDeduction = perDayRate * lopDays;
         
         const earnedGrossSalary = grossSalaryRate - lopDeduction;
@@ -111,7 +132,7 @@ export default function SalaryPage() {
           grossSalary: grossSalaryRate,
           earnedSalary: earnedGrossSalary,
           totalWorkingDays,
-          daysPresent,
+          daysPresent: paidDays,
           lopDays,
           earnings: {
               basic: parseFloat(basicPay.toFixed(2)),
@@ -145,7 +166,7 @@ export default function SalaryPage() {
         <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold font-headline">Salary Automation</h1>
-              <p className="text-muted-foreground">Automate salary calculation and generate slips based on attendance.</p>
+              <p className="text-muted-foreground">Automate salary calculation and generate slips based on attendance and approved leaves.</p>
             </div>
             <Button variant="outline" onClick={() => setIsRulesModalOpen(true)}>
                 <Cog className="mr-2"/>
@@ -189,8 +210,8 @@ export default function SalaryPage() {
                             <TableHead>Designation</TableHead>
                             <TableHead className="text-right">Gross Salary</TableHead>
                             <TableHead className="text-right">Working Days</TableHead>
-                            <TableHead className="text-right">Present Days</TableHead>
-                            <TableHead className="text-right">Deductions</TableHead>
+                            <TableHead className="text-right">Paid Days</TableHead>
+                            <TableHead className="text-right">LOP Deductions</TableHead>
                             <TableHead className="text-right">Net Salary</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -211,7 +232,7 @@ export default function SalaryPage() {
                                     <TableCell className="text-right">{p.grossSalary.toLocaleString('en-IN')}</TableCell>
                                     <TableCell className="text-right">{p.totalWorkingDays}</TableCell>
                                     <TableCell className="text-right">{p.daysPresent}</TableCell>
-                                    <TableCell className="text-right text-destructive">{p.deductions.total.toLocaleString('en-IN')}</TableCell>
+                                    <TableCell className="text-right text-destructive">{p.deductions.lop.toLocaleString('en-IN')}</TableCell>
                                     <TableCell className="text-right font-semibold">{p.netSalary.toLocaleString('en-IN')}</TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="sm" onClick={() => handleViewPayslip(p)}>

@@ -68,6 +68,17 @@ export type Attendance = {
   outTime: string | null; // ISO string
 };
 
+export type LeaveRequest = {
+  id: string;
+  staffId: string;
+  leaveType: 'Casual' | 'Sick';
+  startDate: string; // ISO string date
+  endDate: string; // ISO string date
+  reason: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  requestDate: string; // ISO string
+};
+
 
 export const initialClients: Client[] = [
     { id: 'C-101', organizationName: 'Innovatech Solutions', organizationDetails: 'Leading the charge in AI-driven business solutions and cloud computing.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Rohan Mehra', email: 'contact@innovatech.com', mobile: '9876543210', whatsapp: '9876543210', plan: 'Enterprise', status: 'Active', staffCount: 45, isSetupComplete: true, isGbpConnected: false },
@@ -80,3 +91,36 @@ export const initialClients: Client[] = [
 export const holidays: Holiday[] = [];
 
 export const initialStaff: Staff[] = [];
+
+export const initialLeaves: LeaveRequest[] = [
+    {
+        id: 'L-1',
+        staffId: 'S-001',
+        leaveType: 'Casual',
+        startDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(),
+        endDate: new Date(new Date().setDate(new Date().getDate() + 6)).toISOString(),
+        reason: 'Family function in another city.',
+        status: 'Pending',
+        requestDate: new Date().toISOString()
+    },
+    {
+        id: 'L-2',
+        staffId: 'S-002',
+        leaveType: 'Sick',
+        startDate: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(),
+        endDate: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(),
+        reason: 'Fever and cold.',
+        status: 'Approved',
+        requestDate: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString()
+    },
+     {
+        id: 'L-3',
+        staffId: 'S-003',
+        leaveType: 'Casual',
+        startDate: new Date(new Date().setDate(new Date().getDate() - 10)).toISOString(),
+        endDate: new Date(new Date().setDate(new Date().getDate() - 9)).toISOString(),
+        reason: 'Personal work.',
+        status: 'Rejected',
+        requestDate: new Date(new Date().setDate(new Date().getDate() - 12)).toISOString()
+    }
+];
