@@ -6,7 +6,8 @@ import { type Student } from '@/lib/data';
 import { useClientStore } from './use-client-store.tsx';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `studentList_${clientId}` : null;
-const getPhotoKey = (studentId: string) => `photo_${studentId}`;
+// The photo key MUST be unique per client to prevent data leakage.
+const getPhotoKey = (clientId: string, studentId: string) => `photo_student_${clientId}_${studentId}`;
 
 interface StudentContextType {
   students: Student[];
@@ -26,7 +27,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
 
   // Load from localStorage on mount
   useEffect(() => {
-    if (storeKey) {
+    if (storeKey && currentClient?.id) {
       try {
         const storedStudents = localStorage.getItem(storeKey);
         // If no data, start with an empty array for a fresh start.
@@ -34,7 +35,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
 
         // Re-hydrate photo URLs from separate storage
         loadedStudents = loadedStudents.map((student: Student) => {
-          const photoData = localStorage.getItem(getPhotoKey(student.id));
+          const photoData = localStorage.getItem(getPhotoKey(currentClient.id, student.id));
           if (photoData) {
             return { ...student, photoUrl: photoData };
           }
@@ -51,18 +52,18 @@ export function StudentProvider({ children }: { children: ReactNode }) {
         setStudents([]);
     }
     setIsInitialized(true);
-  }, [storeKey]);
+  }, [storeKey, currentClient?.id]);
 
 
   // Save to localStorage on change, separating photo data
   useEffect(() => {
-    if (storeKey && isInitialized) {
+    if (storeKey && currentClient?.id && isInitialized) {
         try {
             const studentsToStore = students.map(student => {
                 const { photoUrl, ...rest } = student;
                 if (photoUrl && photoUrl.startsWith('data:image')) {
                     // Store large photo data separately
-                    localStorage.setItem(getPhotoKey(student.id), photoUrl);
+                    localStorage.setItem(getPhotoKey(currentClient.id, student.id), photoUrl);
                     // Return student object without photo data for main list
                     return { ...rest, photoUrl: '' }; 
                 }
@@ -74,7 +75,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
             console.error("Failed to save students to localStorage. Quota may be exceeded.", error);
         }
     }
-  }, [students, storeKey, isInitialized]);
+  }, [students, storeKey, isInitialized, currentClient?.id]);
 
   const addStudent = useCallback((newStudentData: Omit<Student, 'id' | 'joiningDate' | 'status'>) => {
     setStudents(prevStudents => {
@@ -100,11 +101,13 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   
   const deleteStudent = useCallback((studentId: string) => {
     // Also remove the photo from localStorage
-    localStorage.removeItem(getPhotoKey(studentId));
+    if (currentClient?.id) {
+        localStorage.removeItem(getPhotoKey(currentClient.id, studentId));
+    }
     setStudents(prevStudents => {
       return prevStudents.filter(member => member.id !== studentId);
     });
-  }, []);
+  }, [currentClient?.id]);
   
   return (
     <StudentContext.Provider value={{ students, addStudent, updateStudent, deleteStudent, isInitialized }}>
