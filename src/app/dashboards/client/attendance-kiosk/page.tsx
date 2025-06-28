@@ -35,6 +35,10 @@ export default function AttendanceKioskPage() {
   const isScanningRef = useRef(false);
   const lastScanTimestampsRef = useRef<Record<string, number>>({});
   
+  const getStaffName = (staffId: string) => {
+    return staff.find(s => s.id === staffId)?.name || 'Unknown Staff';
+  };
+  
   // Update today's log when the full attendance list changes
   useEffect(() => {
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -220,7 +224,7 @@ export default function AttendanceKioskPage() {
                   {todaysLog.length > 0 ? (
                     [...todaysLog].sort((a,b) => (b.inTime ?? '').localeCompare(a.inTime ?? '')).map(record => (
                       <TableRow key={record.staffId}>
-                        <TableCell className="font-medium">{record.staffName}</TableCell>
+                        <TableCell className="font-medium">{getStaffName(record.staffId)}</TableCell>
                         <TableCell>{record.inTime ? format(new Date(record.inTime), 'p') : 'N/A'}</TableCell>
                         <TableCell>{record.outTime ? format(new Date(record.outTime), 'p') : 'N/A'}</TableCell>
                       </TableRow>

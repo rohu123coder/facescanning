@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon, FileSpreadsheet, FileText } from 'lucide-react';
 import { useAttendanceStore } from '@/hooks/use-attendance-store';
+import { useStaffStore } from '@/hooks/use-staff-store';
 import { addDays, format, differenceInHours, parseISO } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { type Attendance } from '@/lib/data';
@@ -16,6 +17,7 @@ import html2canvas from 'html2canvas';
 
 export function AttendanceReport() {
   const { attendance, isInitialized } = useAttendanceStore();
+  const { staff, isInitialized: isStaffInitialized } = useStaffStore();
   
   const [date, setDate] = React.useState<DateRange | undefined>({
     from: addDays(new Date(), -7),
@@ -23,6 +25,10 @@ export function AttendanceReport() {
   });
 
   const [filteredAttendance, setFilteredAttendance] = React.useState<Attendance[]>([]);
+  
+  const getStaffName = (staffId: string) => {
+    return staff.find(s => s.id === staffId)?.name || 'Unknown Staff';
+  };
 
   React.useEffect(() => {
     if (isInitialized) {
@@ -51,10 +57,11 @@ export function AttendanceReport() {
     csvContent += "Staff Name,Date,In Time,Out Time,Total Hours\n";
 
     filteredAttendance.forEach(record => {
+        const staffName = getStaffName(record.staffId);
         const inTime = record.inTime ? format(parseISO(record.inTime), 'p') : 'N/A';
         const outTime = record.outTime ? format(parseISO(record.outTime), 'p') : 'N/A';
         const totalHours = calculateTotalHours(record.inTime, record.outTime);
-        const row = [record.staffName, record.date, inTime, outTime, totalHours].join(",");
+        const row = [staffName, record.date, inTime, outTime, totalHours].join(",");
         csvContent += row + "\n";
     });
 
@@ -154,11 +161,11 @@ export function AttendanceReport() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isInitialized ? (
+              {isInitialized && isStaffInitialized ? (
                 filteredAttendance.length > 0 ? (
                   filteredAttendance.map(record => (
                     <TableRow key={`${record.staffId}-${record.date}`}>
-                      <TableCell className="font-medium">{record.staffName}</TableCell>
+                      <TableCell className="font-medium">{getStaffName(record.staffId)}</TableCell>
                       <TableCell>{format(parseISO(record.date), 'PP')}</TableCell>
                       <TableCell>{record.inTime ? format(parseISO(record.inTime), 'p') : 'N/A'}</TableCell>
                       <TableCell>{record.outTime ? format(parseISO(record.outTime), 'p') : 'N/A'}</TableCell>
