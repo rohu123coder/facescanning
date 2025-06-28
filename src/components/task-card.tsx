@@ -36,7 +36,7 @@ export function TaskCard({ task, onSelectTask, onUpdateTask }: TaskCardProps) {
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => onSelectTask(task)}>
+    <Card className="hover:shadow-md transition-shadow" onClick={() => onSelectTask(task)}>
       <CardHeader className="flex-row justify-between items-start">
         <CardTitle className="text-base pr-2">{task.title}</CardTitle>
         <DropdownMenu>

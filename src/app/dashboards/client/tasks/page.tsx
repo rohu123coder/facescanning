@@ -6,8 +6,9 @@ import { PlusCircle, CheckCircle, ListTodo, CircleEllipsis } from 'lucide-react'
 import { AddTaskModal } from '@/components/add-task-modal';
 import { TaskDetailsModal } from '@/components/task-details-modal';
 import { useTaskStore } from '@/hooks/use-task-store';
-import { TaskCard } from '@/components/task-card';
-import type { Task, TaskStatus } from '@/lib/data';
+import { type Task, type TaskStatus } from '@/lib/data';
+import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { TaskColumn } from '@/components/task-column';
 
 const statusColumns: { status: TaskStatus; title: string; icon: React.ReactNode }[] = [
   { status: 'To Do', title: 'To Do', icon: <ListTodo /> },
@@ -30,6 +31,38 @@ export default function TasksPage() {
     return tasks.filter(task => task.status === status);
   };
   
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px drag to start
+      },
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const task = tasks.find((t) => t.id === active.id);
+    if (!task) return;
+
+    const overContainerId = over.data.current?.sortable.containerId;
+
+    // Determine the new status. It can be the ID of the droppable container
+    // or the container ID of the sortable item we're dropping over.
+    const newStatus = (overContainerId || over.id) as TaskStatus;
+    
+    // Validate if newStatus is a valid column status
+    const isValidStatus = statusColumns.some(c => c.status === newStatus);
+
+    if (isValidStatus && task.status !== newStatus) {
+      updateTask({ ...task, status: newStatus });
+    }
+  };
+
   return (
     <>
       <div className="space-y-8">
@@ -44,43 +77,23 @@ export default function TasksPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
-          {statusColumns.map(({ status, title, icon }) => (
-            <div key={status} className="bg-muted/50 rounded-lg h-full">
-              <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-muted/80 backdrop-blur-sm rounded-t-lg">
-                <div className="flex items-center gap-2">
-                    {icon}
-                    <h2 className="font-semibold">{title}</h2>
-                </div>
-                <span className="bg-primary text-primary-foreground text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
-                    {getTasksByStatus(status).length}
-                </span>
-              </div>
-              <div className="p-4 space-y-4 h-full">
-                {isInitialized ? (
-                    getTasksByStatus(status).length > 0 ? (
-                        getTasksByStatus(status)
-                        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-                        .map(task => (
-                            <TaskCard 
-                              key={task.id} 
-                              task={task} 
-                              onSelectTask={handleViewTask}
-                              onUpdateTask={updateTask}
-                            />
-                        ))
-                    ) : (
-                        <div className="text-center text-sm text-muted-foreground py-8">
-                            No tasks in this column.
-                        </div>
-                    )
-                ) : (
-                    <p>Loading tasks...</p>
-                )}
-              </div>
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+            {isInitialized ? statusColumns.map(({ status, title, icon }) => (
+                <TaskColumn
+                    key={status}
+                    status={status}
+                    title={title}
+                    icon={icon}
+                    tasks={getTasksByStatus(status)}
+                    onSelectTask={handleViewTask}
+                    onUpdateTask={updateTask}
+                />
+            )) : (
+                <p>Loading tasks...</p>
+            )}
             </div>
-          ))}
-        </div>
+        </DndContext>
       </div>
       <AddTaskModal isOpen={isAddTaskModalOpen} onOpenChange={setIsAddTaskModalOpen} />
       <TaskDetailsModal isOpen={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen} task={selectedTask} />
