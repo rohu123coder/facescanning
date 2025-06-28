@@ -30,7 +30,6 @@ import type { Staff } from '@/lib/data';
 import { Loader2, Camera, Upload, Link as LinkIcon, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface EditStaffModalProps {
   isOpen: boolean;
@@ -46,7 +45,6 @@ const staffFormSchema = z.object({
   whatsapp: z.string().min(10, { message: 'WhatsApp number must be at least 10 digits.' }),
   address: z.string().min(5, { message: 'Please enter a valid address.' }),
   department: z.string().min(2, { message: 'Department is required.' }),
-  role: z.enum(['Admin', 'Employee'], { required_error: 'Please select a role.' }),
   salary: z.coerce.number().min(0, { message: 'Salary must be a positive number.' }),
   totalCasualLeaves: z.coerce.number().min(0, { message: 'Casual leaves must be a positive number.' }),
   totalSickLeaves: z.coerce.number().min(0, { message: 'Sick leaves must be a positive number.' }),
@@ -69,7 +67,7 @@ export function EditStaffModal({ isOpen, onOpenChange, staff, onStaffUpdated }: 
   const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffFormSchema),
     defaultValues: {
-      name: '', email: '', mobile: '', whatsapp: '', address: '', department: '', role: 'Employee', salary: 0, photo: '', totalCasualLeaves: 0, totalSickLeaves: 0, skills: [],
+      name: '', email: '', mobile: '', whatsapp: '', address: '', department: '', salary: 0, photo: '', totalCasualLeaves: 0, totalSickLeaves: 0, skills: [],
     },
   });
 
@@ -82,7 +80,6 @@ export function EditStaffModal({ isOpen, onOpenChange, staff, onStaffUpdated }: 
         whatsapp: staff.whatsapp,
         address: staff.address,
         department: staff.department,
-        role: staff.role,
         salary: staff.salary,
         photo: staff.photoUrl,
         totalCasualLeaves: staff.totalCasualLeaves,
@@ -279,27 +276,6 @@ export function EditStaffModal({ isOpen, onOpenChange, staff, onStaffUpdated }: 
                       <FormControl>
                         <Input placeholder="e.g. Engineering" {...field} />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem className="col-span-2 sm:col-span-1">
-                      <FormLabel>Role</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="Employee">Employee</SelectItem>
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

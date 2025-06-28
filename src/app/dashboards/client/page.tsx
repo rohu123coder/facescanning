@@ -199,9 +199,9 @@ export default function ClientDashboard() {
     let fileName;
     
     if (activeTab === 'staff') {
-      const headers = ['Staff ID', 'Name', 'Email', 'Mobile', 'Department', 'Role', 'Date', 'In-Time', 'Out-Time', 'Total Hours Worked'];
+      const headers = ['Staff ID', 'Name', 'Email', 'Mobile', 'Department', 'Date', 'In-Time', 'Out-Time', 'Total Hours Worked'];
       const rows = staffAttendanceList.map(({ staff, record }) => [
-            staff.id, staff.name, staff.email, staff.mobile, staff.department, staff.role,
+            staff.id, staff.name, staff.email, staff.mobile, staff.department, 
             record.date ? format(new Date(record.date), 'yyyy-MM-dd') : 'N/A',
             record.inTime ?? 'N/A', record.outTime ?? 'N/A', record.totalHours ?? 'N/A'
       ].join(','));
@@ -338,21 +338,19 @@ export default function ClientDashboard() {
                                     <TableHead>ID</TableHead>
                                     <TableHead>Name</TableHead>
                                     <TableHead>Department</TableHead>
-                                    <TableHead>Role</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {!staffInitialized ? (
-                                    <TableRow><TableCell colSpan={5} className="text-center h-24">Loading staff data...</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={4} className="text-center h-24">Loading staff data...</TableCell></TableRow>
                                 ) : filteredStaffList.length > 0 ? (
                                     filteredStaffList.map((staff) => (
                                     <TableRow key={staff.id}>
                                         <TableCell className="font-medium">{staff.id}</TableCell>
                                         <TableCell>{staff.name}</TableCell>
                                         <TableCell><Badge variant="outline">{staff.department}</Badge></TableCell>
-                                        <TableCell>{staff.role}</TableCell>
-                                        <TableCell className="text-right print-hide">
+                                        <TableCell className="print-hide">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
@@ -382,7 +380,7 @@ export default function ClientDashboard() {
                                     </TableRow>
                                     ))
                                 ) : (
-                                    <TableRow><TableCell colSpan={5} className="text-center h-24">No staff match the current filters.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={4} className="text-center h-24">No staff match the current filters.</TableCell></TableRow>
                                 )}
                             </TableBody>
                        </Table>

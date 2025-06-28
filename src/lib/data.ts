@@ -18,7 +18,6 @@ export type Staff = {
   whatsapp: string;
   address: string;
   department: string;
-  role: 'Admin' | 'Employee';
   salary: number;
   photoUrl: string;
   totalCasualLeaves: number;
@@ -123,10 +122,10 @@ export type LeaveRequest = {
 };
 
 export const initialStaff: Staff[] = [
-    { id: 'KM-001', name: 'Aarav Sharma', email: 'aarav.sharma@example.com', mobile: '9876543210', whatsapp: '9876543210', address: '123 Tech Park, Bangalore', department: 'Engineering', role: 'Employee', salary: 75000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['React', 'TypeScript', 'Next.js'] },
-    { id: 'KM-002', name: 'Diya Patel', email: 'diya.patel@example.com', mobile: '9876543211', whatsapp: '9876543211', address: '456 Innovation Hub, Pune', department: 'Engineering', role: 'Employee', salary: 85000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Node.js', 'Databases', 'API Design'] },
-    { id: 'KM-003', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', mobile: '9876543212', whatsapp: '9876543212', address: '789 Business Tower, Mumbai', department: 'Product', role: 'Admin', salary: 95000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Product Strategy', 'Jira', 'Agile'] },
-    { id: 'KM-004', name: 'Priya Singh', email: 'priya.singh@example.com', mobile: '9876543213', whatsapp: '9876543213', address: '101 Design Studio, Delhi', department: 'Design', role: 'Employee', salary: 70000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Figma', 'UI Design', 'User Research'] },
+    { id: 'KM-001', name: 'Aarav Sharma', email: 'aarav.sharma@example.com', mobile: '9876543210', whatsapp: '9876543210', address: '123 Tech Park, Bangalore', department: 'Engineering', salary: 75000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['React', 'TypeScript', 'Next.js'] },
+    { id: 'KM-002', name: 'Diya Patel', email: 'diya.patel@example.com', mobile: '9876543211', whatsapp: '9876543211', address: '456 Innovation Hub, Pune', department: 'Engineering', salary: 85000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Node.js', 'Databases', 'API Design'] },
+    { id: 'KM-003', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', mobile: '9876543212', whatsapp: '9876543212', address: '789 Business Tower, Mumbai', department: 'Product', salary: 95000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Product Strategy', 'Jira', 'Agile'] },
+    { id: 'KM-004', name: 'Priya Singh', email: 'priya.singh@example.com', mobile: '9876543213', whatsapp: '9876543213', address: '101 Design Studio, Delhi', department: 'Design', salary: 70000, photoUrl: 'https://placehold.co/400x400.png', totalCasualLeaves: 12, totalSickLeaves: 10, attendanceRecords: [], skills: ['Figma', 'UI Design', 'User Research'] },
 ];
 
 const baseDate = new Date('2024-07-25T10:00:00Z');
