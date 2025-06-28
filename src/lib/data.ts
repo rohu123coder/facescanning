@@ -48,10 +48,14 @@ export type Staff = {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  mobile: string;
+  whatsapp: string;
+  address: string;
   department: 'Sales' | 'Marketing' | 'Engineering' | 'HR' | 'Support';
   role: string;
   salary: number;
+  annualCasualLeaves: number;
+  annualSickLeaves: number;
   joiningDate: string; // ISO string
   status: 'Active' | 'Inactive';
   photoUrl: string;
