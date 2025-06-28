@@ -9,7 +9,7 @@ import { recognizeStaffFace } from '@/ai/flows/face-scan-attendance';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { type Staff, type Attendance } from '@/lib/data';
-import { Progress } from '@/components/ui/progress';
+import { useClientStore } from '@/hooks/use-client-store';
 
 const getAttendanceStoreKey = (clientId: string | undefined) => {
     if (!clientId) return null;
@@ -17,27 +17,26 @@ const getAttendanceStoreKey = (clientId: string | undefined) => {
     return `attendance_${clientId}_${today}`;
 };
 
-type ScanStatus = 'IDLE' | 'SCANNING' | 'SUCCESS' | 'NO_MATCH' | 'ERROR' | 'COOLDOWN';
-const COOLDOWN_DURATION = 5000; // 5 seconds
-const SCAN_INTERVAL = 3000; // 3 seconds between scan attempts
+type ScanStatusType = 'IDLE' | 'SCANNING' | 'SUCCESS' | 'NO_MATCH' | 'ERROR';
+const SCAN_INTERVAL_MS = 3000; // Scan every 3 seconds
+const EMPLOYEE_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
 export default function AttendanceKioskPage() {
   const { staff, isInitialized: isStaffInitialized } = useStaffStore();
   const { toast } = useToast();
 
-  const [isLoading, setIsLoading] = useState(false); // To prevent concurrent scans
+  const [isScanning, setIsScanning] = useState(false); // To prevent concurrent scans
   const [currentTime, setCurrentTime] = useState('');
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [status, setStatus] = useState<{
-    type: ScanStatus;
+    type: ScanStatusType;
     message: string;
-    progress?: number;
   }>({ type: 'IDLE', message: 'Initializing Camera...' });
+  const [lastScanTimestamps, setLastScanTimestamps] = useState<Record<string, number>>({});
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const cooldownTimerRef = useRef<NodeJS.Timeout>();
-
+  
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const { currentClient } = useClientStore();
   const storeKey = getAttendanceStoreKey(currentClient?.id);
@@ -90,121 +89,112 @@ export default function AttendanceKioskPage() {
     }
   };
 
-  // The main scanning function
-  const handleScan = async () => {
-    if (isLoading || !isCameraOn || !videoRef.current || !canvasRef.current || !isStaffInitialized) {
-      return;
-    }
-    if (staff.length === 0) {
-      setStatus({ type: 'ERROR', message: 'No staff registered. Please add staff first.' });
-      return;
-    }
-
-    setIsLoading(true);
-    setStatus({ type: 'SCANNING', message: 'Scanning for a face...' });
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const capturedPhotoDataUri = canvas.toDataURL('image/jpeg');
-
-    try {
-      const staffListForRecognition = staff.map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl }));
-      const result = await recognizeStaffFace({ capturedPhotoDataUri, staffList: staffListForRecognition });
-
-      if (result.matchedStaffId) {
-        const matchedStaff = staff.find(s => s.id === result.matchedStaffId);
-        if (matchedStaff) {
-          const punchType = markAttendance(matchedStaff);
-          const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
-          toast({
-            title: `Attendance Marked: ${punchType === 'in' ? 'Clock In' : 'Clock Out'}`,
-            description: `${welcomeMessage}, ${matchedStaff.name}! Your attendance has been recorded.`,
-          });
-          
-          setStatus({ type: 'COOLDOWN', message: `${welcomeMessage}, ${matchedStaff.name}!`, progress: 100 });
-          let progress = 100;
-          const interval = setInterval(() => {
-              progress -= (100 / (COOLDOWN_DURATION / 100));
-              setStatus(prev => ({ ...prev, progress: progress }));
-          }, 100);
-          cooldownTimerRef.current = setTimeout(() => {
-              clearInterval(interval);
-              setStatus({ type: 'IDLE', message: 'Ready to scan. Position your face in the frame.' });
-              setIsLoading(false);
-          }, COOLDOWN_DURATION);
-        }
-      } else {
-        setStatus({ type: 'IDLE', message: 'No match found. Please position your face clearly.' });
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error('AI Recognition Error:', error);
-      toast({ variant: 'destructive', title: 'An Error Occurred', description: 'AI recognition failed. Retrying...' });
-      setStatus({ type: 'IDLE', message: 'An error occurred. Retrying automatically.' });
-      setIsLoading(false);
-    }
-  };
-
-  // Camera and scanning loop management
+  // Main camera and scanning loop effect
   useEffect(() => {
-    const startCamera = async () => {
+    let stream: MediaStream | null = null;
+    let scanIntervalId: NodeJS.Timeout | null = null;
+
+    const startKiosk = async () => {
+      // 1. Get camera permission
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) videoRef.current.srcObject = stream;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Camera not supported');
+        }
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
         setIsCameraOn(true);
         setStatus({ type: 'IDLE', message: 'Ready to scan. Position your face in the frame.' });
       } catch (error) {
         console.error('Error accessing camera:', error);
-        setIsCameraOn(false);
         setStatus({ type: 'ERROR', message: 'Camera access denied. Please enable it in browser settings.' });
+        setIsCameraOn(false);
+        return;
       }
-    };
-    startCamera();
 
-    // Cleanup function when navigating away
-    return () => {
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
-      if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
-    };
-  }, []);
+      // 2. Define the scan function
+      const performScan = async () => {
+        if (isScanning || !videoRef.current || !canvasRef.current || !isStaffInitialized || staff.length === 0) {
+          return;
+        }
 
-  // Automatic scanning loop, driven by setTimeout for better control
-  useEffect(() => {
-      let scanTimeout: NodeJS.Timeout;
-      
-      const loop = () => {
-          if (document.visibilityState === 'visible') { // Only scan if the page is visible
-            handleScan();
+        setIsScanning(true);
+        setStatus({ type: 'SCANNING', message: 'Scanning...' });
+
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const capturedPhotoDataUri = canvas.toDataURL('image/jpeg');
+
+        try {
+          const staffListForRecognition = staff.map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl }));
+          const result = await recognizeStaffFace({ capturedPhotoDataUri, staffList: staffListForRecognition });
+
+          if (result.matchedStaffId) {
+            const matchedStaff = staff.find(s => s.id === result.matchedStaffId);
+            if (matchedStaff) {
+              const now = Date.now();
+              const lastScanTime = lastScanTimestamps[matchedStaff.id] || 0;
+
+              if (now - lastScanTime < EMPLOYEE_COOLDOWN_MS) {
+                setStatus({ type: 'IDLE', message: `${matchedStaff.name} already marked in recently.` });
+              } else {
+                const punchType = markAttendance(matchedStaff);
+                const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
+                setLastScanTimestamps(prev => ({ ...prev, [matchedStaff.id]: now }));
+                
+                toast({
+                  title: `Attendance Marked: ${punchType === 'in' ? 'Clock In' : 'Clock Out'}`,
+                  description: `${welcomeMessage}, ${matchedStaff.name}!`,
+                });
+                
+                setStatus({ type: 'SUCCESS', message: `${welcomeMessage}, ${matchedStaff.name}!` });
+                setTimeout(() => setStatus({ type: 'IDLE', message: 'Ready to scan. Position your face in the frame.' }), 2000);
+              }
+            }
+          } else {
+            setStatus({ type: 'IDLE', message: 'No match found. Please position your face clearly.' });
           }
+        } catch (error) {
+          console.error('AI Recognition Error:', error);
+          setStatus({ type: 'IDLE', message: 'An error occurred. Retrying automatically.' });
+          toast({ variant: 'destructive', title: 'An Error Occurred', description: 'AI recognition failed.' });
+        } finally {
+          setIsScanning(false);
+        }
       };
 
-      if (status.type === 'IDLE' && isCameraOn) {
-          scanTimeout = setTimeout(loop, SCAN_INTERVAL);
+      // 3. Start the scanning interval
+      if (document.visibilityState === 'visible') {
+        scanIntervalId = setInterval(performScan, SCAN_INTERVAL_MS);
       }
+    };
+    
+    startKiosk();
 
-      return () => {
-          clearTimeout(scanTimeout);
+    // 4. Cleanup function
+    return () => {
+      console.log('Cleaning up attendance kiosk...');
+      if (scanIntervalId) clearInterval(scanIntervalId);
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
+      setIsCameraOn(false);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status.type, isCameraOn]);
+  }, [isStaffInitialized, staff, currentClient?.id]);
 
 
   const StatusIcon = () => {
     switch (status.type) {
       case 'SCANNING': return <Loader2 className="h-6 w-6 text-primary animate-spin" />;
-      case 'COOLDOWN':
-        return <UserCheck className="h-6 w-6 text-green-500" />;
+      case 'SUCCESS': return <UserCheck className="h-6 w-6 text-green-500" />;
       case 'NO_MATCH': return <UserX className="h-6 w-6 text-destructive" />;
       case 'ERROR': return <ShieldAlert className="h-6 w-6 text-destructive" />;
-      case 'IDLE':
-      default:
-        return <Camera className="h-6 w-6 text-muted-foreground" />;
+      case 'IDLE': default: return <Camera className="h-6 w-6 text-muted-foreground" />;
     }
   }
 
@@ -242,7 +232,6 @@ export default function AttendanceKioskPage() {
                         <p className="text-sm text-muted-foreground">{status.message}</p>
                     </div>
                 </div>
-                {status.type === 'COOLDOWN' && <Progress value={status.progress} className="w-full mt-2 h-2" />}
             </Card>
 
           </CardContent>
