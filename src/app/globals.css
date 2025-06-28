@@ -8,7 +8,7 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 96.1%;
+    --background: 240 10% 96.1%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
@@ -95,7 +95,7 @@ body {
     background-color: white !important;
     color: black !important;
   }
-  .print-hide {
+  .print-hide, .hidden-for-print {
     display: none !important;
   }
   main {

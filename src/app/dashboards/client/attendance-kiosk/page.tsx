@@ -9,13 +9,8 @@ import { recognizeStaffFace } from '@/ai/flows/face-scan-attendance';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { type Staff, type Attendance } from '@/lib/data';
-import { useClientStore } from '@/hooks/use-client-store';
+import { useAttendanceStore } from '@/hooks/use-attendance-store';
 
-const getAttendanceStoreKey = (clientId: string | undefined) => {
-    if (!clientId) return null;
-    const today = format(new Date(), 'yyyy-MM-dd');
-    return `attendance_${clientId}_${today}`;
-};
 
 type ScanStatusType = 'IDLE' | 'SCANNING' | 'SUCCESS' | 'NO_MATCH' | 'ERROR';
 const SCAN_INTERVAL_MS = 3000; // Scan every 3 seconds
@@ -24,6 +19,7 @@ const EMPLOYEE_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 export default function AttendanceKioskPage() {
   const { staff, isInitialized: isStaffInitialized } = useStaffStore();
   const { toast } = useToast();
+  const { attendance, markAttendance, isInitialized: isAttendanceInitialized } = useAttendanceStore();
 
   const [currentTime, setCurrentTime] = useState('');
   const [status, setStatus] = useState<{
@@ -31,6 +27,7 @@ export default function AttendanceKioskPage() {
     message: string;
   }>({ type: 'IDLE', message: 'Initializing Camera...' });
   const [isCameraOn, setIsCameraOn] = useState(false);
+  const [todaysLog, setTodaysLog] = useState<Attendance[]>([]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -38,22 +35,13 @@ export default function AttendanceKioskPage() {
   const isScanningRef = useRef(false);
   const lastScanTimestampsRef = useRef<Record<string, number>>({});
   
-  const [attendance, setAttendance] = useState<Attendance[]>([]);
-  const { currentClient } = useClientStore();
-  const storeKey = getAttendanceStoreKey(currentClient?.id);
-
-  // Load attendance from local storage
+  // Update today's log when the full attendance list changes
   useEffect(() => {
-    if (storeKey) {
-      const storedAttendance = localStorage.getItem(storeKey);
-      if (storedAttendance) {
-        setAttendance(JSON.parse(storedAttendance));
-      } else {
-        setAttendance([]); // Ensure it's reset if key changes and no data exists
-      }
-    }
-  }, [storeKey]);
-
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const filteredLog = attendance.filter(record => record.date === today);
+    setTodaysLog(filteredLog);
+  }, [attendance]);
+  
   // Clock
   useEffect(() => {
     const timer = setInterval(() => {
@@ -62,41 +50,9 @@ export default function AttendanceKioskPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const markAttendance = useCallback((staffMember: Staff): 'in' | 'out' => {
-      const now = new Date();
-      const today = format(now, 'yyyy-MM-dd');
-      const time = now.toISOString();
-      let punchTypeResult: 'in' | 'out' = 'in';
-  
-      if (storeKey) {
-          const storedData = localStorage.getItem(storeKey);
-          const currentAttendance: Attendance[] = storedData ? JSON.parse(storedData) : [];
-          
-          const existingRecordIndex = currentAttendance.findIndex(record => record.staffId === staffMember.id);
-  
-          if (existingRecordIndex > -1) {
-              currentAttendance[existingRecordIndex].outTime = time;
-              punchTypeResult = 'out';
-          } else {
-              const newRecord: Attendance = {
-                  staffId: staffMember.id,
-                  staffName: staffMember.name,
-                  date: today,
-                  inTime: time,
-                  outTime: null,
-              };
-              currentAttendance.push(newRecord);
-              punchTypeResult = 'in';
-          }
-          localStorage.setItem(storeKey, JSON.stringify(currentAttendance));
-          setAttendance(currentAttendance);
-      }
-      return punchTypeResult;
-  }, [storeKey]);
-
   // Main camera and scanning loop effect
   useEffect(() => {
-    if (!isStaffInitialized) return;
+    if (!isStaffInitialized || !isAttendanceInitialized) return;
 
     let scanIntervalId: NodeJS.Timeout | null = null;
     
@@ -180,15 +136,15 @@ export default function AttendanceKioskPage() {
       
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       }
-      streamRef.current = null;
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
       setIsCameraOn(false);
       console.log('Camera cleanup complete.');
     };
-  }, [isStaffInitialized, staff, toast, markAttendance, storeKey]);
+  }, [isStaffInitialized, isAttendanceInitialized, staff, toast, markAttendance]);
 
   const StatusIcon = () => {
     switch (status.type) {
@@ -236,7 +192,7 @@ export default function AttendanceKioskPage() {
                 <div className="flex items-center gap-4">
                     <StatusIcon />
                     <div className="flex-1">
-                        <p className="font-semibold">{status.type}</p>
+                        <p className="font-semibold">{status.type.charAt(0).toUpperCase() + status.type.slice(1).toLowerCase()}</p>
                         <p className="text-sm text-muted-foreground">{status.message}</p>
                     </div>
                 </div>
@@ -261,8 +217,8 @@ export default function AttendanceKioskPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {attendance.length > 0 ? (
-                    [...attendance].sort((a,b) => (b.inTime ?? '').localeCompare(a.inTime ?? '')).map(record => (
+                  {todaysLog.length > 0 ? (
+                    [...todaysLog].sort((a,b) => (b.inTime ?? '').localeCompare(a.inTime ?? '')).map(record => (
                       <TableRow key={record.staffId}>
                         <TableCell className="font-medium">{record.staffName}</TableCell>
                         <TableCell>{record.inTime ? format(new Date(record.inTime), 'p') : 'N/A'}</TableCell>
@@ -284,22 +240,4 @@ export default function AttendanceKioskPage() {
       </div>
     </div>
   );
-}
-
-// Minimal useClientStore to get currentClient.id
-// In a real app this would be more robust.
-function useClientStore() {
-    const [currentClient, setCurrentClient] = useState<{id: string} | null>(null);
-    useEffect(() => {
-        try {
-            const loggedInClientId = localStorage.getItem('loggedInClientId');
-            if (loggedInClientId) {
-                // For this component, we only need the ID.
-                setCurrentClient({ id: loggedInClientId });
-            }
-        } catch (e) {
-            console.error(e)
-        }
-    }, []);
-    return { currentClient };
 }
