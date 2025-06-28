@@ -56,6 +56,7 @@ export function EditStudentModal({ isOpen, onOpenChange, student }: EditStudentM
   const { toast } = useToast();
   const { updateStudent } = useStudentStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentYear = new Date().getFullYear();
   
   const form = useForm<z.infer<typeof studentFormSchema>>({
     resolver: zodResolver(studentFormSchema),
@@ -260,6 +261,9 @@ export function EditStudentModal({ isOpen, onOpenChange, student }: EditStudentM
                               onSelect={field.onChange}
                               disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                               initialFocus
+                              captionLayout="dropdown-buttons"
+                              fromYear={currentYear - 100}
+                              toYear={currentYear}
                             />
                           </PopoverContent>
                         </Popover>

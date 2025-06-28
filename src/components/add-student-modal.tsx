@@ -55,6 +55,7 @@ export function AddStudentModal({ isOpen, onOpenChange }: AddStudentModalProps) 
   const { toast } = useToast();
   const { addStudent } = useStudentStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentYear = new Date().getFullYear();
   
   const form = useForm<z.infer<typeof studentFormSchema>>({
     resolver: zodResolver(studentFormSchema),
@@ -272,6 +273,9 @@ export function AddStudentModal({ isOpen, onOpenChange }: AddStudentModalProps) 
                               onSelect={field.onChange}
                               disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                               initialFocus
+                              captionLayout="dropdown-buttons"
+                              fromYear={currentYear - 100}
+                              toYear={currentYear}
                             />
                           </PopoverContent>
                         </Popover>
