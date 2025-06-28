@@ -29,8 +29,14 @@ export function StaffSelectionModal({ isOpen, onOpenChange, onSelectStaff }: Sta
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0">
-        <Command>
+      <DialogContent>
+        <DialogHeader>
+            <DialogTitle>Select a staff member</DialogTitle>
+            <DialogDescription>
+                Search by name and select a staff member to assign the task to.
+            </DialogDescription>
+        </DialogHeader>
+        <Command className="rounded-lg border">
           <CommandInput placeholder="Search staff..." />
           <CommandList>
             <CommandEmpty>No staff found.</CommandEmpty>
@@ -40,7 +46,7 @@ export function StaffSelectionModal({ isOpen, onOpenChange, onSelectStaff }: Sta
                   key={member.id}
                   value={member.name}
                   onSelect={() => onSelectStaff(member.id)}
-                  className="flex items-center gap-4"
+                  className="flex items-center gap-4 cursor-pointer"
                 >
                   <Avatar>
                     <AvatarImage src={member.photoUrl} alt={member.name} />
