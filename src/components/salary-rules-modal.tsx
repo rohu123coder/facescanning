@@ -61,8 +61,8 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
     form.reset(rules);
   }, [rules, isOpen, form]);
 
-  const basicValue = form.watch('basic');
-  const hraValue = form.watch('hra');
+  const basicValue = form.watch('basic') ?? 0;
+  const hraValue = form.watch('hra') ?? 0;
   const specialAllowance = 100 - basicValue - hraValue;
 
 
@@ -104,7 +104,7 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
                                 checked={field.value?.includes(item.id)}
                                 onCheckedChange={(checked) => {
                                   return checked
-                                    ? field.onChange([...field.value, item.id])
+                                    ? field.onChange([...(field.value || []), item.id])
                                     : field.onChange(field.value?.filter((value) => value !== item.id));
                                 }}
                               />
@@ -124,8 +124,8 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
                 <FormItem>
                     <FormLabel>Basic Salary (% of Gross)</FormLabel>
                      <div className="flex items-center gap-4">
-                         <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} max={100} step={1} />
-                         <span className="font-mono text-lg w-16 text-center">{field.value}%</span>
+                         <Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} max={100} step={1} />
+                         <span className="font-mono text-lg w-16 text-center">{field.value ?? 0}%</span>
                      </div>
                 </FormItem>
             )} />
@@ -134,8 +134,8 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
                 <FormItem>
                     <FormLabel>HRA (% of Gross)</FormLabel>
                      <div className="flex items-center gap-4">
-                         <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} max={100 - basicValue} step={1} />
-                         <span className="font-mono text-lg w-16 text-center">{field.value}%</span>
+                         <Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} max={100 - basicValue} step={1} />
+                         <span className="font-mono text-lg w-16 text-center">{field.value ?? 0}%</span>
                      </div>
                      <FormMessage />
                 </FormItem>
@@ -154,8 +154,8 @@ export function SalaryRulesModal({ isOpen, onOpenChange }: SalaryRulesModalProps
                 <FormItem>
                     <FormLabel>Standard Deduction (% of Gross)</FormLabel>
                      <div className="flex items-center gap-4">
-                         <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} max={100} step={1} />
-                         <span className="font-mono text-lg w-16 text-center">{field.value}%</span>
+                         <Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} max={100} step={1} />
+                         <span className="font-mono text-lg w-16 text-center">{field.value ?? 0}%</span>
                      </div>
                 </FormItem>
             )} />
