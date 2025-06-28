@@ -20,8 +20,6 @@ export const planFeatures: Record<Client['plan'], Feature[]> = {
     'DASHBOARD',
     'ATTENDANCE_KIOSK',
     'STUDENT_MANAGEMENT',
-    'STAFF_MANAGEMENT',
-    'LEAVE_MANAGEMENT',
     'REPUTATION_MANAGEMENT'
   ],
   Enterprise: [
@@ -29,9 +27,5 @@ export const planFeatures: Record<Client['plan'], Feature[]> = {
     'STUDENT_MANAGEMENT',
     'ATTENDANCE_KIOSK',
     'REPUTATION_MANAGEMENT',
-    'STAFF_MANAGEMENT',
-    'TASK_MANAGEMENT',
-    'LEAVE_MANAGEMENT',
-    'SALARY_MANAGEMENT'
   ],
 };
