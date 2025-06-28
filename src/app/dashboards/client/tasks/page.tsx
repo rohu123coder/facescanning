@@ -16,7 +16,7 @@ const statusColumns: { status: TaskStatus; title: string; icon: React.ReactNode 
 ];
 
 export default function TasksPage() {
-  const { tasks, isInitialized } = useTaskStore();
+  const { tasks, isInitialized, updateTask } = useTaskStore();
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -62,7 +62,12 @@ export default function TasksPage() {
                         getTasksByStatus(status)
                         .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
                         .map(task => (
-                            <TaskCard key={task.id} task={task} onSelectTask={handleViewTask} />
+                            <TaskCard 
+                              key={task.id} 
+                              task={task} 
+                              onSelectTask={handleViewTask}
+                              onUpdateTask={updateTask}
+                            />
                         ))
                     ) : (
                         <div className="text-center text-sm text-muted-foreground py-8">
