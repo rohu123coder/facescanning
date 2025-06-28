@@ -116,14 +116,13 @@ export default function AdminDashboard() {
                   <TableHead>ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Department</TableHead>
-                  <TableHead>Role</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {!isInitialized ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={4} className="h-24 text-center">
                       Loading staff data...
                     </TableCell>
                   </TableRow>
@@ -135,7 +134,6 @@ export default function AdminDashboard() {
                       <TableCell>
                         <Badge variant="outline">{employee.department}</Badge>
                       </TableCell>
-                      <TableCell>{employee.role}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -167,7 +165,7 @@ export default function AdminDashboard() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={4} className="h-24 text-center">
                       No staff members found matching the current filters.
                     </TableCell>
                   </TableRow>
