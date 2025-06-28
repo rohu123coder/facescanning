@@ -25,7 +25,6 @@ import Image from 'next/image';
 const navConfig: { feature: Feature, href: string, label: string, icon: React.ElementType }[] = [
   { feature: 'DASHBOARD', href: '/dashboards/client', label: 'Dashboard', icon: Briefcase },
   { feature: 'ATTENDANCE_KIOSK', href: '/dashboards/client/attendance-kiosk', label: 'Attendance Kiosk', icon: Video },
-  { feature: 'STUDENT_MANAGEMENT', href: '/dashboards/client', label: 'Students', icon: User },
   { feature: 'REPUTATION_MANAGEMENT', href: '/dashboards/client/reputation', label: 'Reputation', icon: Star },
 ];
 
