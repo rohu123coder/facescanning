@@ -2,7 +2,6 @@ import { type Client } from "./data";
 
 export type Feature = 
     | 'DASHBOARD'
-    | 'STAFF_MANAGEMENT'
     | 'STUDENT_MANAGEMENT'
     | 'TASK_MANAGEMENT'
     | 'LEAVE_MANAGEMENT'
@@ -13,12 +12,10 @@ export type Feature =
 export const planFeatures: Record<Client['plan'], Feature[]> = {
   Basic: [
     'DASHBOARD',
-    'STAFF_MANAGEMENT',
     'ATTENDANCE_KIOSK',
   ],
   Premium: [
     'DASHBOARD',
-    'STAFF_MANAGEMENT',
     'ATTENDANCE_KIOSK',
     'LEAVE_MANAGEMENT',
     'SALARY_MANAGEMENT',
@@ -26,7 +23,6 @@ export const planFeatures: Record<Client['plan'], Feature[]> = {
   ],
   Enterprise: [
     'DASHBOARD',
-    'STAFF_MANAGEMENT',
     'STUDENT_MANAGEMENT',
     'ATTENDANCE_KIOSK',
     'LEAVE_MANAGEMENT',

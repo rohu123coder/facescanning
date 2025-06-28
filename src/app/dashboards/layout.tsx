@@ -25,7 +25,6 @@ import Image from 'next/image';
 const navConfig: { feature: Feature, href: string, label: string, icon: React.ElementType }[] = [
   { feature: 'DASHBOARD', href: '/dashboards/client', label: 'Dashboard', icon: Briefcase },
   { feature: 'ATTENDANCE_KIOSK', href: '/dashboards/client/attendance-kiosk', label: 'Attendance Kiosk', icon: Video },
-  { feature: 'STAFF_MANAGEMENT', href: '/dashboards/client', label: 'Staff', icon: Users },
   { feature: 'STUDENT_MANAGEMENT', href: '/dashboards/client', label: 'Students', icon: User },
   { feature: 'TASK_MANAGEMENT', href: '/dashboards/client/tasks', label: 'Task Management', icon: ClipboardCheck },
   { feature: 'LEAVE_MANAGEMENT', href: '/dashboards/client/leaves', label: 'Leave Requests', icon: CalendarCheck },
@@ -99,8 +98,7 @@ function ClientDashboardLayout({
           <SidebarMenu>
             {navConfig.map((item) => {
               if (allowedFeatures.includes(item.feature)) {
-                // Special handling for staff and student links to avoid duplicate keys
-                const key = item.feature === 'STAFF_MANAGEMENT' ? `${item.href}-staff` : item.feature === 'STUDENT_MANAGEMENT' ? `${item.href}-student` : item.href;
+                const key = item.href;
                 return (
                   <SidebarMenuItem key={key}>
                     <SidebarMenuButton

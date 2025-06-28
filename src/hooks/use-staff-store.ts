@@ -41,26 +41,6 @@ export function useStaffStore() {
     }
   }, []);
   
-  const addStaff = useCallback((newStaff: Omit<Staff, 'id' | 'attendanceRecords'>) => {
-    const newIdNumber = staffList.length > 0 ? Math.max(0, ...staffList.map(s => parseInt(s.id.split('-')[1], 10))) + 1 : 1;
-    const newId = `KM-${String(newIdNumber).padStart(3, '0')}`;
-    const staffToAdd: Staff = { ...newStaff, id: newId, attendanceRecords: [] };
-    
-    updateStaffList([...staffList, staffToAdd]);
-  }, [staffList, updateStaffList]);
-  
-  const updateStaff = useCallback((updatedStaffData: Staff) => {
-    const updatedList = staffList.map(staff => 
-      staff.id === updatedStaffData.id ? updatedStaffData : staff
-    );
-    updateStaffList(updatedList);
-  }, [staffList, updateStaffList]);
-
-  const deleteStaff = useCallback((staffId: string) => {
-      const updatedList = staffList.filter(staff => staff.id !== staffId);
-      updateStaffList(updatedList);
-  }, [staffList, updateStaffList]);
-  
   const updateStaffAttendance = useCallback((staffId: string) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
@@ -106,5 +86,5 @@ export function useStaffStore() {
   }, [staffList, updateStaffList]);
 
 
-  return { staffList, setStaffList, addStaff, updateStaff, deleteStaff, updateStaffAttendance, isInitialized };
+  return { staffList, setStaffList, updateStaffAttendance, isInitialized };
 }
