@@ -5,6 +5,9 @@ import { useClientStore } from './use-client-store';
 
 export type SalaryRules = {
   workingDays: string[]; // Array of day indices ('0' for Sun, '1' for Mon, etc.)
+  basicSalaryPercentage: number;
+  hraPercentage: number;
+  standardDeductionPercentage: number;
 };
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `salaryRules_${clientId}` : null;
@@ -12,6 +15,9 @@ const getStoreKey = (clientId: string | undefined) => clientId ? `salaryRules_${
 // Default rules: Monday to Friday working
 const defaultRules: SalaryRules = {
   workingDays: ['1', '2', '3', '4', '5'],
+  basicSalaryPercentage: 50,
+  hraPercentage: 30,
+  standardDeductionPercentage: 10,
 };
 
 export function useSalaryRulesStore() {
@@ -25,7 +31,9 @@ export function useSalaryRulesStore() {
       try {
         const storedData = localStorage.getItem(storeKey);
         if (storedData) {
-          setRulesState(JSON.parse(storedData));
+          const parsedData = JSON.parse(storedData);
+          // Ensure all keys from defaultRules exist to prevent errors after an update
+          setRulesState({ ...defaultRules, ...parsedData });
         } else {
           setRulesState(defaultRules);
           localStorage.setItem(storeKey, JSON.stringify(defaultRules));

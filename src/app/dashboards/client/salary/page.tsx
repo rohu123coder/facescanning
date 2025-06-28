@@ -7,22 +7,33 @@ import { Cog, FileText, Loader2 } from 'lucide-react';
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { useAttendanceStore } from '@/hooks/use-attendance-store';
 import { useSalaryRulesStore } from '@/hooks/use-salary-rules-store';
-import { getDaysInMonth, getDay, format, parse } from 'date-fns';
+import { getDaysInMonth, getDay, format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SalaryRulesModal } from '@/components/salary-rules-modal';
 import { PayslipModal } from '@/components/payslip-modal';
 import { type Staff } from '@/lib/data';
 
-type PayslipData = {
+export type PayslipData = {
   staff: Staff;
   month: string;
   year: string;
-  basicSalary: number;
+  grossSalary: number; // monthly rate
+  earnedSalary: number;
   totalWorkingDays: number;
   daysPresent: number;
-  perDaySalary: number;
-  deductions: number;
+  lopDays: number;
+  earnings: {
+    basic: number;
+    hra: number;
+    specialAllowance: number;
+    total: number;
+  };
+  deductions: {
+    lop: number;
+    standard: number;
+    total: number;
+  };
   netSalary: number;
 };
 
@@ -75,19 +86,44 @@ export default function SalaryPage() {
             record.inTime !== null
         ).length;
         
-        const perDaySalary = totalWorkingDays > 0 ? employee.salary / totalWorkingDays : 0;
-        const deductions = (totalWorkingDays - daysPresent) * perDaySalary;
-        const netSalary = employee.salary - deductions;
+        const grossSalaryRate = employee.salary;
+        const perDayRate = totalWorkingDays > 0 ? grossSalaryRate / totalWorkingDays : 0;
+        const lopDays = Math.max(0, totalWorkingDays - daysPresent);
+        const lopDeduction = perDayRate * lopDays;
+        
+        const earnedGrossSalary = grossSalaryRate - lopDeduction;
+
+        const basicPay = earnedGrossSalary * (rules.basicSalaryPercentage / 100);
+        const hra = earnedGrossSalary * (rules.hraPercentage / 100);
+        const specialAllowance = earnedGrossSalary - basicPay - hra;
+
+        const totalEarnings = earnedGrossSalary;
+
+        const standardDeduction = earnedGrossSalary * (rules.standardDeductionPercentage / 100);
+        const totalDeductions = standardDeduction;
+
+        const netSalary = totalEarnings - totalDeductions;
 
         return {
           staff: employee,
           month: selectedMonth,
           year: selectedYear,
-          basicSalary: employee.salary,
+          grossSalary: grossSalaryRate,
+          earnedSalary: earnedGrossSalary,
           totalWorkingDays,
           daysPresent,
-          perDaySalary: parseFloat(perDaySalary.toFixed(2)),
-          deductions: parseFloat(deductions.toFixed(2)),
+          lopDays,
+          earnings: {
+              basic: parseFloat(basicPay.toFixed(2)),
+              hra: parseFloat(hra.toFixed(2)),
+              specialAllowance: parseFloat(specialAllowance.toFixed(2)),
+              total: parseFloat(totalEarnings.toFixed(2)),
+          },
+          deductions: {
+              lop: parseFloat(lopDeduction.toFixed(2)),
+              standard: parseFloat(standardDeduction.toFixed(2)),
+              total: parseFloat(totalDeductions.toFixed(2)),
+          },
           netSalary: parseFloat(netSalary.toFixed(2)),
         };
     });
@@ -95,7 +131,7 @@ export default function SalaryPage() {
     setTimeout(() => {
         setPayslips(generatedPayslips);
         setIsLoading(false);
-    }, 500); // Simulate processing time
+    }, 500);
   };
 
   const handleViewPayslip = (payslip: PayslipData) => {
@@ -172,10 +208,10 @@ export default function SalaryPage() {
                                     <TableRow key={p.staff.id}>
                                     <TableCell className="font-medium">{p.staff.name}</TableCell>
                                     <TableCell>{p.staff.role}</TableCell>
-                                    <TableCell className="text-right">{p.basicSalary.toLocaleString('en-IN')}</TableCell>
+                                    <TableCell className="text-right">{p.grossSalary.toLocaleString('en-IN')}</TableCell>
                                     <TableCell className="text-right">{p.totalWorkingDays}</TableCell>
                                     <TableCell className="text-right">{p.daysPresent}</TableCell>
-                                    <TableCell className="text-right text-destructive">{p.deductions.toLocaleString('en-IN')}</TableCell>
+                                    <TableCell className="text-right text-destructive">{p.deductions.total.toLocaleString('en-IN')}</TableCell>
                                     <TableCell className="text-right font-semibold">{p.netSalary.toLocaleString('en-IN')}</TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="sm" onClick={() => handleViewPayslip(p)}>
