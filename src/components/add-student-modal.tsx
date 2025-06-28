@@ -1,4 +1,4 @@
-// This component has been repurposed from AddStaffModal
+
 'use client';
 
 import { useState, useRef } from 'react';
@@ -26,6 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { PhotoCaptureModal } from './photo-capture-modal';
 
 
 interface AddStudentModalProps {
@@ -50,6 +51,7 @@ const studentFormSchema = z.object({
 
 export function AddStudentModal({ isOpen, onOpenChange }: AddStudentModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const { toast } = useToast();
   const { addStudent } = useStudentStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,6 +85,10 @@ export function AddStudentModal({ isOpen, onOpenChange }: AddStudentModalProps) 
       };
       reader.readAsDataURL(file);
     }
+  };
+  
+  const handlePhotoCaptured = (dataUri: string) => {
+    form.setValue('photoUrl', dataUri, { shouldValidate: true });
   };
 
   const onSubmit = async (values: z.infer<typeof studentFormSchema>) => {
@@ -118,6 +124,7 @@ export function AddStudentModal({ isOpen, onOpenChange }: AddStudentModalProps) 
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
@@ -145,9 +152,14 @@ export function AddStudentModal({ isOpen, onOpenChange }: AddStudentModalProps) 
                               )}
                           </div>
                           <div className='space-y-2'>
-                             <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                    <Upload className="mr-2"/> Upload Photo
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button type="button" variant="outline" onClick={() => setIsPhotoModalOpen(true)}>
+                                  <Camera className="mr-2"/> Take Photo
+                                </Button>
+                                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                      <Upload className="mr-2"/> Upload
+                                </Button>
+                              </div>
                               <Input 
                                     type="file" 
                                     className="hidden" 
@@ -367,5 +379,11 @@ export function AddStudentModal({ isOpen, onOpenChange }: AddStudentModalProps) 
         </Form>
       </DialogContent>
     </Dialog>
+     <PhotoCaptureModal 
+        isOpen={isPhotoModalOpen}
+        onOpenChange={setIsPhotoModalOpen}
+        onPhotoCaptured={handlePhotoCaptured}
+    />
+    </>
   );
 }

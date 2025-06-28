@@ -22,6 +22,7 @@ import { useStaffStore } from '@/hooks/use-staff-store';
 import { Loader2, Camera, Upload } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
+import { PhotoCaptureModal } from './photo-capture-modal';
 
 interface AddStaffModalProps {
   isOpen: boolean;
@@ -39,11 +40,12 @@ const staffFormSchema = z.object({
   salary: z.coerce.number().min(0, 'Salary must be a positive number'),
   annualCasualLeaves: z.coerce.number().int().min(0, 'Must be a positive number'),
   annualSickLeaves: z.coerce.number().int().min(0, 'Must be a positive number'),
-  photoUrl: z.string().url('Please provide a valid image URL.'),
+  photoUrl: z.string().min(1, 'A photo is required for facial recognition.'),
 });
 
 export function AddStaffModal({ isOpen, onOpenChange }: AddStaffModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const { toast } = useToast();
   const { addStaff } = useStaffStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,6 +79,10 @@ export function AddStaffModal({ isOpen, onOpenChange }: AddStaffModalProps) {
       reader.readAsDataURL(file);
     }
   };
+  
+  const handlePhotoCaptured = (dataUri: string) => {
+    form.setValue('photoUrl', dataUri, { shouldValidate: true });
+  };
 
   const onSubmit = async (values: z.infer<typeof staffFormSchema>) => {
     setIsLoading(true);
@@ -105,6 +111,7 @@ export function AddStaffModal({ isOpen, onOpenChange }: AddStaffModalProps) {
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
@@ -130,9 +137,14 @@ export function AddStaffModal({ isOpen, onOpenChange }: AddStaffModalProps) {
                               )}
                           </div>
                           <div className='space-y-2'>
-                             <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                    <Upload className="mr-2"/> Upload Photo
-                              </Button>
+                             <div className="flex gap-2">
+                                <Button type="button" variant="outline" onClick={() => setIsPhotoModalOpen(true)}>
+                                  <Camera className="mr-2"/> Take Photo
+                                </Button>
+                                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                      <Upload className="mr-2"/> Upload
+                                </Button>
+                             </div>
                               <Input type="file" className="hidden" ref={fileInputRef} accept="image/*" onChange={handleFileChange} />
                             <FormControl>
                                 <Input placeholder="Or paste image URL" {...field} />
@@ -204,5 +216,11 @@ export function AddStaffModal({ isOpen, onOpenChange }: AddStaffModalProps) {
         </Form>
       </DialogContent>
     </Dialog>
+    <PhotoCaptureModal 
+        isOpen={isPhotoModalOpen}
+        onOpenChange={setIsPhotoModalOpen}
+        onPhotoCaptured={handlePhotoCaptured}
+    />
+    </>
   );
 }
