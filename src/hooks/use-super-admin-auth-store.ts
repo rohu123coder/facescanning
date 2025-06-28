@@ -51,7 +51,7 @@ export function useSuperAdminAuthStore() {
     try {
       localStorage.removeItem(AUTH_KEY);
       setIsAuthenticated(false);
-      window.location.assign('/super-admin/login');
+      window.location.assign('/dashboards/super-admin/login');
     } catch (error) {
         console.error("Failed to logout super admin", error);
     }
