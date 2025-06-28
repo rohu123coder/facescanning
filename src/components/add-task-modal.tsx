@@ -28,6 +28,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { suggestAssigneeForTask } from '@/ai/flows/auto-assign-task';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Badge } from './ui/badge';
 
 
 interface AddTaskModalProps {
@@ -41,7 +42,7 @@ const taskFormSchema = z.object({
   category: z.string().min(2, { message: 'Category is required.' }),
   priority: z.enum(['Low', 'Medium', 'High', 'Urgent']),
   dueDate: z.date({ required_error: 'A due date is required.' }),
-  assignedTo: z.string().nullable(),
+  assignedTo: z.array(z.string()),
 });
 
 export function AddTaskModal({ isOpen, onOpenChange }: AddTaskModalProps) {
@@ -61,15 +62,15 @@ export function AddTaskModal({ isOpen, onOpenChange }: AddTaskModalProps) {
       description: '',
       category: '',
       priority: 'Medium',
-      assignedTo: null,
+      assignedTo: [],
     },
   });
 
-  const assignedToId = form.watch('assignedTo');
-  const assignedStaff = staff.find(s => s.id === assignedToId);
+  const assignedToIds = form.watch('assignedTo');
+  const assignedStaff = staff.filter(s => assignedToIds.includes(s.id));
 
-  const handleSelectStaff = (staffId: string) => {
-    form.setValue('assignedTo', staffId);
+  const handleSelectStaff = (staffIds: string[]) => {
+    form.setValue('assignedTo', staffIds);
     setIsStaffModalOpen(false);
   };
 
@@ -250,17 +251,23 @@ export function AddTaskModal({ isOpen, onOpenChange }: AddTaskModalProps) {
             />
             
             <FormItem>
-                <FormLabel>Assign To</FormLabel>
-                <div className="flex items-center gap-2">
-                    <Button type="button" variant="outline" className="w-full justify-start" onClick={() => setIsStaffModalOpen(true)}>
-                        <User className="mr-2"/>
-                        {assignedStaff ? `Assigned to ${assignedStaff.name}` : 'Select a staff member'}
-                    </Button>
-                     <Button type="button" variant="outline" size="icon" onClick={handleAiSuggestion} disabled={isAiLoading}>
-                        {isAiLoading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                        <span className="sr-only">Get AI Suggestion</span>
-                    </Button>
-                </div>
+              <FormLabel>Assign To</FormLabel>
+              <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" className="w-full justify-start h-auto min-h-10" onClick={() => setIsStaffModalOpen(true)}>
+                      <User className="mr-2 h-4 w-4 shrink-0" />
+                      <div className="flex flex-wrap items-center gap-1">
+                          {assignedStaff.length > 0 ? (
+                              assignedStaff.map(s => <Badge key={s.id} variant="secondary">{s.name}</Badge>)
+                          ) : (
+                              <span className="text-muted-foreground">Select staff member(s)</span>
+                          )}
+                      </div>
+                  </Button>
+                   <Button type="button" variant="outline" size="icon" onClick={handleAiSuggestion} disabled={isAiLoading}>
+                      {isAiLoading ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                      <span className="sr-only">Get AI Suggestion</span>
+                  </Button>
+              </div>
             </FormItem>
 
             {aiSuggestion && (
@@ -272,7 +279,10 @@ export function AddTaskModal({ isOpen, onOpenChange }: AddTaskModalProps) {
                         <Button 
                             variant="link" 
                             className="p-0 h-auto ml-1"
-                            onClick={() => form.setValue('assignedTo', aiSuggestion.id)}
+                            onClick={() => {
+                                form.setValue('assignedTo', [aiSuggestion.id]);
+                                setAiSuggestion(null);
+                            }}
                         >
                             Click to assign.
                         </Button>
@@ -296,6 +306,7 @@ export function AddTaskModal({ isOpen, onOpenChange }: AddTaskModalProps) {
         isOpen={isStaffModalOpen} 
         onOpenChange={setIsStaffModalOpen} 
         onSelectStaff={handleSelectStaff}
+        initialSelectedIds={assignedToIds}
     />
     </>
   );

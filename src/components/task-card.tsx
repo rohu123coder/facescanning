@@ -24,7 +24,7 @@ const priorityStyles: Record<Task['priority'], string> = {
 
 export function TaskCard({ task, onSelectTask }: TaskCardProps) {
   const { staff } = useStaffStore();
-  const assignedStaff = staff.find(s => s.id === task.assignedTo);
+  const assignees = staff.filter(s => task.assignedTo.includes(s.id));
   const dueDate = new Date(task.dueDate);
   const isOverdue = isPast(dueDate) && !isToday(dueDate);
 
@@ -48,20 +48,38 @@ export function TaskCard({ task, onSelectTask }: TaskCardProps) {
           <Calendar className="h-4 w-4" />
           <span>{format(dueDate, 'MMM d')}</span>
         </div>
-        {assignedStaff ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                <Avatar className="h-7 w-7">
-                  <AvatarImage src={assignedStaff.photoUrl} alt={assignedStaff.name} />
-                  <AvatarFallback>{assignedStaff.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Assigned to {assignedStaff.name}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        {assignees.length > 0 ? (
+          <div className="flex -space-x-2">
+            {assignees.slice(0, 2).map(assignee => (
+                <TooltipProvider key={assignee.id}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Avatar className="h-7 w-7 border-2 border-card">
+                                <AvatarImage src={assignee.photoUrl} alt={assignee.name} />
+                                <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{assignee.name}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            ))}
+            {assignees.length > 2 && (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                           <Avatar className="h-7 w-7 border-2 border-card">
+                                <AvatarFallback>+{assignees.length - 2}</AvatarFallback>
+                            </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{assignees.slice(2).map(a => a.name).join(', ')}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            )}
+          </div>
         ) : (
            <TooltipProvider>
              <Tooltip>

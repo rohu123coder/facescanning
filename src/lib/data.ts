@@ -91,7 +91,7 @@ export type Task = {
     category: string;
     dueDate: string; // ISO string date
     createdAt: string; // ISO string
-    assignedTo: string | null; // Staff ID
+    assignedTo: string[]; // Staff IDs
 };
 
 export const initialClients: Client[] = [

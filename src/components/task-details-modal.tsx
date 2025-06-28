@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
-  DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -16,7 +14,7 @@ import { z } from 'zod';
 import { useTaskStore } from '@/hooks/use-task-store';
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { useToast } from '@/hooks/use-toast';
-import type { Task, TaskStatus } from '@/lib/data';
+import type { Task } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Input } from './ui/input';
@@ -40,6 +38,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { suggestAssigneeForTask } from '@/ai/flows/auto-assign-task';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Badge } from './ui/badge';
 
 
 interface TaskDetailsModalProps {
@@ -55,7 +54,7 @@ const taskDetailSchema = z.object({
   priority: z.enum(['Low', 'Medium', 'High', 'Urgent']),
   dueDate: z.date({ required_error: 'A due date is required.' }),
   status: z.enum(['To Do', 'In Progress', 'Done']),
-  assignedTo: z.string().nullable(),
+  assignedTo: z.array(z.string()),
 });
 
 export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModalProps) {
@@ -72,20 +71,22 @@ export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModa
     resolver: zodResolver(taskDetailSchema),
   });
   
-  const assignedToId = form.watch('assignedTo');
-  const assignedStaff = staff.find(s => s.id === assignedToId);
+  const assignedToIds = form.watch('assignedTo');
+  const assignedStaff = staff.filter(s => assignedToIds && assignedToIds.includes(s.id));
 
   useEffect(() => {
     if (task) {
       form.reset({
         ...task,
+        assignedTo: task.assignedTo || [],
         dueDate: new Date(task.dueDate),
       });
     }
-  }, [task, form]);
+     setAiSuggestion(null);
+  }, [task, form, isOpen]);
 
-  const handleSelectStaff = (staffId: string) => {
-    form.setValue('assignedTo', staffId);
+  const handleSelectStaff = (staffIds: string[]) => {
+    form.setValue('assignedTo', staffIds);
     setIsStaffModalOpen(false);
   };
 
@@ -284,17 +285,23 @@ export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModa
                 )}
               />
               <FormItem>
-                <FormLabel>Assign To</FormLabel>
-                 <div className="flex items-center gap-2">
-                    <Button type="button" variant="outline" className="w-full justify-start" onClick={() => setIsStaffModalOpen(true)}>
-                        <User className="mr-2"/>
-                        {assignedStaff ? `Assigned to ${assignedStaff.name}` : 'Select a staff member'}
-                    </Button>
-                     <Button type="button" variant="outline" size="icon" onClick={handleAiSuggestion} disabled={isAiLoading}>
-                        {isAiLoading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                        <span className="sr-only">Get AI Suggestion</span>
-                    </Button>
-                </div>
+                  <FormLabel>Assign To</FormLabel>
+                  <div className="flex items-center gap-2">
+                      <Button type="button" variant="outline" className="w-full justify-start h-auto min-h-10" onClick={() => setIsStaffModalOpen(true)}>
+                           <User className="mr-2 h-4 w-4 shrink-0" />
+                          <div className="flex flex-wrap items-center gap-1">
+                              {assignedStaff.length > 0 ? (
+                                  assignedStaff.map(s => <Badge key={s.id} variant="secondary">{s.name}</Badge>)
+                              ) : (
+                                  <span className="text-muted-foreground">Select staff member(s)</span>
+                              )}
+                          </div>
+                      </Button>
+                      <Button type="button" variant="outline" size="icon" onClick={handleAiSuggestion} disabled={isAiLoading}>
+                          {isAiLoading ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                          <span className="sr-only">Get AI Suggestion</span>
+                      </Button>
+                  </div>
               </FormItem>
 
              {aiSuggestion && (
@@ -307,7 +314,7 @@ export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModa
                             variant="link" 
                             className="p-0 h-auto ml-1"
                             onClick={() => {
-                                form.setValue('assignedTo', aiSuggestion.id);
+                                form.setValue('assignedTo', [aiSuggestion.id]);
                                 setAiSuggestion(null);
                             }}
                         >
@@ -350,6 +357,7 @@ export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModa
         isOpen={isStaffModalOpen} 
         onOpenChange={setIsStaffModalOpen} 
         onSelectStaff={handleSelectStaff}
+        initialSelectedIds={assignedToIds}
     />
     </>
   );
