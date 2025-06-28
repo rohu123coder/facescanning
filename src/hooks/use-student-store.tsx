@@ -2,8 +2,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { type Student, initialStudents } from '@/lib/data';
-import { useClientStore } from './use-client-store';
+import { type Student } from '@/lib/data';
+import { useClientStore } from './use-client-store.tsx';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `studentList_${clientId}` : null;
 const getPhotoKey = (studentId: string) => `photo_${studentId}`;
@@ -29,17 +29,14 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedStudents = localStorage.getItem(storeKey);
-        let loadedStudents = storedStudents ? JSON.parse(storedStudents) : initialStudents;
+        // If no data, start with an empty array for a fresh start.
+        let loadedStudents = storedStudents ? JSON.parse(storedStudents) : [];
 
         // Re-hydrate photo URLs from separate storage
         loadedStudents = loadedStudents.map((student: Student) => {
           const photoData = localStorage.getItem(getPhotoKey(student.id));
           if (photoData) {
             return { ...student, photoUrl: photoData };
-          }
-          // If initial data, store its photo url for consistency
-          if (student.photoUrl) {
-              localStorage.setItem(getPhotoKey(student.id), student.photoUrl);
           }
           return student;
         });
@@ -48,7 +45,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
 
       } catch (error) {
         console.error("Failed to load students from localStorage", error);
-        setStudents(initialStudents);
+        setStudents([]);
       }
     } else {
         setStudents([]);
@@ -69,7 +66,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
                     // Return student object without photo data for main list
                     return { ...rest, photoUrl: '' }; 
                 }
-                return student; // Keep existing (placeholder) URLs in the list
+                return { ...rest, photoUrl: photoUrl || ''};
             });
 
             localStorage.setItem(storeKey, JSON.stringify(studentsToStore));

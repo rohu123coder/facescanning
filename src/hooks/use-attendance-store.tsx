@@ -2,8 +2,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { type Staff, type Attendance, initialAttendance } from '@/lib/data';
-import { useClientStore } from './use-client-store';
+import { type Staff, type Attendance } from '@/lib/data';
+import { useClientStore } from './use-client-store.tsx';
 import { format } from 'date-fns';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `attendance_${clientId}` : null;
@@ -27,10 +27,11 @@ export function AttendanceProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedData = localStorage.getItem(storeKey);
-        setAttendance(storedData ? JSON.parse(storedData) : initialAttendance);
+        // If no data, start with an empty array for a fresh start.
+        setAttendance(storedData ? JSON.parse(storedData) : []);
       } catch (error) {
         console.error("Failed to load attendance from localStorage", error);
-        setAttendance(initialAttendance);
+        setAttendance([]);
       }
     } else {
         setAttendance([]);
@@ -86,7 +87,7 @@ export function AttendanceProvider({ children }: { children: ReactNode }) {
     });
 
     return punchType;
-  }, [attendance, storeKey]);
+  }, [attendance]);
 
   return (
     <AttendanceContext.Provider value={{ attendance, markAttendance, isInitialized }}>

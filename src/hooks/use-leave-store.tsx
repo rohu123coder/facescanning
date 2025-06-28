@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { type LeaveRequest, initialLeaves } from '@/lib/data';
+import { type LeaveRequest } from '@/lib/data';
 import { useClientStore } from './use-client-store.tsx';
 import { useStaffStore } from './use-staff-store.tsx';
 
@@ -29,10 +29,11 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedData = localStorage.getItem(storeKey);
-        setRequests(storedData ? JSON.parse(storedData) : initialLeaves);
+        // If no data, start with an empty array for a fresh start.
+        setRequests(storedData ? JSON.parse(storedData) : []);
       } catch (error) {
         console.error("Failed to load leave requests from localStorage", error);
-        setRequests(initialLeaves);
+        setRequests([]);
       }
     } else {
       setRequests([]);
@@ -60,34 +61,35 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const approveRequest = useCallback((requestId: string) => {
-    const request = requests.find(r => r.id === requestId);
-    if (!request) return;
+    setRequests(prevRequests => {
+        const req = prevRequests.find(r => r.id === requestId);
+        if (!req) return prevRequests;
 
-    const staffMember = staff.find(s => s.id === request.staffId);
-    if (!staffMember) return;
-    
-    const leaveDays = 1; 
-    let canApprove = false;
-    let updatedStaffMember = { ...staffMember };
+        const staffMember = staff.find(s => s.id === req.staffId);
+        if (!staffMember) return prevRequests;
+        
+        const leaveDays = 1; // Simplified for now
+        let canApprove = false;
+        let updatedStaffMember = { ...staffMember };
 
-    if (request.leaveType === 'Casual' && updatedStaffMember.annualCasualLeaves >= leaveDays) {
-        updatedStaffMember.annualCasualLeaves -= leaveDays;
-        canApprove = true;
-    } else if (request.leaveType === 'Sick' && updatedStaffMember.annualSickLeaves >= leaveDays) {
-        updatedStaffMember.annualSickLeaves -= leaveDays;
-        canApprove = true;
-    }
+        if (req.leaveType === 'Casual' && updatedStaffMember.annualCasualLeaves >= leaveDays) {
+            updatedStaffMember.annualCasualLeaves -= leaveDays;
+            canApprove = true;
+        } else if (req.leaveType === 'Sick' && updatedStaffMember.annualSickLeaves >= leaveDays) {
+            updatedStaffMember.annualSickLeaves -= leaveDays;
+            canApprove = true;
+        }
 
-    if(canApprove) {
-        updateStaff(updatedStaffMember);
-        setRequests(prevRequests => {
-          const updatedRequests = prevRequests.map(r => 
-            r.id === requestId ? { ...r, status: 'Approved' as const } : r
-          );
-          return updatedRequests;
-        });
-    }
+        if(canApprove) {
+            updateStaff(updatedStaffMember);
+            return prevRequests.map(r => 
+                r.id === requestId ? { ...r, status: 'Approved' as const } : r
+            );
+        }
+        return prevRequests;
+    });
   }, [requests, staff, updateStaff]);
+
 
   const rejectRequest = useCallback((requestId: string) => {
     setRequests(prevRequests => {

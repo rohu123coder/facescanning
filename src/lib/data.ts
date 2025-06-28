@@ -127,86 +127,17 @@ export type SalarySlipData = {
 
 
 export const initialClients: Client[] = [
-    { id: 'C-101', organizationName: 'Innovatech Solutions', organizationDetails: 'Leading the charge in AI-driven business solutions and cloud computing.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Rohan Mehra', email: 'contact@innovatech.com', mobile: '9876543210', whatsapp: '9876543210', plan: 'Enterprise', status: 'Active', staffCount: 45, isSetupComplete: true, isGbpConnected: false },
-    { id: 'C-102', organizationName: 'Creative Minds Inc.', organizationDetails: 'A digital marketing agency specializing in branding and creative content.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Priya Sharma', email: 'hello@creativeminds.co', mobile: '9876543211', whatsapp: '9876543211', plan: 'Basic', status: 'Active', staffCount: 12, isSetupComplete: true, isGbpConnected: false },
-    { id: 'C-103', organizationName: 'TechForward', organizationDetails: 'Enterprise-level software development and IT consulting services.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Amit Singh', email: 'support@techforward.io', mobile: '9876543212', whatsapp: '9876543212', plan: 'Enterprise', status: 'Active', staffCount: 150, isSetupComplete: false, isGbpConnected: false },
-    { id: 'C-104', organizationName: 'NextGen Systems', organizationDetails: 'Hardware and software solutions for the next generation of computing.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Sunita Patil', email: 'admin@nextgen.com', mobile: '9876543213', whatsapp: '9876543213', plan: 'Premium', status: 'Inactive', staffCount: 30, isSetupComplete: true, isGbpConnected: false },
-    { id: 'C-105', organizationName: 'egyan solutions', organizationDetails: 'Innovative e-learning and educational technology provider.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Rohit Jha', email: 'rohit.1702jha@gmail.com', mobile: '9876543214', whatsapp: '9876543214', plan: 'Enterprise', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: false },
+    { id: 'C-101', organizationName: 'Innovatech Solutions', organizationDetails: 'Leading the charge in AI-driven business solutions and cloud computing.', logoUrl: '', contactName: 'Rohan Mehra', email: 'contact@innovatech.com', mobile: '9876543210', whatsapp: '9876543210', plan: 'Enterprise', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: false },
+    { id: 'C-102', organizationName: 'Creative Minds Inc.', organizationDetails: 'A digital marketing agency specializing in branding and creative content.', logoUrl: '', contactName: 'Priya Sharma', email: 'hello@creativeminds.co', mobile: '9876543211', whatsapp: '9876543211', plan: 'Basic', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: false },
+    { id: 'C-103', organizationName: 'TechForward', organizationDetails: 'Enterprise-level software development and IT consulting services.', logoUrl: '', contactName: 'Amit Singh', email: 'support@techforward.io', mobile: '9876543212', whatsapp: '9876543212', plan: 'Enterprise', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: false },
+    { id: 'C-104', organizationName: 'NextGen Systems', organizationDetails: 'Hardware and software solutions for the next generation of computing.', logoUrl: '', contactName: 'Sunita Patil', email: 'admin@nextgen.com', mobile: '9876543213', whatsapp: '9876543213', plan: 'Premium', status: 'Inactive', staffCount: 0, isSetupComplete: false, isGbpConnected: false },
+    { id: 'C-105', organizationName: 'egyan solutions', organizationDetails: 'Innovative e-learning and educational technology provider.', logoUrl: '', contactName: 'Rohit Jha', email: 'rohit.1702jha@gmail.com', mobile: '9876543214', whatsapp: '9876543214', plan: 'Enterprise', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: false },
 ];
 
+// All initial data arrays are now empty to ensure a fresh start for every client.
 export const initialHolidays: Holiday[] = [];
-
-export const initialStudents: Student[] = [
-    {
-        id: 'STU-001',
-        name: 'Aarav Sharma',
-        email: 'aarav.sharma@example.com',
-        className: '10 A',
-        rollNumber: '21',
-        gender: 'Male',
-        dob: '2008-05-15T00:00:00.000Z',
-        religion: 'Hinduism',
-        fatherName: 'Manish Sharma',
-        motherName: 'Sunita Sharma',
-        parentMobile: '9876543210',
-        parentWhatsapp: '9876543210',
-        photoUrl: 'https://placehold.co/200x200.png',
-        status: 'Active',
-        joiningDate: new Date().toISOString()
-    },
-    {
-        id: 'STU-002',
-        name: 'Diya Patel',
-        email: 'diya.patel@example.com',
-        className: '9 B',
-        rollNumber: '15',
-        gender: 'Female',
-        dob: '2009-08-22T00:00:00.000Z',
-        religion: 'Hinduism',
-        fatherName: 'Rajesh Patel',
-        motherName: 'Priya Patel',
-        parentMobile: '9876543211',
-        parentWhatsapp: '9876543211',
-        photoUrl: 'https://placehold.co/200x200.png',
-        status: 'Active',
-        joiningDate: new Date().toISOString()
-    }
-];
-
-export const initialStaff: Staff[] = [
-    {
-        id: 'S-001',
-        name: 'Rohan Mehra',
-        email: 'rohan.mehra@example.com',
-        mobile: '9876543210',
-        whatsapp: '9876543210',
-        address: '123 Tech Park, Bangalore',
-        department: 'Engineering',
-        role: 'Senior Developer',
-        salary: 80000,
-        annualCasualLeaves: 12,
-        annualSickLeaves: 7,
-        joiningDate: '2022-01-15T00:00:00.000Z',
-        status: 'Active',
-        photoUrl: 'https://placehold.co/200x200.png'
-    },
-    {
-        id: 'S-002',
-        name: 'Priya Sharma',
-        email: 'priya.sharma@example.com',
-        mobile: '9876543211',
-        whatsapp: '9876543211',
-        address: '456 Marketing Ave, Mumbai',
-        department: 'Marketing',
-        role: 'Marketing Head',
-        salary: 95000,
-        annualCasualLeaves: 15,
-        annualSickLeaves: 10,
-        joiningDate: '2021-11-20T00:00:00.000Z',
-        status: 'Active',
-        photoUrl: 'https://placehold.co/200x200.png'
-    }
-];
+export const initialStudents: Student[] = [];
+export const initialStaff: Staff[] = [];
 export const initialLeaves: LeaveRequest[] = [];
 export const initialTasks: Task[] = [];
 export const initialAttendance: Attendance[] = [];

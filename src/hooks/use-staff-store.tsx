@@ -2,8 +2,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { type Staff, initialStaff } from '@/lib/data';
-import { useClientStore } from './use-client-store';
+import { type Staff } from '@/lib/data';
+import { useClientStore } from './use-client-store.tsx';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `staffList_${clientId}` : null;
 const getPhotoKey = (staffId: string) => `photo_${staffId}`;
@@ -29,17 +29,14 @@ export function StaffProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedStaff = localStorage.getItem(storeKey);
-        let loadedStaff = storedStaff ? JSON.parse(storedStaff) : initialStaff;
+        // If no data, start with an empty array for a fresh start.
+        let loadedStaff = storedStaff ? JSON.parse(storedStaff) : [];
         
         // Re-hydrate photo URLs from separate storage
         loadedStaff = loadedStaff.map((staffMember: Staff) => {
             const photoData = localStorage.getItem(getPhotoKey(staffMember.id));
             if (photoData) {
                 return { ...staffMember, photoUrl: photoData };
-            }
-            // If initial data, store its photo url for consistency
-            if (staffMember.photoUrl) {
-                localStorage.setItem(getPhotoKey(staffMember.id), staffMember.photoUrl);
             }
             return staffMember;
         });
@@ -48,7 +45,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
 
       } catch (error) {
         console.error("Failed to load staff from localStorage", error);
-        setStaff(initialStaff);
+        setStaff([]);
       }
     } else {
         setStaff([]);
@@ -68,7 +65,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
                     // Return staff object without photo data for main list
                     return { ...rest, photoUrl: '' };
                 }
-                return staffMember; // Keep existing (placeholder) URLs in the list
+                return { ...rest, photoUrl: photoUrl || '' }; // Ensure photoUrl is not undefined
             });
             localStorage.setItem(storeKey, JSON.stringify(staffToStore));
         } catch (error) {

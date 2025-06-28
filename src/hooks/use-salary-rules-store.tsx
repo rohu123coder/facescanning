@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { type SalaryRules } from '@/lib/data';
-import { useClientStore } from './use-client-store';
+import { useClientStore } from './use-client-store.tsx';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `salaryRules_${clientId}` : null;
 
@@ -32,6 +32,7 @@ export function SalaryRulesProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedRules = localStorage.getItem(storeKey);
+        // If a new client has no rules, set the default ones.
         setRulesState(storedRules ? JSON.parse(storedRules) : defaultRules);
       } catch (error) {
         console.error("Failed to load salary rules from localStorage", error);
