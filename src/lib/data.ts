@@ -16,8 +16,8 @@ export type Student = {
     religion: string;
     fatherName: string;
     motherName: string;
-    parentMobile: string;
     parentWhatsapp: string;
+    parentMobile: string;
     photoUrl: string;
     status: 'Active' | 'Inactive';
     joiningDate: string; // ISO string
@@ -77,6 +77,12 @@ export type LeaveRequest = {
 export type TaskStatus = 'To Do' | 'In Progress' | 'Done';
 export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 
+export type Attachment = {
+    name: string;
+    url: string;
+    type: 'file' | 'link';
+};
+
 export type Task = {
     id: string;
     title: string;
@@ -87,6 +93,7 @@ export type Task = {
     dueDate: string; // ISO string date
     createdAt: string; // ISO string
     assignedTo: string[]; // Staff IDs
+    attachments: Attachment[];
 };
 
 export type SalaryRules = {

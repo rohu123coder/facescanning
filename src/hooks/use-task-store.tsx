@@ -50,6 +50,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         ...newTaskData,
         id: `T-${Date.now()}`,
         createdAt: new Date().toISOString(),
+        attachments: newTaskData.attachments || [],
       };
       return [...prevTasks, newTask];
     });

@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Calendar, User, Flag, MoreHorizontal } from 'lucide-react';
+import { Calendar, User, Flag, MoreHorizontal, Paperclip } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { cn } from '@/lib/utils';
@@ -74,9 +74,17 @@ export function TaskCard({ task, onSelectTask, onUpdateTask, showActions = true 
         <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
       </CardContent>
       <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
-        <div className={cn('flex items-center gap-1', isOverdue && 'text-destructive font-semibold')}>
-          <Calendar className="h-4 w-4" />
-          <span>{format(dueDate, 'MMM d')}</span>
+        <div className="flex items-center gap-2">
+            {task.attachments && task.attachments.length > 0 && (
+              <div className="flex items-center gap-1 text-muted-foreground">
+                  <Paperclip className="h-4 w-4" />
+                  <span>{task.attachments.length}</span>
+              </div>
+            )}
+            <div className={cn('flex items-center gap-1', isOverdue && 'text-destructive font-semibold')}>
+              <Calendar className="h-4 w-4" />
+              <span>{format(dueDate, 'MMM d')}</span>
+            </div>
         </div>
         {assignees.length > 0 ? (
           <div className="flex -space-x-2">

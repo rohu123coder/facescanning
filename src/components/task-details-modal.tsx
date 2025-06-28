@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,22 +10,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTaskStore } from '@/hooks/use-task-store.tsx';
 import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { useToast } from '@/hooks/use-toast';
-import type { Task } from '@/lib/data';
+import type { Task, Attachment } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Popover, PopoverTrigger, PopoverContent } from './ui/popover';
 import { Calendar } from './ui/calendar';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, User, Trash2, Loader2, Sparkles } from 'lucide-react';
+import { CalendarIcon, User, Trash2, Loader2, Sparkles, Upload, Link2, File as FileIcon, Youtube } from 'lucide-react';
 import { StaffSelectionModal } from './staff-selection-modal';
 import {
   AlertDialog,
@@ -57,6 +57,11 @@ const taskDetailSchema = z.object({
   dueDate: z.date({ required_error: 'A due date is required.' }),
   status: z.enum(['To Do', 'In Progress', 'Done']),
   assignedTo: z.array(z.string()),
+  attachments: z.array(z.object({
+    name: z.string(),
+    url: z.string(),
+    type: z.enum(['file', 'link']),
+  })).optional(),
 });
 
 export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModalProps) {
@@ -64,13 +69,21 @@ export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModa
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<{ id: string, reasoning: string} | null>(null);
-
+  const [isAddingLink, setIsAddingLink] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { updateTask, deleteTask } = useTaskStore();
   const { staff } = useStaffStore();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof taskDetailSchema>>({
     resolver: zodResolver(taskDetailSchema),
+  });
+  
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "attachments"
   });
   
   const assignedToIds = form.watch('assignedTo');
@@ -82,10 +95,36 @@ export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModa
         ...task,
         assignedTo: task.assignedTo || [],
         dueDate: new Date(task.dueDate),
+        attachments: task.attachments || [],
       });
     }
      setAiSuggestion(null);
+     setIsAddingLink(false);
+     setLinkUrl('');
   }, [task, form, isOpen]);
+  
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUri = e.target?.result as string;
+        append({ name: file.name, url: dataUri, type: 'file' });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddLink = () => {
+    if (linkUrl && (linkUrl.startsWith('http://') || linkUrl.startsWith('https://'))) {
+      const isYoutube = linkUrl.includes('youtube.com') || linkUrl.includes('youtu.be');
+      append({ name: isYoutube ? 'YouTube Video' : 'Web Link', url: linkUrl, type: 'link' });
+      setLinkUrl('');
+      setIsAddingLink(false);
+    } else {
+        toast({ variant: 'destructive', title: 'Invalid URL', description: 'Please enter a valid URL starting with http:// or https://' });
+    }
+  };
 
   const handleSelectStaff = (staffIds: string[]) => {
     form.setValue('assignedTo', staffIds);
@@ -96,15 +135,29 @@ export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModa
     if (!task) return;
     setIsLoading(true);
     try {
-      updateTask({
+      const updatedTaskData = {
         ...task,
         ...values,
         dueDate: values.dueDate.toISOString(),
-      });
-      toast({
-        title: 'Task Updated',
-        description: `"${values.title}" has been updated.`,
-      });
+      };
+      updateTask(updatedTaskData);
+      
+      const oldAssignees = new Set(task.assignedTo);
+      const newAssignees = values.assignedTo.filter(id => !oldAssignees.has(id));
+
+      if (newAssignees.length > 0) {
+        const assigneeNames = staff.filter(s => newAssignees.includes(s.id)).map(s => s.name);
+        toast({
+            title: 'Task Assigned!',
+            description: `Task "${values.title}" has been assigned to ${assigneeNames.join(', ')}.`,
+        });
+        window.dispatchEvent(new CustomEvent('play-task-notification'));
+      } else {
+         toast({
+          title: 'Task Updated',
+          description: `"${values.title}" has been updated.`,
+        });
+      }
       onOpenChange(false);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to update task.' });
@@ -153,6 +206,16 @@ export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModa
   };
 
   if (!task) return null;
+
+  const getAttachmentIcon = (attachment: Attachment) => {
+    if (attachment.type === 'link') {
+        if (attachment.url.includes('youtube.com') || attachment.url.includes('youtu.be')) {
+            return <Youtube className="text-red-500" />;
+        }
+        return <Link2 />;
+    }
+    return <FileIcon />;
+  }
 
   return (
     <>
@@ -317,15 +380,66 @@ export function TaskDetailsModal({ isOpen, onOpenChange, task }: TaskDetailsModa
                             variant="link" 
                             className="p-0 h-auto ml-1"
                             onClick={() => {
-                                form.setValue('assignedTo', [aiSuggestion.id]);
+                                const currentAssigned = form.getValues('assignedTo');
+                                form.setValue('assignedTo', [...currentAssigned, aiSuggestion.id]);
                                 setAiSuggestion(null);
                             }}
                         >
-                            Click to assign.
+                            Click to add assign.
                         </Button>
                     </AlertDescription>
                 </Alert>
             )}
+
+            <FormItem>
+              <FormLabel>Attachments</FormLabel>
+              <div className="space-y-2 rounded-md border p-2">
+                 {fields.length > 0 ? (
+                    fields.map((field, index) => (
+                    <a key={field.id} href={field.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-1 rounded-md bg-muted/50 hover:bg-muted">
+                        <div className="flex items-center gap-2 truncate">
+                           {getAttachmentIcon(field as Attachment)}
+                           <span className="text-sm truncate">{field.name}</span>
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.preventDefault(); remove(index); }}>
+                            <Trash2 className="h-4 w-4 text-destructive"/>
+                        </Button>
+                    </a>
+                ))) : (
+                    <p className="text-xs text-muted-foreground text-center p-2">No attachments added.</p>
+                )}
+              </div>
+              
+              {isAddingLink ? (
+                <div className="flex gap-2 items-center">
+                    <Link2 className="text-muted-foreground"/>
+                    <Input 
+                        value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                        placeholder="https://example.com"
+                        className="h-8"
+                    />
+                    <Button type="button" size="sm" onClick={handleAddLink}>Add</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setIsAddingLink(false)}>Cancel</Button>
+                </div>
+              ) : (
+                <div className="flex gap-2 mt-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                      <Upload className="mr-2"/> Upload File
+                  </Button>
+                   <Input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        onChange={handleFileSelect}
+                        accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,video/*"
+                    />
+                  <Button type="button" variant="outline" size="sm" onClick={() => setIsAddingLink(true)}>
+                      <Link2 className="mr-2"/> Add Link
+                  </Button>
+              </div>
+              )}
+            </FormItem>
             </div>
             <DialogFooter className="flex justify-between items-center">
               <AlertDialog>

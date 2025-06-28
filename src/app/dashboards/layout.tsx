@@ -119,6 +119,16 @@ function ClientDashboardLayout({
     checkHolidays();
   }, [holidaysInitialized, holidays, toast]);
   
+   useEffect(() => {
+    const playSound = () => {
+        audioRef.current?.play().catch(e => console.error("Audio playback failed", e));
+    };
+    window.addEventListener('play-task-notification', playSound);
+    return () => {
+        window.removeEventListener('play-task-notification', playSound);
+    };
+  }, []);
+
   const handleLogout = () => {
     logout();
   };
