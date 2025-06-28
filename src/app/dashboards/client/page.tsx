@@ -41,9 +41,6 @@ export default function ClientDashboard() {
   const allowedFeatures = useMemo(() => planFeatures[clientPlan], [clientPlan]);
   
   const canManageStudents = allowedFeatures.includes('STUDENT_MANAGEMENT');
-  const canManageSalaries = allowedFeatures.includes('SALARY_MANAGEMENT');
-  const canManageTasks = allowedFeatures.includes('TASK_MANAGEMENT');
-  const canManageLeaves = allowedFeatures.includes('LEAVE_MANAGEMENT');
 
 
   // Filter states
@@ -381,9 +378,6 @@ export default function ClientDashboard() {
           >
             <Printer className="mr-2 h-4 w-4" /> Print Report
           </Button>
-          {canManageSalaries && <Button asChild><Link href="/dashboards/client/salary"><Banknote className="mr-2 h-4 w-4" />Manage Salaries</Link></Button>}
-          {canManageTasks && <Button asChild><Link href="/dashboards/client/tasks"><ClipboardCheck className="mr-2 h-4 w-4" />Manage Tasks</Link></Button>}
-          {canManageLeaves && <Button asChild><Link href="/dashboards/client/leaves"><CalendarCheck className="mr-2 h-4 w-4" />Leave Requests</Link></Button>}
           <Button variant="outline" onClick={() => setIsHolidayModalOpen(true)}>
             <CalendarDays className="mr-2 h-4 w-4" />
             Holiday Calendar
