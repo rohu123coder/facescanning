@@ -94,9 +94,8 @@ function ClientDashboardLayout({
           <SidebarMenu>
             {navConfig.map((item) => {
               if (allowedFeatures.includes(item.feature)) {
-                const key = item.href;
                 return (
-                  <SidebarMenuItem key={key}>
+                  <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       asChild
                       isActive={getIsActive(item.href, pathname)}
