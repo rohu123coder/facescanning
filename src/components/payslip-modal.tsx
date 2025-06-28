@@ -44,7 +44,15 @@ export function PayslipModal({ isOpen, onOpenChange, payslipData }: PayslipModal
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl p-0">
+          <DialogHeader className="p-6 pb-0 print-hide">
+            <DialogTitle className="font-headline">
+              Payslip for {payslipData.staff.name} - {payslipData.month} {payslipData.year}
+            </DialogTitle>
+            <DialogDescription>
+              This is the generated payslip. You can print it or close the dialog.
+            </DialogDescription>
+          </DialogHeader>
           <div id="payslip-content" className="p-8 text-black bg-white">
             <header className="flex justify-between items-center pb-4 border-b-2 border-gray-200">
               <div className="flex items-center gap-4">
