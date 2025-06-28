@@ -4,8 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { faceScanAttendance } from '@/ai/flows/face-scan-attendance';
-import { AlertCircle, UserCheck, GraduationCap } from 'lucide-react';
-import { useStaffStore } from '@/hooks/use-staff-store';
+import { AlertCircle, GraduationCap } from 'lucide-react';
 import { useStudentStore } from '@/hooks/use-student-store';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,7 +15,7 @@ type Person = {
   id: string;
   name: string;
   photoUrl: string;
-  type: 'Staff' | 'Student';
+  type: 'Student';
 };
 
 type LogEntry = {
@@ -25,7 +24,7 @@ type LogEntry = {
   timestamp: string;
   personName: string;
   personPhotoUrl: string;
-  personType: 'Staff' | 'Student';
+  personType: 'Student';
 };
 
 export default function AttendanceKiosk() {
@@ -34,7 +33,6 @@ export default function AttendanceKiosk() {
   const [scanLogs, setScanLogs] = useState<LogEntry[]>([]);
   const { toast } = useToast();
   
-  const { staffList, updateStaffAttendance, isInitialized: staffInitialized } = useStaffStore();
   const { studentList, updateStudentAttendance, isInitialized: studentInitialized } = useStudentStore();
   
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -73,7 +71,7 @@ export default function AttendanceKiosk() {
   }, []);
 
   const handleScanFrame = useCallback(async () => {
-    if (isProcessingFrame.current || !videoRef.current || !canvasRef.current || !staffInitialized || !studentInitialized) return;
+    if (isProcessingFrame.current || !videoRef.current || !canvasRef.current || !studentInitialized) return;
 
     isProcessingFrame.current = true;
     try {
@@ -91,7 +89,6 @@ export default function AttendanceKiosk() {
         const now = Date.now();
 
         const allPeople: Person[] = [
-          ...staffList.map(s => ({ ...s, type: 'Staff' as const })),
           ...studentList.map(s => ({ ...s, type: 'Student' as const }))
         ];
 
@@ -111,12 +108,7 @@ export default function AttendanceKiosk() {
             if (result.isRecognized) {
               lastScanTimesRef.current.set(person.id, now);
               
-              let statusMsg = '';
-              if (person.type === 'Staff') {
-                statusMsg = updateStaffAttendance(person.id);
-              } else {
-                statusMsg = updateStudentAttendance(person.id);
-              }
+              const statusMsg = updateStudentAttendance(person.id);
               
               toast({ title: `Attendance Logged`, description: `${person.name} has ${statusMsg.toLowerCase()}.` });
               playBeep();
@@ -133,7 +125,7 @@ export default function AttendanceKiosk() {
     } finally {
         isProcessingFrame.current = false;
     }
-  }, [staffList, studentList, staffInitialized, studentInitialized, updateStaffAttendance, updateStudentAttendance, toast, scanCooldown, addLog, playBeep]);
+  }, [studentList, studentInitialized, updateStudentAttendance, toast, scanCooldown, addLog, playBeep]);
 
   const startScanning = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -195,12 +187,12 @@ export default function AttendanceKiosk() {
 
   // Effect to manage the scanning interval based on permissions and data loading.
   useEffect(() => {
-    if (hasCameraPermission && staffInitialized && studentInitialized) {
+    if (hasCameraPermission && studentInitialized) {
       startScanning();
     } else {
       stopScanning();
     }
-  }, [hasCameraPermission, staffInitialized, studentInitialized, startScanning, stopScanning]);
+  }, [hasCameraPermission, studentInitialized, startScanning, stopScanning]);
 
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-8rem)] gap-8 p-1">
@@ -255,7 +247,7 @@ export default function AttendanceKiosk() {
                         <div className="flex-grow">
                           <p className="font-semibold">{log.personName}</p>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            {log.personType === 'Student' ? <GraduationCap className="text-blue-500" /> : <UserCheck className="text-green-500" />}
+                            <GraduationCap className="text-blue-500" />
                             <span>{log.message}</span>
                           </div>
                         </div>
