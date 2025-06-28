@@ -61,7 +61,6 @@ export function useAttendanceStore() {
       } else {
           const newRecord: Attendance = {
               staffId: staffMember.id,
-              staffName: staffMember.name,
               date: today,
               inTime: time,
               outTime: null,

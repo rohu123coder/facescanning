@@ -63,7 +63,6 @@ export type Staff = {
 
 export type Attendance = {
   staffId: string;
-  staffName: string;
   date: string; // 'YYYY-MM-DD'
   inTime: string | null; // ISO string
   outTime: string | null; // ISO string

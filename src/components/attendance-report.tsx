@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, FileSpreadsheet, FileText } from 'lucide-react';
+import { CalendarIcon, FileSpreadsheet, FileText, Search } from 'lucide-react';
 import { useAttendanceStore } from '@/hooks/use-attendance-store';
 import { useStaffStore } from '@/hooks/use-staff-store';
 import { addDays, format, differenceInHours, parseISO } from 'date-fns';
@@ -24,27 +24,25 @@ export function AttendanceReport() {
     to: new Date(),
   });
 
-  const [filteredAttendance, setFilteredAttendance] = React.useState<Attendance[]>([]);
+  const [reportData, setReportData] = React.useState<Attendance[] | null>(null);
   
   const getStaffName = (staffId: string) => {
     return staff.find(s => s.id === staffId)?.name || 'Unknown Staff';
   };
 
-  React.useEffect(() => {
-    if (isInitialized) {
-        const fromDate = date?.from ? format(date.from, 'yyyy-MM-dd') : null;
-        const toDate = date?.to ? format(date.to, 'yyyy-MM-dd') : null;
+  const handleGenerateReport = () => {
+    if (isInitialized && date?.from && date?.to) {
+        const fromDate = format(date.from, 'yyyy-MM-dd');
+        const toDate = format(date.to, 'yyyy-MM-dd');
 
-        if (fromDate && toDate) {
-            const filtered = attendance.filter(record => {
-                return record.date >= fromDate && record.date <= toDate;
-            });
-            setFilteredAttendance(filtered.sort((a, b) => b.date.localeCompare(a.date)));
-        } else {
-            setFilteredAttendance([]);
-        }
+        const filtered = attendance.filter(record => {
+            return record.date >= fromDate && record.date <= toDate;
+        });
+        setReportData(filtered.sort((a, b) => b.date.localeCompare(a.date)));
+    } else {
+        setReportData([]);
     }
-  }, [date, attendance, isInitialized]);
+  };
 
   const calculateTotalHours = (inTime: string | null, outTime: string | null): string => {
     if (!inTime || !outTime) return 'N/A';
@@ -53,10 +51,11 @@ export function AttendanceReport() {
   };
 
   const handleExportCSV = () => {
+    if (!reportData) return;
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "Staff Name,Date,In Time,Out Time,Total Hours\n";
 
-    filteredAttendance.forEach(record => {
+    reportData.forEach(record => {
         const staffName = getStaffName(record.staffId);
         const inTime = record.inTime ? format(parseISO(record.inTime), 'p') : 'N/A';
         const outTime = record.outTime ? format(parseISO(record.outTime), 'p') : 'N/A';
@@ -99,7 +98,6 @@ export function AttendanceReport() {
     }
   };
 
-
   return (
     <Card>
       <CardHeader>
@@ -139,11 +137,14 @@ export function AttendanceReport() {
               />
             </PopoverContent>
           </Popover>
+          <Button onClick={handleGenerateReport}>
+            <Search className="mr-2" /> View Report
+          </Button>
           <div className="flex gap-2 print-hide">
-            <Button variant="outline" onClick={handleExportCSV} disabled={filteredAttendance.length === 0}>
+            <Button variant="outline" onClick={handleExportCSV} disabled={!reportData || reportData.length === 0}>
                 <FileSpreadsheet className="mr-2"/> Export CSV
             </Button>
-            <Button variant="outline" onClick={handleExportPDF} disabled={filteredAttendance.length === 0}>
+            <Button variant="outline" onClick={handleExportPDF} disabled={!reportData || reportData.length === 0}>
                 <FileText className="mr-2"/> Export PDF
             </Button>
           </div>
@@ -162,8 +163,14 @@ export function AttendanceReport() {
             </TableHeader>
             <TableBody>
               {isInitialized && isStaffInitialized ? (
-                filteredAttendance.length > 0 ? (
-                  filteredAttendance.map(record => (
+                reportData === null ? (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                            Please select a date range and click "View Report".
+                        </TableCell>
+                    </TableRow>
+                ) : reportData.length > 0 ? (
+                  reportData.map(record => (
                     <TableRow key={`${record.staffId}-${record.date}`}>
                       <TableCell className="font-medium">{getStaffName(record.staffId)}</TableCell>
                       <TableCell>{format(parseISO(record.date), 'PP')}</TableCell>
