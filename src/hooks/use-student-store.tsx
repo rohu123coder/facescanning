@@ -6,6 +6,7 @@ import { type Student, initialStudents } from '@/lib/data';
 import { useClientStore } from './use-client-store';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `studentList_${clientId}` : null;
+const getPhotoKey = (studentId: string) => `photo_${studentId}`;
 
 interface StudentContextType {
   students: Student[];
@@ -23,11 +24,28 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const storeKey = getStoreKey(currentClient?.id);
 
+  // Load from localStorage on mount
   useEffect(() => {
     if (storeKey) {
       try {
         const storedStudents = localStorage.getItem(storeKey);
-        setStudents(storedStudents ? JSON.parse(storedStudents) : initialStudents);
+        let loadedStudents = storedStudents ? JSON.parse(storedStudents) : initialStudents;
+
+        // Re-hydrate photo URLs from separate storage
+        loadedStudents = loadedStudents.map((student: Student) => {
+          const photoData = localStorage.getItem(getPhotoKey(student.id));
+          if (photoData) {
+            return { ...student, photoUrl: photoData };
+          }
+          // If initial data, store its photo url for consistency
+          if (student.photoUrl) {
+              localStorage.setItem(getPhotoKey(student.id), student.photoUrl);
+          }
+          return student;
+        });
+        
+        setStudents(loadedStudents);
+
       } catch (error) {
         console.error("Failed to load students from localStorage", error);
         setStudents(initialStudents);
@@ -38,9 +56,26 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     setIsInitialized(true);
   }, [storeKey]);
 
+
+  // Save to localStorage on change, separating photo data
   useEffect(() => {
     if (storeKey && isInitialized) {
-        localStorage.setItem(storeKey, JSON.stringify(students));
+        try {
+            const studentsToStore = students.map(student => {
+                const { photoUrl, ...rest } = student;
+                if (photoUrl && photoUrl.startsWith('data:image')) {
+                    // Store large photo data separately
+                    localStorage.setItem(getPhotoKey(student.id), photoUrl);
+                    // Return student object without photo data for main list
+                    return { ...rest, photoUrl: '' }; 
+                }
+                return student; // Keep existing (placeholder) URLs in the list
+            });
+
+            localStorage.setItem(storeKey, JSON.stringify(studentsToStore));
+        } catch (error) {
+            console.error("Failed to save students to localStorage. Quota may be exceeded.", error);
+        }
     }
   }, [students, storeKey, isInitialized]);
 
@@ -67,6 +102,8 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   }, []);
   
   const deleteStudent = useCallback((studentId: string) => {
+    // Also remove the photo from localStorage
+    localStorage.removeItem(getPhotoKey(studentId));
     setStudents(prevStudents => {
       return prevStudents.filter(member => member.id !== studentId);
     });
