@@ -14,7 +14,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Briefcase, LogOut, Mountain, Users, ScanFace, IndianRupee, Star, CalendarCheck } from 'lucide-react';
+import { Briefcase, LogOut, Mountain, Users, ScanFace, IndianRupee, Star, CalendarCheck, CheckSquare } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/hooks/use-auth-store';
 import { useClientStore } from '@/hooks/use-client-store';
@@ -25,6 +25,7 @@ const navItems = [
     { href: '/dashboards/client', label: 'Dashboard', icon: <Briefcase /> },
     { href: '/dashboards/client/staff', label: 'Staff', icon: <Users /> },
     { href: '/dashboards/client/leaves', label: 'Leaves', icon: <CalendarCheck /> },
+    { href: '/dashboards/client/tasks', label: 'Tasks', icon: <CheckSquare /> },
     { href: '/dashboards/client/attendance-kiosk', label: 'Attendance Kiosk', icon: <ScanFace /> },
     { href: '/dashboards/client/salary', label: 'Salary', icon: <IndianRupee /> },
     { href: '/dashboards/client/reputation', label: 'Reputation', icon: <Star /> },

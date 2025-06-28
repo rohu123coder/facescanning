@@ -79,6 +79,20 @@ export type LeaveRequest = {
   requestDate: string; // ISO string
 };
 
+export type TaskStatus = 'To Do' | 'In Progress' | 'Done';
+export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
+
+export type Task = {
+    id: string;
+    title: string;
+    description: string;
+    status: TaskStatus;
+    priority: TaskPriority;
+    category: string;
+    dueDate: string; // ISO string date
+    createdAt: string; // ISO string
+    assignedTo: string | null; // Staff ID
+};
 
 export const initialClients: Client[] = [
     { id: 'C-101', organizationName: 'Innovatech Solutions', organizationDetails: 'Leading the charge in AI-driven business solutions and cloud computing.', logoUrl: 'https://placehold.co/100x100.png', contactName: 'Rohan Mehra', email: 'contact@innovatech.com', mobile: '9876543210', whatsapp: '9876543210', plan: 'Enterprise', status: 'Active', staffCount: 45, isSetupComplete: true, isGbpConnected: false },
@@ -124,3 +138,5 @@ export const initialLeaves: LeaveRequest[] = [
         requestDate: new Date(new Date().setDate(new Date().getDate() - 12)).toISOString()
     }
 ];
+
+export const initialTasks: Task[] = [];
