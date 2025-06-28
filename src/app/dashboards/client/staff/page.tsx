@@ -2,12 +2,12 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function AttendanceKioskPage() {
+export default function StaffPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold font-headline">Attendance Kiosk</h1>
-        <p className="text-muted-foreground">Log employee attendance using AI face scan.</p>
+        <h1 className="text-3xl font-bold font-headline">Staff Management</h1>
+        <p className="text-muted-foreground">Manage your employees, roles, and permissions.</p>
       </div>
        <Card>
         <CardHeader>
@@ -15,7 +15,7 @@ export default function AttendanceKioskPage() {
           <CardDescription>This feature is under construction.</CardDescription>
         </CardHeader>
         <CardContent>
-          <p>The attendance kiosk will be available here shortly.</p>
+          <p>The staff management dashboard will be available here shortly.</p>
         </CardContent>
        </Card>
     </div>

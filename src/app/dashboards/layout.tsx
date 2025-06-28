@@ -14,12 +14,20 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Briefcase, LogOut, Mountain } from 'lucide-react';
+import { Briefcase, LogOut, Mountain, Users, ScanFace, IndianRupee, Star } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/hooks/use-auth-store';
 import { useClientStore } from '@/hooks/use-client-store';
 import { useEffect } from 'react';
 import Image from 'next/image';
+
+const navItems = [
+    { href: '/dashboards/client', label: 'Dashboard', icon: <Briefcase /> },
+    { href: '/dashboards/client/staff', label: 'Staff', icon: <Users /> },
+    { href: '/dashboards/client/attendance-kiosk', label: 'Attendance Kiosk', icon: <ScanFace /> },
+    { href: '/dashboards/client/salary', label: 'Salary', icon: <IndianRupee /> },
+    { href: '/dashboards/client/reputation', label: 'Reputation', icon: <Star /> },
+];
 
 function ClientDashboardLayout({
   children,
@@ -71,14 +79,16 @@ function ClientDashboardLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/dashboards/client'} tooltip="Dashboard">
-                <Link href="/dashboards/client">
-                  <Briefcase />
-                  <span>Dashboard</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {navItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.label}>
+                        <Link href={item.href}>
+                            {item.icon}
+                            <span>{item.label}</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarContent>
          <SidebarHeader className="p-4 mt-auto">

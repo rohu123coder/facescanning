@@ -110,7 +110,7 @@ export default function SetupPage() {
     <main className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-8">
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Organization Setup</CardTitle>
+          <CardTitle className="text-2xl font-headline">Organization Setup</CardTitle>
           <CardDescription>Welcome! Let's get your organization set up on Karma Manager.</CardDescription>
         </CardHeader>
         <CardContent>

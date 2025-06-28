@@ -6,12 +6,12 @@ export default function ReputationManagementPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Reputation Management</h1>
+        <h1 className="text-3xl font-bold font-headline">Reputation Management</h1>
         <p className="text-muted-foreground">Monitor and improve your online reputation.</p>
       </div>
        <Card>
         <CardHeader>
-          <CardTitle>Coming Soon</CardTitle>
+          <CardTitle className="font-headline">Coming Soon</CardTitle>
           <CardDescription>This feature is under construction.</CardDescription>
         </CardHeader>
         <CardContent>

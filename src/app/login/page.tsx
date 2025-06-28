@@ -73,7 +73,7 @@ export default function LoginPage() {
         </Link>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Client Login</CardTitle>
+          <CardTitle className="text-2xl font-headline">Client Login</CardTitle>
           <CardDescription>Enter your email and password to access your dashboard.</CardDescription>
         </CardHeader>
         <CardContent>
