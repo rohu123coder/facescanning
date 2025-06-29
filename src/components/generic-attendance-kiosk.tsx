@@ -138,11 +138,17 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
                     if (result.matchedPersonId) {
                         const matchedPerson = persons.find(p => p.id === result.matchedPersonId);
                         if (matchedPerson) {
+                            const today = format(new Date(), 'yyyy-MM-dd');
+                            const todaysRecord = attendance.find(a => a.personId === matchedPerson.id && a.date === today);
+                            const isCurrentlyClockedIn = !!(todaysRecord && todaysRecord.inTime && !todaysRecord.outTime);
+                            
                             const now = Date.now();
                             const lastScanTime = lastScanTimestampsRef.current[matchedPerson.id] || 0;
-
-                            if (now - lastScanTime < PERSON_COOLDOWN_MS) {
-                                setStatus(s => s.type !== 'SUCCESS' ? { type: 'IDLE', message: `${matchedPerson.name} already checked in recently.` } : s);
+                    
+                            // Apply cooldown ONLY for clock-in attempts to prevent rapid re-clock-ins.
+                            // A clock-out is always allowed.
+                            if (!isCurrentlyClockedIn && (now - lastScanTime < PERSON_COOLDOWN_MS)) {
+                                 setStatus({ type: 'IDLE', message: `${matchedPerson.name} recently scanned. Please wait before clocking in again.` });
                             } else {
                                 lastScanTimestampsRef.current[matchedPerson.id] = now;
                                 const punchType = markAttendance(matchedPerson);
@@ -154,7 +160,7 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
                                 });
                                 
                                 setStatus({ type: 'SUCCESS', message: `${welcomeMessage}, ${matchedPerson.name}!` });
-                                setTimeout(() => setStatus({ type: 'IDLE', message: `Ready to scan. ${personType}s, please position your face in the frame.` }), 2000);
+                                setTimeout(() => setStatus({ type: 'IDLE', message: `Ready to scan. ${personType}s, please position your face in the frame.` }), 3000);
                             }
                         } else {
                             setStatus({ type: 'IDLE', message: 'No match found. Please try again.' });
@@ -178,7 +184,7 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
         return () => {
            stopKiosk();
         };
-    }, [isPersonsInitialized, isAttendanceInitialized, persons, toast, markAttendance, personType, isActive]);
+    }, [isPersonsInitialized, isAttendanceInitialized, persons, toast, markAttendance, personType, isActive, attendance]);
 
     const StatusIcon = () => {
         switch (status.type) {

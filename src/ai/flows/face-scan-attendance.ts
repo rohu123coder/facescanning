@@ -47,14 +47,13 @@ const prompt = ai.definePrompt({
   name: 'recognizeFacePrompt',
   input: { schema: RecognizeFaceInputSchema },
   output: { schema: RecognizeFaceOutputSchema },
-  prompt: `You are an AI assistant performing facial recognition. I will provide you with a 'Captured Photo' and a list of 'Registered People'. Your task is to compare the face in the 'Captured Photo' with the faces in each of the 'Registered People' photos.
-
-You must identify the single best match from the list.
+  prompt: `You are a highly accurate AI facial recognition system. Your ONLY task is to determine if the person in the 'Captured Photo' is one of the people in the 'Registered People' list.
 
 **Captured Photo:**
 {{media url=capturedPhotoDataUri}}
 
 **Registered People ({{personType}}):**
+This is the complete list of registered {{personType}}s you must check against.
 {{#each personList}}
 ---
 **Person ID:** \`{{id}}\`
@@ -63,11 +62,13 @@ You must identify the single best match from the list.
 ---
 {{/each}}
 
-**Instructions for Output:**
-1. Examine the 'Captured Photo' and all 'Reference Photos'.
-2. If the person in the 'Captured Photo' is a clear match for one of the people in the list, you MUST return their 'Person ID' in the \`matchedPersonId\` field. Set the message to "Match found for [Person's Name]."
-3. If there is no clear match, you MUST return \`null\` for the \`matchedPersonId\` field. Set the message to "No clear match found in the database."
-4. Accuracy is paramount. If you are not certain of a match, it is better to return \`null\`.
+**CRITICAL INSTRUCTIONS:**
+1.  **Examine the 'Captured Photo' meticulously.**
+2.  **Compare the face in the 'Captured Photo' against EACH 'Reference Photo' from the list.**
+3.  **If you find a clear, confident match, you MUST return their 'Person ID' in the \`matchedPersonId\` field.** The message should be "Match found for [Person's Name]."
+4.  **If there is NO clear match, or if you have ANY doubt, you MUST return \`null\` for the \`matchedPersonId\` field.** The message should be "No match found in the database."
+5.  **Do not invent people or match against anyone not in the provided 'Registered People' list.** Your scope is limited to this list only.
+6.  Accuracy is the highest priority. It is better to fail a match than to make an incorrect one.
 `,
 });
 
