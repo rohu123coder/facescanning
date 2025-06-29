@@ -54,42 +54,37 @@ export function AttendanceProvider({ children }: { children: ReactNode }) {
   const markAttendance = useCallback((staffMember: Staff): 'in' | 'out' => {
     const todayString = format(new Date(), 'yyyy-MM-dd');
     const nowISO = new Date().toISOString();
-    
-    // Find the current record without waiting for state update
-    const existingRecord = attendance.find(
-        (record) => record.personId === staffMember.id && record.date === todayString
-    );
+    let punchTypeResult: 'in' | 'out' = 'in';
 
-    const punchTypeResult: 'in' | 'out' = (existingRecord && existingRecord.inTime && !existingRecord.outTime) ? 'out' : 'in';
-
-    setAttendance(prevAttendance => {
-        const currentAttendance = [...prevAttendance];
+    setAttendance(currentAttendance => {
         const recordIndex = currentAttendance.findIndex(
             (record) => record.personId === staffMember.id && record.date === todayString
         );
 
+        const existingRecord = recordIndex !== -1 ? currentAttendance[recordIndex] : null;
+        punchTypeResult = (existingRecord && existingRecord.inTime && !existingRecord.outTime) ? 'out' : 'in';
+
+        const newAttendance = [...currentAttendance];
+
         if (recordIndex !== -1) {
-            // Record exists, update it based on punchTypeResult
             if (punchTypeResult === 'out') {
-                currentAttendance[recordIndex] = { ...currentAttendance[recordIndex], outTime: nowISO };
+                newAttendance[recordIndex] = { ...newAttendance[recordIndex], outTime: nowISO };
             } else {
-                // Re-clock-in
-                currentAttendance[recordIndex] = { ...currentAttendance[recordIndex], inTime: nowISO, outTime: null };
+                newAttendance[recordIndex] = { ...newAttendance[recordIndex], inTime: nowISO, outTime: null };
             }
         } else {
-            // New record for clock-in
-            currentAttendance.push({
+            newAttendance.push({
                 personId: staffMember.id,
                 date: todayString,
                 inTime: nowISO,
                 outTime: null,
             });
         }
-        return currentAttendance;
+        return newAttendance;
     });
 
     return punchTypeResult;
-  }, [attendance]);
+  }, []);
 
   return (
     <AttendanceContext.Provider value={{ attendance, markAttendance, isInitialized, setAttendance }}>

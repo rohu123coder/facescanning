@@ -49,25 +49,24 @@ export function StudentAttendanceProvider({ children }: { children: ReactNode })
   const markAttendance = useCallback((student: Student): 'in' | 'out' => {
       const today = format(new Date(), 'yyyy-MM-dd');
       const time = new Date().toISOString();
+      let punchTypeResult: 'in' | 'out' = 'in';
 
-      const existingRecord = attendance.find(
-          (record) => record.personId === student.id && record.date === today
-      );
-      
-      const punchTypeResult: 'in' | 'out' = (existingRecord && existingRecord.inTime && !existingRecord.outTime) ? 'out' : 'in';
-      
-      setAttendance(prevAttendance => {
-        const currentAttendance = [...prevAttendance];
-        const existingRecordIndex = currentAttendance.findIndex(
+      setAttendance(currentAttendance => {
+        const recordIndex = currentAttendance.findIndex(
           record => record.personId === student.id && record.date === today
         );
+        
+        const existingRecord = recordIndex !== -1 ? currentAttendance[recordIndex] : null;
+        punchTypeResult = (existingRecord && existingRecord.inTime && !existingRecord.outTime) ? 'out' : 'in';
 
-        if (existingRecordIndex > -1) {
+        const newAttendance = [...currentAttendance];
+
+        if (recordIndex > -1) {
             if(punchTypeResult === 'out') {
-              currentAttendance[existingRecordIndex].outTime = time;
+              newAttendance[recordIndex].outTime = time;
             } else {
-              currentAttendance[existingRecordIndex].inTime = time;
-              currentAttendance[existingRecordIndex].outTime = null;
+              newAttendance[recordIndex].inTime = time;
+              newAttendance[recordIndex].outTime = null;
             }
         } else {
             const newRecord: Attendance = {
@@ -76,14 +75,14 @@ export function StudentAttendanceProvider({ children }: { children: ReactNode })
                 inTime: time,
                 outTime: null,
             };
-            currentAttendance.push(newRecord);
+            newAttendance.push(newRecord);
         }
         
-        return currentAttendance;
+        return newAttendance;
       });
 
       return punchTypeResult;
-  }, [attendance]);
+  }, []);
   
   return (
     <StudentAttendanceContext.Provider value={{ attendance, markAttendance, isInitialized, setAttendance }}>

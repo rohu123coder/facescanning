@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Camera, UserCheck, UserX, ShieldAlert, CameraOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -46,22 +45,6 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
     const isScanningRef = useRef(false);
     const lastScanTimestampsRef = useRef<Record<string, number>>({});
     const streamRef = useRef<MediaStream | null>(null);
-
-    // This is the key change: Stabilize the markAttendance callback to prevent effect re-runs
-    const markAttendanceRef = useRef(markAttendance);
-    useEffect(() => {
-        markAttendanceRef.current = markAttendance;
-    }, [markAttendance]);
-
-    const stableMarkAttendance = useCallback((person: T) => {
-        return markAttendanceRef.current(person);
-    }, []);
-
-    const attendanceRef = useRef(attendance);
-    useEffect(() => {
-        attendanceRef.current = attendance;
-    }, [attendance]);
-
 
     const getPersonName = (personId: string) => {
         return persons.find(p => p.id === personId)?.name || `Unknown ${personType}`;
@@ -155,7 +138,7 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
                         const matchedPerson = persons.find(p => p.id === result.matchedPersonId);
                         if (matchedPerson) {
                             const today = format(new Date(), 'yyyy-MM-dd');
-                            const todaysRecord = attendanceRef.current.find(a => a.personId === matchedPerson.id && a.date === today);
+                            const todaysRecord = attendance.find(a => a.personId === matchedPerson.id && a.date === today);
                             const isCurrentlyClockedIn = !!(todaysRecord && todaysRecord.inTime && !todaysRecord.outTime);
                             
                             const now = Date.now();
@@ -165,7 +148,7 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
                                  setStatus({ type: 'IDLE', message: `${matchedPerson.name} recently scanned. Please wait before clocking in again.` });
                             } else {
                                 lastScanTimestampsRef.current[matchedPerson.id] = now;
-                                const punchType = stableMarkAttendance(matchedPerson); // Use the stable function
+                                const punchType = markAttendance(matchedPerson);
                                 const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
                                 
                                 toast({
@@ -198,7 +181,7 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
         return () => {
            stopKiosk();
         };
-    }, [isPersonsInitialized, isAttendanceInitialized, persons, toast, stableMarkAttendance, personType, isActive]);
+    }, [isPersonsInitialized, isAttendanceInitialized, persons, toast, markAttendance, personType, isActive, attendance]);
 
     const StatusIcon = () => {
         switch (status.type) {
