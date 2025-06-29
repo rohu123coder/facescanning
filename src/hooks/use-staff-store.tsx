@@ -6,8 +6,6 @@ import { type Staff } from '@/lib/data';
 import { useClientStore } from './use-client-store.tsx';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `staffList_${clientId}` : null;
-// The photo key MUST be unique per client to prevent data leakage.
-const getPhotoKey = (clientId: string, staffId: string) => `photo_staff_${clientId}_${staffId}`;
 
 interface StaffContextType {
   staff: Staff[];
@@ -27,23 +25,10 @@ export function StaffProvider({ children }: { children: ReactNode }) {
 
   // Load from localStorage on mount
   useEffect(() => {
-    if (storeKey && currentClient?.id) {
+    if (storeKey) {
       try {
         const storedStaff = localStorage.getItem(storeKey);
-        // If no data, start with an empty array for a fresh start.
-        let loadedStaff = storedStaff ? JSON.parse(storedStaff) : [];
-        
-        // Re-hydrate photo URLs from separate storage
-        loadedStaff = loadedStaff.map((staffMember: Staff) => {
-            const photoData = localStorage.getItem(getPhotoKey(currentClient.id, staffMember.id));
-            if (photoData) {
-                return { ...staffMember, photoUrl: photoData };
-            }
-            return staffMember;
-        });
-
-        setStaff(loadedStaff);
-
+        setStaff(storedStaff ? JSON.parse(storedStaff) : []);
       } catch (error) {
         console.error("Failed to load staff from localStorage", error);
         setStaff([]);
@@ -52,28 +37,18 @@ export function StaffProvider({ children }: { children: ReactNode }) {
         setStaff([]);
     }
     setIsInitialized(true);
-  }, [storeKey, currentClient?.id]);
+  }, [storeKey]);
 
-  // Save to localStorage on change, separating photo data
+  // Save to localStorage on change
   useEffect(() => {
-    if (storeKey && currentClient?.id && isInitialized) {
+    if (storeKey && isInitialized) {
         try {
-            const staffToStore = staff.map(staffMember => {
-                const { photoUrl, ...rest } = staffMember;
-                if (photoUrl && photoUrl.startsWith('data:image')) {
-                    // Store large photo data separately
-                    localStorage.setItem(getPhotoKey(currentClient.id, staffMember.id), photoUrl);
-                    // Return staff object without photo data for main list
-                    return { ...rest, photoUrl: '' };
-                }
-                return { ...rest, photoUrl: photoUrl || '' }; // Ensure photoUrl is not undefined
-            });
-            localStorage.setItem(storeKey, JSON.stringify(staffToStore));
+            localStorage.setItem(storeKey, JSON.stringify(staff));
         } catch (error) {
             console.error("Failed to save staff to localStorage. Quota may be exceeded.", error);
         }
     }
-  }, [staff, storeKey, isInitialized, currentClient?.id]);
+  }, [staff, storeKey, isInitialized]);
 
   const addStaff = useCallback((newStaffData: Omit<Staff, 'id'>) => {
     setStaff((prevStaff) => {
@@ -93,14 +68,10 @@ export function StaffProvider({ children }: { children: ReactNode }) {
   }, []);
   
   const deleteStaff = useCallback((staffId: string) => {
-    // Also remove the photo from localStorage
-    if (currentClient?.id) {
-        localStorage.removeItem(getPhotoKey(currentClient.id, staffId));
-    }
     setStaff((prevStaff) => {
         return prevStaff.filter(member => member.id !== staffId);
     });
-  }, [currentClient?.id]);
+  }, []);
 
   return (
     <StaffContext.Provider value={{ staff, addStaff, updateStaff, deleteStaff, isInitialized }}>
