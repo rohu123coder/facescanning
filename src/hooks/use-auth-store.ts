@@ -1,9 +1,11 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { type Client } from '@/lib/data';
 
 const AUTH_KEY = 'loggedInClientId';
+const EMPLOYEE_AUTH_KEY = 'loggedInEmployeeId';
 const CLIENT_STORE_KEY = 'clientList';
 
 export function useAuthStore() {
@@ -34,6 +36,8 @@ export function useAuthStore() {
         // For this simulation, the password is the client's mobile number
         if (client && client.mobile === password) {
           localStorage.setItem(AUTH_KEY, client.id);
+          // Ensure no employee is logged in simultaneously
+          localStorage.removeItem(EMPLOYEE_AUTH_KEY);
           setIsAuthenticated(true);
           return { success: true, client: client };
         }
@@ -49,6 +53,8 @@ export function useAuthStore() {
   const logout = useCallback(() => {
     try {
       localStorage.removeItem(AUTH_KEY);
+       // Ensure employee is also logged out
+      localStorage.removeItem(EMPLOYEE_AUTH_KEY);
       setIsAuthenticated(false);
       window.location.assign('/login');
     } catch (error) {

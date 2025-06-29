@@ -15,9 +15,10 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Briefcase, LogOut, Mountain, Users, ScanFace, Star, CheckSquare, GraduationCap, FileText, HandCoins, CalendarDays } from 'lucide-react';
+import { Briefcase, LogOut, Mountain, Users, ScanFace, Star, CheckSquare, GraduationCap, FileText, HandCoins, CalendarDays, UserCheck, Bell } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/hooks/use-auth-store';
+import { useEmployeeAuthStore } from '@/hooks/use-employee-auth-store';
 import { ClientProvider, useClientStore } from '@/hooks/use-client-store.tsx';
 import { useEffect, type ReactNode, useRef } from 'react';
 import Image from 'next/image';
@@ -25,8 +26,8 @@ import { usePlanFeatures } from '@/hooks/use-plan-features';
 import { useToast } from '@/hooks/use-toast';
 import { useHolidayStore, HolidayProvider } from '@/hooks/use-holiday-store.tsx';
 import { isToday, isTomorrow, parseISO, startOfDay, format } from 'date-fns';
-
-import { StaffProvider } from '@/hooks/use-staff-store.tsx';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useStaffStore, StaffProvider } from '@/hooks/use-staff-store.tsx';
 import { StudentProvider } from '@/hooks/use-student-store.tsx';
 import { AttendanceProvider } from '@/hooks/use-attendance-store.tsx';
 import { StudentAttendanceProvider } from '@/hooks/use-student-attendance-store.tsx';
@@ -35,7 +36,7 @@ import { TaskProvider } from '@/hooks/use-task-store.tsx';
 import { SalaryRulesProvider } from '@/hooks/use-salary-rules-store.tsx';
 
 
-const navItems = [
+const clientNavItems = [
     { href: '/dashboards/client', label: 'Dashboard', icon: <Briefcase />, feature: 'DASHBOARD' },
     { href: '/dashboards/client/staff', label: 'Staff', icon: <Users />, feature: 'STAFF_MANAGEMENT' },
     { href: '/dashboards/client/students', label: 'Students', icon: <GraduationCap />, feature: 'STUDENT_MANAGEMENT' },
@@ -45,6 +46,14 @@ const navItems = [
     { href: '/dashboards/client/salary', label: 'Salary', icon: <HandCoins />, feature: 'SALARY_AUTOMATION' },
     { href: '/dashboards/client/attendance-kiosk', label: 'Attendance Kiosk', icon: <ScanFace />, feature: 'ATTENDANCE_KIOSK' },
     { href: '/dashboards/client/reputation', label: 'Reputation', icon: <Star />, feature: 'REPUTATION_MANAGEMENT' },
+];
+
+const employeeNavItems = [
+    { href: '/dashboards/employee', label: 'Dashboard', icon: <Briefcase /> },
+    { href: '/dashboards/employee/tasks', label: 'My Tasks', icon: <CheckSquare /> },
+    { href: '/dashboards/employee/leaves', label: 'My Leaves', icon: <FileText /> },
+    { href: '/dashboards/employee/attendance', label: 'My Attendance', icon: <UserCheck /> },
+    { href: '/dashboards/employee/payslips', label: 'My Payslips', icon: <HandCoins /> },
 ];
 
 
@@ -70,11 +79,7 @@ function AllAppProviders({ children }: { children: ReactNode }) {
     );
 }
 
-function ClientDashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function ClientDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, logout, isAuthInitialized } = useAuthStore();
@@ -159,7 +164,7 @@ function ClientDashboardLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {navItems.map((item) => (
+            {clientNavItems.map((item) => (
                 hasFeature(item.feature as any) && (
                     <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)} tooltip={item.label}>
@@ -202,9 +207,6 @@ function ClientDashboardLayout({
 function MainDashboard({ children }: { children: React.ReactNode }) {
     const { currentClient, isInitialized } = useClientStore();
 
-    // This is a critical guard. It prevents any data-dependent components (like StaffProvider)
-    // from rendering until the correct client context is fully loaded and available.
-    // This solves the data leak/caching issue between client logins.
     if (!isInitialized || !currentClient) {
         return (
             <div className="flex items-center justify-center h-screen">
@@ -213,9 +215,6 @@ function MainDashboard({ children }: { children: React.ReactNode }) {
         );
     }
     
-    // The key prop is also crucial. When currentClient.id changes (on login/logout),
-    // React unmounts the old AllAppProviders and mounts a new one,
-    // ensuring all nested stores reset and re-initialize with the new client's data.
     return (
         <AllAppProviders key={currentClient.id}>
             <ClientDashboardLayout>{children}</ClientDashboardLayout>
@@ -223,15 +222,107 @@ function MainDashboard({ children }: { children: React.ReactNode }) {
     )
 }
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function EmployeeDashboardLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { isAuthenticated, logout, isAuthInitialized, currentEmployeeId } = useEmployeeAuthStore();
+  const { staff } = useStaffStore();
+  
+  const currentEmployee = staff.find(s => s.id === currentEmployeeId);
+  
+  useEffect(() => {
+    if (isAuthInitialized && !isAuthenticated) {
+      router.push('/employee-login');
+    }
+  }, [isAuthenticated, isAuthInitialized, router]);
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  if (!isAuthInitialized || !isAuthenticated || !currentEmployee) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+          <Mountain className="h-8 w-8 text-primary animate-pulse" />
+      </div>
+    );
+  }
+
+  return (
+      <div className="flex min-h-screen w-full flex-col">
+        <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
+           <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+                <Link href="/dashboards/employee" className="flex items-center gap-2 text-lg font-semibold md:text-base">
+                    <Briefcase className="h-6 w-6 text-primary" />
+                    <span className="sr-only">Employee Dashboard</span>
+                </Link>
+                {employeeNavItems.map(item => (
+                    <Link key={item.label} href={item.href} className={cn("transition-colors hover:text-foreground", pathname === item.href ? "text-foreground" : "text-muted-foreground")}>
+                        {item.label}
+                    </Link>
+                ))}
+           </nav>
+            <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+                <div className="ml-auto flex-1 sm:flex-initial">
+                   {/* Future search bar */}
+                </div>
+                 <Button variant="ghost" size="icon" className="rounded-full">
+                    <Bell className="h-5 w-5" />
+                    <span className="sr-only">Toggle notifications</span>
+                </Button>
+                <ThemeToggle />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" size="icon" className="rounded-full">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={currentEmployee.photoUrl} alt={currentEmployee.name} />
+                        <AvatarFallback>{currentEmployee.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="sr-only">Toggle user menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>{currentEmployee.name}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>Settings</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </header>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+            {children}
+        </main>
+      </div>
+  )
+}
+
+function EmployeeMainDashboard({ children }: { children: React.ReactNode }) {
+    const { isAuthenticated, isAuthInitialized } = useEmployeeAuthStore();
+     const { currentClient, isInitialized: isClientInitialized } = useClientStore();
+
+    if (!isAuthInitialized || !isAuthenticated || !isClientInitialized || !currentClient) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <Mountain className="h-8 w-8 text-primary animate-pulse" />
+            </div>
+        );
+    }
+    
+    // Key is crucial to reset providers when a different employee from a different client logs in
+    return (
+        <AllAppProviders key={currentClient.id}>
+            <EmployeeDashboardLayout>{children}</EmployeeDashboardLayout>
+        </AllAppProviders>
+    )
+}
+
+
+export default function DashboardLayout({ children, }: { children: React.ReactNode; }) {
   const pathname = usePathname();
   
   if (pathname && pathname.startsWith('/dashboards/super-admin')) {
-    // Super-admin pages only need the ClientProvider for managing clients
     return (
       <ClientProvider>
           {children}
@@ -239,10 +330,27 @@ export default function DashboardLayout({
     );
   }
 
-  // Client dashboard pages need all providers, wrapped to handle re-initialization
+  if (pathname && pathname.startsWith('/dashboards/employee')) {
+    return (
+      <ClientProvider>
+          <EmployeeMainDashboard>{children}</EmployeeMainDashboard>
+      </ClientProvider>
+    )
+  }
+
+  // Client dashboard pages are the default
   return (
     <ClientProvider>
       <MainDashboard>{children}</MainDashboard>
     </ClientProvider>
   );
 }
+
+// Dummy Dropdown components to avoid breaking the layout
+// In a real scenario, these would be imported from the UI library
+const DropdownMenu = ({ children }: {children: ReactNode}) => <div>{children}</div>;
+const DropdownMenuTrigger = ({ children }: {children: ReactNode}) => <div>{children}</div>;
+const DropdownMenuContent = ({ children }: {children: ReactNode}) => <div>{children}</div>;
+const DropdownMenuLabel = ({ children }: {children: ReactNode}) => <div>{children}</div>;
+const DropdownMenuItem = ({ children, onClick }: {children: ReactNode, onClick?: () => void}) => <div onClick={onClick} style={{cursor: 'pointer'}}>{children}</div>;
+const DropdownMenuSeparator = () => <hr />;
