@@ -1,13 +1,14 @@
+
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { useStudentStore } from '@/hooks/use-student-store.tsx';
 import { useTaskStore } from '@/hooks/use-task-store.tsx';
 import { useLeaveStore } from '@/hooks/use-leave-store.tsx';
 import { useHolidayStore } from '@/hooks/use-holiday-store.tsx';
 import { Users, GraduationCap, ListTodo, MailQuestion, Calendar, Mountain } from 'lucide-react';
-import { format, isFuture } from 'date-fns';
+import { format, isFuture, parseISO } from 'date-fns';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -26,7 +27,7 @@ export default function ClientDashboard() {
   const pendingLeaves = requests.filter(r => r.status === 'Pending').length;
   
   const upcomingHolidays = holidays
-    .filter(h => isFuture(new Date(h.date)) || format(new Date(h.date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'))
+    .filter(h => isFuture(parseISO(h.date)) || format(parseISO(h.date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 5);
 
@@ -81,7 +82,7 @@ export default function ClientDashboard() {
                 {upcomingHolidays.map(holiday => (
                   <div key={holiday.id} className="flex items-center justify-between">
                     <p className="font-medium">{holiday.name}</p>
-                    <p className="text-sm text-muted-foreground">{format(new Date(holiday.date), 'PPP')}</p>
+                    <p className="text-sm text-muted-foreground">{format(parseISO(holiday.date), 'PPP')}</p>
                   </div>
                 ))}
               </div>
