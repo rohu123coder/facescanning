@@ -1,22 +1,23 @@
 'use server';
 /**
- * @fileOverview An AI flow for recognizing a staff member's face for attendance.
+ * @fileOverview An AI flow for recognizing a person's face for attendance.
  *
- * - recognizeStaffFace - A function that handles the face recognition process.
- * - RecognizeStaffFaceInput - The input type for the recognizeStaffFace function.
- * - RecognizeStaffFaceOutput - The return type for the recognizeStaffFace function.
+ * - recognizeFace - A function that handles the face recognition process.
+ * - RecognizeFaceInput - The input type for the recognizeFace function.
+ * - RecognizeFaceOutput - The return type for the recognizeFace function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-const RecognizeStaffFaceInputSchema = z.object({
+const RecognizeFaceInputSchema = z.object({
+  personType: z.enum(['Staff', 'Student']).describe('The type of person to recognize.'),
   capturedPhotoDataUri: z
     .string()
     .describe(
       "A photo of a person captured for attendance, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  staffList: z
+  personList: z
     .array(
       z.object({
         id: z.string(),
@@ -24,60 +25,60 @@ const RecognizeStaffFaceInputSchema = z.object({
         photoUrl: z.string(),
       })
     )
-    .describe('A list of registered staff members with their photos.'),
+    .describe('A list of registered people with their photos.'),
 });
-export type RecognizeStaffFaceInput = z.infer<typeof RecognizeStaffFaceInputSchema>;
+export type RecognizeFaceInput = z.infer<typeof RecognizeFaceInputSchema>;
 
-const RecognizeStaffFaceOutputSchema = z.object({
-  matchedStaffId: z
+const RecognizeFaceOutputSchema = z.object({
+  matchedPersonId: z
     .string()
     .nullable()
-    .describe('The ID of the matched staff member, or null if no match is found.'),
+    .describe('The ID of the matched person, or null if no match is found.'),
   message: z.string().describe('A message indicating the result of the recognition.'),
 });
-export type RecognizeStaffFaceOutput = z.infer<typeof RecognizeStaffFaceOutputSchema>;
+export type RecognizeFaceOutput = z.infer<typeof RecognizeFaceOutputSchema>;
 
-export async function recognizeStaffFace(input: RecognizeStaffFaceInput): Promise<RecognizeStaffFaceOutput> {
-  return recognizeStaffFaceFlow(input);
+export async function recognizeFace(input: RecognizeFaceInput): Promise<RecognizeFaceOutput> {
+  return recognizeFaceFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'recognizeStaffFacePrompt',
-  input: { schema: RecognizeStaffFaceInputSchema },
-  output: { schema: RecognizeStaffFaceOutputSchema },
-  prompt: `You are an advanced facial recognition system for an office attendance kiosk. Your task is to accurately identify an employee from a captured photo by comparing it against a database of registered staff photos.
+  name: 'recognizeFacePrompt',
+  input: { schema: RecognizeFaceInputSchema },
+  output: { schema: RecognizeFaceOutputSchema },
+  prompt: `You are an advanced facial recognition system for an attendance kiosk. Your task is to accurately identify a {{personType}} from a captured photo by comparing it against a database of registered people.
 
-Analyze the captured image provided below and compare it with each employee in the provided staff list.
+Analyze the captured image provided below and compare it with each person in the provided list.
 
 **Captured Photo for Recognition:**
 {{media url=capturedPhotoDataUri}}
 
-**Registered Staff Database:**
-{{#each staffList}}
-- **Employee ID:** \`{{id}}\`
+**Registered {{personType}} Database:**
+{{#each personList}}
+- **ID:** \`{{id}}\`
 - **Name:** {{name}}
 - **Registered Photo:** {{media url=photoUrl}}
 ---
 {{/each}}
 
-After careful comparison, determine which registered employee is in the captured photo.
+After careful comparison, determine which registered {{personType}} is in the captured photo.
 
 **Output Instructions:**
-- If you find a clear match, set the 'matchedStaffId' to the corresponding Employee ID. Set the message to "Match found."
-- If the captured photo does not match any employee in the database, or if the image is unclear, set 'matchedStaffId' to null. Set the message to "No match found."
+- If you find a clear match, set the 'matchedPersonId' to the corresponding ID. Set the message to "Match found."
+- If the captured photo does not match any person in the database, or if the image is unclear, set 'matchedPersonId' to null. Set the message to "No match found."
 - Do not guess. Accuracy is critical.
 `,
 });
 
-const recognizeStaffFaceFlow = ai.defineFlow(
+const recognizeFaceFlow = ai.defineFlow(
   {
-    name: 'recognizeStaffFaceFlow',
-    inputSchema: RecognizeStaffFaceInputSchema,
-    outputSchema: RecognizeStaffFaceOutputSchema,
+    name: 'recognizeFaceFlow',
+    inputSchema: RecognizeFaceInputSchema,
+    outputSchema: RecognizeFaceOutputSchema,
   },
   async (input) => {
-    if (input.staffList.length === 0) {
-        return { matchedStaffId: null, message: 'Staff list is empty. Cannot perform recognition.' };
+    if (input.personList.length === 0) {
+        return { matchedPersonId: null, message: 'Person list is empty. Cannot perform recognition.' };
     }
     const { output } = await prompt(input);
     return output!;

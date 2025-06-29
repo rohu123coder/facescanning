@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Camera, UserCheck, UserX, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { recognizeStaffFace } from '@/ai/flows/face-scan-attendance';
+import { recognizeFace } from '@/ai/flows/face-scan-attendance';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { type Student, type Staff, type Attendance } from '@/lib/data';
@@ -109,10 +109,14 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
                         return;
                     }
 
-                    const result = await recognizeStaffFace({ capturedPhotoDataUri, staffList: personListForRecognition });
+                    const result = await recognizeFace({ 
+                        capturedPhotoDataUri, 
+                        personList: personListForRecognition, 
+                        personType,
+                    });
 
-                    if (result.matchedStaffId) {
-                        const matchedPerson = persons.find(p => p.id === result.matchedStaffId);
+                    if (result.matchedPersonId) {
+                        const matchedPerson = persons.find(p => p.id === result.matchedPersonId);
                         if (matchedPerson) {
                             const now = Date.now();
                             const lastScanTime = lastScanTimestampsRef.current[matchedPerson.id] || 0;
