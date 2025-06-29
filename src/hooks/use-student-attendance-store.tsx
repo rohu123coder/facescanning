@@ -12,6 +12,7 @@ interface StudentAttendanceContextType {
   attendance: Attendance[];
   markAttendance: (student: Student) => 'in' | 'out';
   isInitialized: boolean;
+  setAttendance: React.Dispatch<React.SetStateAction<Attendance[]>>;
 }
 
 const StudentAttendanceContext = createContext<StudentAttendanceContextType | undefined>(undefined);
@@ -46,27 +47,27 @@ export function StudentAttendanceProvider({ children }: { children: ReactNode })
 
 
   const markAttendance = useCallback((student: Student): 'in' | 'out' => {
-      let punchTypeResult: 'in' | 'out' = 'in';
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const time = new Date().toISOString();
+
+      const existingRecord = attendance.find(
+          (record) => record.personId === student.id && record.date === today
+      );
+      
+      const punchTypeResult: 'in' | 'out' = (existingRecord && existingRecord.inTime && !existingRecord.outTime) ? 'out' : 'in';
       
       setAttendance(prevAttendance => {
-        const now = new Date();
-        const today = format(now, 'yyyy-MM-dd');
-        const time = now.toISOString();
-        
         const currentAttendance = [...prevAttendance];
         const existingRecordIndex = currentAttendance.findIndex(
           record => record.personId === student.id && record.date === today
         );
 
         if (existingRecordIndex > -1) {
-            const existingRecord = currentAttendance[existingRecordIndex];
-            if(existingRecord.inTime && !existingRecord.outTime) {
+            if(punchTypeResult === 'out') {
               currentAttendance[existingRecordIndex].outTime = time;
-              punchTypeResult = 'out';
             } else {
               currentAttendance[existingRecordIndex].inTime = time;
               currentAttendance[existingRecordIndex].outTime = null;
-              punchTypeResult = 'in';
             }
         } else {
             const newRecord: Attendance = {
@@ -76,17 +77,16 @@ export function StudentAttendanceProvider({ children }: { children: ReactNode })
                 outTime: null,
             };
             currentAttendance.push(newRecord);
-            punchTypeResult = 'in';
         }
         
         return currentAttendance;
       });
 
       return punchTypeResult;
-  }, []);
+  }, [attendance]);
   
   return (
-    <StudentAttendanceContext.Provider value={{ attendance, markAttendance, isInitialized }}>
+    <StudentAttendanceContext.Provider value={{ attendance, markAttendance, isInitialized, setAttendance }}>
       {children}
     </StudentAttendanceContext.Provider>
   );

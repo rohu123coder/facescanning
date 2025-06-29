@@ -26,6 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { useAttendanceStore } from '@/hooks/use-attendance-store.tsx';
 
 
 const getStatusBadge = (status: 'Active' | 'Inactive') => {
@@ -41,6 +42,7 @@ const getStatusBadge = (status: 'Active' | 'Inactive') => {
 
 export default function StaffPage() {
   const { staff, isInitialized, deleteStaff } = useStaffStore();
+  const { setAttendance } = useAttendanceStore();
   const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -52,10 +54,13 @@ export default function StaffPage() {
   };
 
   const handleDelete = (staffMember: Staff) => {
+    // First, remove all attendance records for this staff member
+    setAttendance(prev => prev.filter(att => att.personId !== staffMember.id));
+    // Then, delete the staff member themselves
     deleteStaff(staffMember.id);
     toast({
       title: "Staff Member Deleted",
-      description: `${staffMember.name} has been removed successfully.`,
+      description: `${staffMember.name} and all associated attendance data have been removed.`,
     });
   };
 

@@ -27,6 +27,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useStudentAttendanceStore } from '@/hooks/use-student-attendance-store.tsx';
 
 
 const getStatusBadge = (status: 'Active' | 'Inactive') => {
@@ -42,6 +43,7 @@ const getStatusBadge = (status: 'Active' | 'Inactive') => {
 
 export default function StudentsPage() {
   const { students, isInitialized, deleteStudent } = useStudentStore();
+  const { setAttendance } = useStudentAttendanceStore();
   const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -56,10 +58,13 @@ export default function StudentsPage() {
   };
   
   const handleDelete = (student: Student) => {
+    // First, remove all attendance records for this student
+    setAttendance(prev => prev.filter(att => att.personId !== student.id));
+    // Then, delete the student themselves
     deleteStudent(student.id);
     toast({
       title: "Student Deleted",
-      description: `${student.name} has been removed successfully.`,
+      description: `${student.name} and all associated attendance data have been removed.`,
     });
   };
 

@@ -12,6 +12,7 @@ interface AttendanceContextType {
   attendance: Attendance[];
   markAttendance: (staffMember: Staff) => 'in' | 'out';
   isInitialized: boolean;
+  setAttendance: React.Dispatch<React.SetStateAction<Attendance[]>>;
 }
 
 const AttendanceContext = createContext<AttendanceContextType | undefined>(undefined);
@@ -51,47 +52,47 @@ export function AttendanceProvider({ children }: { children: ReactNode }) {
   }, [attendance, storeKey, isInitialized]);
 
   const markAttendance = useCallback((staffMember: Staff): 'in' | 'out' => {
-    let punchTypeResult: 'in' | 'out' = 'in';
+    const todayString = format(new Date(), 'yyyy-MM-dd');
+    const nowISO = new Date().toISOString();
+    
+    // Find the current record without waiting for state update
+    const existingRecord = attendance.find(
+        (record) => record.personId === staffMember.id && record.date === todayString
+    );
+
+    const punchTypeResult: 'in' | 'out' = (existingRecord && existingRecord.inTime && !existingRecord.outTime) ? 'out' : 'in';
 
     setAttendance(prevAttendance => {
-        const todayString = format(new Date(), 'yyyy-MM-dd');
-        const nowISO = new Date().toISOString();
-
         const currentAttendance = [...prevAttendance];
         const recordIndex = currentAttendance.findIndex(
             (record) => record.personId === staffMember.id && record.date === todayString
         );
 
         if (recordIndex !== -1) {
-            // Record for today exists
-            const existingRecord = currentAttendance[recordIndex];
-            if (existingRecord.inTime && !existingRecord.outTime) {
-                // It's a clock-out
-                currentAttendance[recordIndex] = { ...existingRecord, outTime: nowISO };
-                punchTypeResult = 'out';
+            // Record exists, update it based on punchTypeResult
+            if (punchTypeResult === 'out') {
+                currentAttendance[recordIndex] = { ...currentAttendance[recordIndex], outTime: nowISO };
             } else {
-                // It's a re-clock-in (e.g., after lunch)
-                currentAttendance[recordIndex] = { ...existingRecord, inTime: nowISO, outTime: null };
-                punchTypeResult = 'in';
+                // Re-clock-in
+                currentAttendance[recordIndex] = { ...currentAttendance[recordIndex], inTime: nowISO, outTime: null };
             }
         } else {
-            // No record for today, create a new one (clock-in)
+            // New record for clock-in
             currentAttendance.push({
                 personId: staffMember.id,
                 date: todayString,
                 inTime: nowISO,
                 outTime: null,
             });
-            punchTypeResult = 'in';
         }
         return currentAttendance;
     });
 
     return punchTypeResult;
-  }, []);
+  }, [attendance]);
 
   return (
-    <AttendanceContext.Provider value={{ attendance, markAttendance, isInitialized }}>
+    <AttendanceContext.Provider value={{ attendance, markAttendance, isInitialized, setAttendance }}>
       {children}
     </AttendanceContext.Provider>
   );
