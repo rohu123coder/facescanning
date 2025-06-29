@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Camera, UserCheck, UserX, ShieldAlert, CameraOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -47,7 +47,16 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
     const lastScanTimestampsRef = useRef<Record<string, number>>({});
     const streamRef = useRef<MediaStream | null>(null);
 
-    // Use a ref to hold the latest attendance data to avoid re-triggering the main effect.
+    // This is the key change: Stabilize the markAttendance callback to prevent effect re-runs
+    const markAttendanceRef = useRef(markAttendance);
+    useEffect(() => {
+        markAttendanceRef.current = markAttendance;
+    }, [markAttendance]);
+
+    const stableMarkAttendance = useCallback((person: T) => {
+        return markAttendanceRef.current(person);
+    }, []);
+
     const attendanceRef = useRef(attendance);
     useEffect(() => {
         attendanceRef.current = attendance;
@@ -152,13 +161,11 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
                             const now = Date.now();
                             const lastScanTime = lastScanTimestampsRef.current[matchedPerson.id] || 0;
                     
-                            // Apply cooldown ONLY for clock-in attempts to prevent rapid re-clock-ins.
-                            // A clock-out is always allowed.
                             if (!isCurrentlyClockedIn && (now - lastScanTime < PERSON_COOLDOWN_MS)) {
                                  setStatus({ type: 'IDLE', message: `${matchedPerson.name} recently scanned. Please wait before clocking in again.` });
                             } else {
                                 lastScanTimestampsRef.current[matchedPerson.id] = now;
-                                const punchType = markAttendance(matchedPerson);
+                                const punchType = stableMarkAttendance(matchedPerson); // Use the stable function
                                 const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
                                 
                                 toast({
@@ -191,7 +198,7 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
         return () => {
            stopKiosk();
         };
-    }, [isPersonsInitialized, isAttendanceInitialized, persons, toast, markAttendance, personType, isActive]);
+    }, [isPersonsInitialized, isAttendanceInitialized, persons, toast, stableMarkAttendance, personType, isActive]);
 
     const StatusIcon = () => {
         switch (status.type) {
