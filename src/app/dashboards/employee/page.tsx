@@ -19,9 +19,9 @@ export default function EmployeeDashboardPage() {
 
     const featureCards = [
         { title: 'My Tasks', description: 'View and manage your assigned tasks.', icon: <CheckSquare className="h-8 w-8 text-muted-foreground" />, href: '/dashboards/employee/tasks' },
-        { title: 'Apply for Leave', description: 'Submit and track your leave requests.', icon: <FileText className="h-8 w-8 text-muted-foreground" />, href: '/dashboards/employee/leaves' },
-        { title: 'My Attendance', description: 'Check your attendance log and history.', icon: <UserCheck className="h-8 w-8 text-muted-foreground" />, href: '/dashboards/employee/attendance' },
-        { title: 'My Payslips', description: 'View and download your salary slips.', icon: <HandCoins className="h-8 w-8 text-muted-foreground" />, href: '/dashboards/employee/payslips' },
+        { title: 'Apply for Leave', description: 'Submit and track your leave requests.', icon: <FileText className="h-8 w-8 text-muted-foreground" />, href: '#' },
+        { title: 'My Attendance', description: 'Check your attendance log and history.', icon: <UserCheck className="h-8 w-8 text-muted-foreground" />, href: '#' },
+        { title: 'My Payslips', description: 'View and download your salary slips.', icon: <HandCoins className="h-8 w-8 text-muted-foreground" />, href: '#' },
     ];
 
     return (
@@ -33,7 +33,7 @@ export default function EmployeeDashboardPage() {
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 {featureCards.map(card => (
-                    <Link href="#" key={card.title}>
+                    <Link href={card.href} key={card.title}>
                     <Card className="hover:bg-muted/50 transition-colors h-full">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-xl font-headline">{card.title}</CardTitle>

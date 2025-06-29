@@ -2,16 +2,17 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { type Task } from '@/lib/data';
+import { type Task, type Comment } from '@/lib/data';
 import { useClientStore } from './use-client-store.tsx';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `taskList_${clientId}` : null;
 
 interface TaskContextType {
   tasks: Task[];
-  addTask: (newTaskData: Omit<Task, 'id' | 'createdAt'>) => void;
+  addTask: (newTaskData: Omit<Task, 'id' | 'createdAt' | 'status'>) => void;
   updateTask: (updatedTaskData: Task) => void;
   deleteTask: (taskId: string) => void;
+  addCommentToTask: (taskId: string, newCommentData: Omit<Comment, 'id' | 'timestamp'>) => void;
   isInitialized: boolean;
 }
 
@@ -45,13 +46,15 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [tasks, storeKey, isInitialized]);
 
-  const addTask = useCallback((newTaskData: Omit<Task, 'id' | 'createdAt'>) => {
+  const addTask = useCallback((newTaskData: Omit<Task, 'id' | 'createdAt' | 'status'>) => {
     setTasks(prevTasks => {
       const newTask: Task = {
         ...newTaskData,
         id: `T-${Date.now()}`,
+        status: 'To Do',
         createdAt: new Date().toISOString(),
         attachments: newTaskData.attachments || [],
+        comments: [],
       };
       return [...prevTasks, newTask];
     });
@@ -70,9 +73,27 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       return prevTasks.filter(task => task.id !== taskId);
     });
   }, []);
+  
+  const addCommentToTask = useCallback((taskId: string, newCommentData: Omit<Comment, 'id' | 'timestamp'>) => {
+    setTasks(prevTasks => {
+        const newTasks = prevTasks.map(task => {
+            if (task.id === taskId) {
+                const newComment: Comment = {
+                    ...newCommentData,
+                    id: `COMM-${Date.now()}`,
+                    timestamp: new Date().toISOString(),
+                };
+                const updatedComments = [...(task.comments || []), newComment];
+                return { ...task, comments: updatedComments };
+            }
+            return task;
+        });
+        return newTasks;
+    });
+  }, []);
 
   return (
-    <TaskContext.Provider value={{ tasks, addTask, updateTask, deleteTask, isInitialized }}>
+    <TaskContext.Provider value={{ tasks, addTask, updateTask, deleteTask, addCommentToTask, isInitialized }}>
       {children}
     </TaskContext.Provider>
   );

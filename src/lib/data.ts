@@ -83,6 +83,15 @@ export type Attachment = {
     type: 'file' | 'link';
 };
 
+export type Comment = {
+  id: string;
+  authorId: string; // 'client-admin' or staffId
+  authorName: string;
+  authorImageUrl?: string;
+  text: string;
+  timestamp: string; // ISO string
+};
+
 export type Task = {
     id: string;
     title: string;
@@ -94,6 +103,7 @@ export type Task = {
     createdAt: string; // ISO string
     assignedTo: string[]; // Staff IDs
     attachments: Attachment[];
+    comments?: Comment[];
 };
 
 export type SalaryRules = {

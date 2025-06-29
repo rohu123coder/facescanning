@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -31,7 +32,7 @@ import { StudentProvider } from '@/hooks/use-student-store.tsx';
 import { AttendanceProvider } from '@/hooks/use-attendance-store.tsx';
 import { StudentAttendanceProvider } from '@/hooks/use-student-attendance-store.tsx';
 import { LeaveProvider } from '@/hooks/use-leave-store.tsx';
-import { TaskProvider } from '@/hooks/use-task-store.tsx';
+import { useTaskStore, TaskProvider } from '@/hooks/use-task-store.tsx';
 import { SalaryRulesProvider } from '@/hooks/use-salary-rules-store.tsx';
 import { cn } from '@/lib/utils';
 import {
@@ -235,6 +236,10 @@ function EmployeeDashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, logout, isAuthInitialized, currentEmployeeId } = useEmployeeAuthStore();
   const { staff } = useStaffStore();
+  const { tasks, isInitialized: tasksInitialized } = useTaskStore();
+  const { toast } = useToast();
+  const prevAssignedTaskIdsRef = useRef<string[]>([]);
+  const isInitialLoadRef = useRef(true);
   
   const currentEmployee = staff.find(s => s.id === currentEmployeeId);
   
@@ -243,6 +248,36 @@ function EmployeeDashboardLayout({ children }: { children: ReactNode }) {
       router.push('/employee-login');
     }
   }, [isAuthenticated, isAuthInitialized, router]);
+
+  // Effect for new task notifications
+  useEffect(() => {
+    if (!tasksInitialized || !currentEmployeeId) return;
+
+    const currentAssignedTasks = tasks.filter(t => t.assignedTo.includes(currentEmployeeId));
+    const currentAssignedTaskIds = currentAssignedTasks.map(t => t.id);
+    
+    // On initial load, just set the reference and bail.
+    if (isInitialLoadRef.current) {
+        prevAssignedTaskIdsRef.current = currentAssignedTaskIds;
+        isInitialLoadRef.current = false;
+        return;
+    }
+
+    const newTasks = currentAssignedTasks.filter(task => !prevAssignedTaskIdsRef.current.includes(task.id));
+    
+    if (newTasks.length > 0) {
+        const latestNewTask = newTasks[newTasks.length - 1];
+        toast({
+            title: "New Task Assigned!",
+            description: `You have a new task: "${latestNewTask.title}"`,
+        });
+        const audioEl = document.getElementById('notification-sound') as HTMLAudioElement;
+        audioEl?.play().catch(e => console.error("Audio playback failed", e));
+    }
+
+    prevAssignedTaskIdsRef.current = currentAssignedTaskIds;
+
+  }, [tasks, tasksInitialized, currentEmployeeId, toast]);
 
   const handleLogout = () => {
     logout();
@@ -301,6 +336,7 @@ function EmployeeDashboardLayout({ children }: { children: ReactNode }) {
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
             {children}
+            <audio id="notification-sound" src="https://actions.google.com/sounds/v1/alarms/notification_sound.ogg" preload="auto" />
         </main>
       </div>
   )
