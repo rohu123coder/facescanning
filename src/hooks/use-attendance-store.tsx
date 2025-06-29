@@ -51,43 +51,44 @@ export function AttendanceProvider({ children }: { children: ReactNode }) {
   }, [attendance, storeKey, isInitialized]);
 
   const markAttendance = useCallback((staffMember: Staff): 'in' | 'out' => {
-    const todayString = format(new Date(), 'yyyy-MM-dd');
-    const nowISO = new Date().toISOString();
-    
-    // Determine punch type based on current state *before* updating
-    const existingRecordForCheck = attendance.find(
-      (record) => record.personId === staffMember.id && record.date === todayString
-    );
-    const punchType: 'in' | 'out' = (existingRecordForCheck && existingRecordForCheck.inTime && !existingRecordForCheck.outTime) ? 'out' : 'in';
+    let punchTypeResult: 'in' | 'out' = 'in';
 
     setAttendance(prevAttendance => {
-      const newAttendanceList = [...prevAttendance];
-      const recordIndex = newAttendanceList.findIndex(
-        (record) => record.personId === staffMember.id && record.date === todayString
-      );
+        const todayString = format(new Date(), 'yyyy-MM-dd');
+        const nowISO = new Date().toISOString();
 
-      if (recordIndex !== -1) {
-        // Record for today exists, so update it
-        const existingRecord = newAttendanceList[recordIndex];
-        if (punchType === 'out') {
-          newAttendanceList[recordIndex] = { ...existingRecord, outTime: nowISO };
-        } else { // Re-punching in
-          newAttendanceList[recordIndex] = { ...existingRecord, inTime: nowISO, outTime: null };
+        const currentAttendance = [...prevAttendance];
+        const recordIndex = currentAttendance.findIndex(
+            (record) => record.personId === staffMember.id && record.date === todayString
+        );
+
+        if (recordIndex !== -1) {
+            // Record for today exists
+            const existingRecord = currentAttendance[recordIndex];
+            if (existingRecord.inTime && !existingRecord.outTime) {
+                // It's a clock-out
+                currentAttendance[recordIndex] = { ...existingRecord, outTime: nowISO };
+                punchTypeResult = 'out';
+            } else {
+                // It's a re-clock-in (e.g., after lunch)
+                currentAttendance[recordIndex] = { ...existingRecord, inTime: nowISO, outTime: null };
+                punchTypeResult = 'in';
+            }
+        } else {
+            // No record for today, create a new one (clock-in)
+            currentAttendance.push({
+                personId: staffMember.id,
+                date: todayString,
+                inTime: nowISO,
+                outTime: null,
+            });
+            punchTypeResult = 'in';
         }
-      } else {
-        // No record for today, create a new one
-        newAttendanceList.push({
-          personId: staffMember.id,
-          date: todayString,
-          inTime: nowISO,
-          outTime: null,
-        });
-      }
-      return newAttendanceList;
+        return currentAttendance;
     });
 
-    return punchType;
-  }, [attendance]);
+    return punchTypeResult;
+  }, []);
 
   return (
     <AttendanceContext.Provider value={{ attendance, markAttendance, isInitialized }}>
