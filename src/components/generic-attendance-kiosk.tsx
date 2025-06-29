@@ -47,6 +47,13 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
     const lastScanTimestampsRef = useRef<Record<string, number>>({});
     const streamRef = useRef<MediaStream | null>(null);
 
+    // Use a ref to hold the latest attendance data to avoid re-triggering the main effect.
+    const attendanceRef = useRef(attendance);
+    useEffect(() => {
+        attendanceRef.current = attendance;
+    }, [attendance]);
+
+
     const getPersonName = (personId: string) => {
         return persons.find(p => p.id === personId)?.name || `Unknown ${personType}`;
     };
@@ -139,7 +146,7 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
                         const matchedPerson = persons.find(p => p.id === result.matchedPersonId);
                         if (matchedPerson) {
                             const today = format(new Date(), 'yyyy-MM-dd');
-                            const todaysRecord = attendance.find(a => a.personId === matchedPerson.id && a.date === today);
+                            const todaysRecord = attendanceRef.current.find(a => a.personId === matchedPerson.id && a.date === today);
                             const isCurrentlyClockedIn = !!(todaysRecord && todaysRecord.inTime && !todaysRecord.outTime);
                             
                             const now = Date.now();
@@ -184,7 +191,7 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
         return () => {
            stopKiosk();
         };
-    }, [isPersonsInitialized, isAttendanceInitialized, persons, toast, markAttendance, personType, isActive, attendance]);
+    }, [isPersonsInitialized, isAttendanceInitialized, persons, toast, markAttendance, personType, isActive]);
 
     const StatusIcon = () => {
         switch (status.type) {
