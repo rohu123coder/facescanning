@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -34,6 +33,15 @@ import { StudentAttendanceProvider } from '@/hooks/use-student-attendance-store.
 import { LeaveProvider } from '@/hooks/use-leave-store.tsx';
 import { TaskProvider } from '@/hooks/use-task-store.tsx';
 import { SalaryRulesProvider } from '@/hooks/use-salary-rules-store.tsx';
+import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 
 const clientNavItems = [
@@ -345,12 +353,3 @@ export default function DashboardLayout({ children, }: { children: React.ReactNo
     </ClientProvider>
   );
 }
-
-// Dummy Dropdown components to avoid breaking the layout
-// In a real scenario, these would be imported from the UI library
-const DropdownMenu = ({ children }: {children: ReactNode}) => <div>{children}</div>;
-const DropdownMenuTrigger = ({ children }: {children: ReactNode}) => <div>{children}</div>;
-const DropdownMenuContent = ({ children }: {children: ReactNode}) => <div>{children}</div>;
-const DropdownMenuLabel = ({ children }: {children: ReactNode}) => <div>{children}</div>;
-const DropdownMenuItem = ({ children, onClick }: {children: ReactNode, onClick?: () => void}) => <div onClick={onClick} style={{cursor: 'pointer'}}>{children}</div>;
-const DropdownMenuSeparator = () => <hr />;
