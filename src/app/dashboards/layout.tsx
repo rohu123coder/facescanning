@@ -34,6 +34,7 @@ import { StudentAttendanceProvider } from '@/hooks/use-student-attendance-store.
 import { LeaveProvider } from '@/hooks/use-leave-store.tsx';
 import { useTaskStore, TaskProvider } from '@/hooks/use-task-store.tsx';
 import { SalaryRulesProvider } from '@/hooks/use-salary-rules-store.tsx';
+import { SalarySlipsProvider } from '@/hooks/use-salary-slips-store.tsx';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -75,9 +76,11 @@ function AllAppProviders({ children }: { children: ReactNode }) {
                         <LeaveProvider>
                             <TaskProvider>
                                 <SalaryRulesProvider>
-                                    <HolidayProvider>
-                                        {children}
-                                    </HolidayProvider>
+                                    <SalarySlipsProvider>
+                                        <HolidayProvider>
+                                            {children}
+                                        </HolidayProvider>
+                                    </SalarySlipsProvider>
                                 </SalaryRulesProvider>
                             </TaskProvider>
                         </LeaveProvider>
@@ -306,11 +309,25 @@ function EmployeeDashboardLayout({ children }: { children: ReactNode }) {
             playSound();
         }
     };
+    
+    const handleSalaryGenerated = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        const { staffId } = customEvent.detail;
+        if (staffId === currentEmployeeId) {
+            toast({
+                title: "Payslip Generated!",
+                description: `Your payslip is now available to view.`
+            });
+            playSound();
+        }
+    };
 
     window.addEventListener('leave-status-update', handleLeaveStatusUpdate);
+    window.addEventListener('salary-generated', handleSalaryGenerated);
 
     return () => {
         window.removeEventListener('leave-status-update', handleLeaveStatusUpdate);
+        window.removeEventListener('salary-generated', handleSalaryGenerated);
     };
 
   }, [tasks, tasksInitialized, currentEmployeeId, toast]);

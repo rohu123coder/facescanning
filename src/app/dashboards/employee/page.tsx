@@ -19,9 +19,9 @@ export default function EmployeeDashboardPage() {
 
     const featureCards = [
         { title: 'My Tasks', description: 'View and manage your assigned tasks.', icon: <CheckSquare className="h-8 w-8 text-muted-foreground" />, href: '/dashboards/employee/tasks' },
-        { title: 'Apply for Leave', description: 'Submit and track your leave requests.', icon: <FileText className="h-8 w-8 text-muted-foreground" />, href: '#' },
-        { title: 'My Attendance', description: 'Check your attendance log and history.', icon: <UserCheck className="h-8 w-8 text-muted-foreground" />, href: '#' },
-        { title: 'My Payslips', description: 'View and download your salary slips.', icon: <HandCoins className="h-8 w-8 text-muted-foreground" />, href: '#' },
+        { title: 'Apply for Leave', description: 'Submit and track your leave requests.', icon: <FileText className="h-8 w-8 text-muted-foreground" />, href: '/dashboards/employee/leaves' },
+        { title: 'My Attendance', description: 'Check your attendance log and history.', icon: <UserCheck className="h-8 w-8 text-muted-foreground" />, href: '/dashboards/employee/attendance' },
+        { title: 'My Payslips', description: 'View and download your salary slips.', icon: <HandCoins className="h-8 w-8 text-muted-foreground" />, href: '/dashboards/employee/payslips' },
     ];
 
     return (

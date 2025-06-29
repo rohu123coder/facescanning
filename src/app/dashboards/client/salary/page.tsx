@@ -15,6 +15,8 @@ import { getDaysInMonth, getYear, getMonth, format, isWithinInterval, parseISO }
 import { SalaryRulesModal } from '@/components/salary-rules-modal';
 import { PayslipModal } from '@/components/payslip-modal';
 import { type Staff, type SalarySlipData } from '@/lib/data';
+import { useSalarySlipsStore } from '@/hooks/use-salary-slips-store.tsx';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SalaryPage() {
   const { staff } = useStaffStore();
@@ -22,10 +24,12 @@ export default function SalaryPage() {
   const { requests: leaveRequests } = useLeaveStore();
   const { rules } = useSalaryRulesStore();
   const { holidays } = useHolidayStore();
+  const { slips, addOrUpdateSlips } = useSalarySlipsStore();
+  const { toast } = useToast();
 
   const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth()));
   const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
-  const [generatedSlips, setGeneratedSlips] = useState<SalarySlipData[] | null>(null);
+  const [lastGeneratedPeriod, setLastGeneratedPeriod] = useState<{month: string, year: string} | null>(null);
   
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false);
@@ -42,6 +46,11 @@ export default function SalaryPage() {
       label: format(new Date(2000, i), 'MMMM'),
     }));
   }, []);
+
+  const generatedSlipsForPeriod = useMemo(() => {
+    if (!lastGeneratedPeriod) return null;
+    return slips.filter(s => s.month === months[parseInt(lastGeneratedPeriod.month)].label && s.year === lastGeneratedPeriod.year);
+  }, [slips, lastGeneratedPeriod, months]);
   
   const handleGenerateSlips = () => {
       const month = parseInt(selectedMonth);
@@ -66,7 +75,7 @@ export default function SalaryPage() {
         })
         .length;
 
-      const slips = staff.map(employee => {
+      const newSlips = staff.map(employee => {
           const employeeAttendance = attendance.filter(a => 
             a.personId === employee.id && 
             getMonth(parseISO(a.date)) === month && 
@@ -98,7 +107,6 @@ export default function SalaryPage() {
           const earnedGross = totalPaidDays * perDaySalary;
           const lopDeduction = lopDays * perDaySalary;
           
-          // Calculate components based on EARNED gross
           const basic = earnedGross * (rules.basic / 100);
           const hra = earnedGross * (rules.hra / 100);
           const specialAllowance = earnedGross - basic - hra;
@@ -131,8 +139,21 @@ export default function SalaryPage() {
             netSalary: netSalary,
           };
       });
+      
+      addOrUpdateSlips(newSlips);
+      setLastGeneratedPeriod({ month: selectedMonth, year: selectedYear });
+      
+      toast({
+        title: 'Salaries Generated',
+        description: `Payslips for ${months[month].label}, ${year} have been created and notifications sent.`
+      });
 
-      setGeneratedSlips(slips);
+      // Notify employees
+      newSlips.forEach(slip => {
+          window.dispatchEvent(new CustomEvent('salary-generated', { 
+              detail: { staffId: slip.staffId } 
+          }));
+      });
   };
 
   const viewPayslip = (slip: SalarySlipData) => {
@@ -177,7 +198,7 @@ export default function SalaryPage() {
           </CardContent>
         </Card>
         
-        {generatedSlips && (
+        {generatedSlipsForPeriod && (
           <Card>
             <CardHeader>
                 <CardTitle>Salary Report for {months[parseInt(selectedMonth)].label}, {selectedYear}</CardTitle>
@@ -198,7 +219,7 @@ export default function SalaryPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {generatedSlips.map(slip => (
+                        {generatedSlipsForPeriod.map(slip => (
                             <TableRow key={slip.id}>
                                 <TableCell>{slip.staffName}</TableCell>
                                 <TableCell>₹{slip.grossSalary.toFixed(2)}</TableCell>
