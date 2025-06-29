@@ -1,23 +1,19 @@
 
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useMemo } from 'react';
 import { useEmployeeAuthStore } from '@/hooks/use-employee-auth-store';
 import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { useAttendanceStore } from '@/hooks/use-attendance-store.tsx';
-import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Clock, Check, LogOut, Coffee, CalendarCheck2 } from 'lucide-react';
-import { format, parseISO, differenceInHours, differenceInMinutes, startOfDay } from 'date-fns';
-import { type Attendance } from '@/lib/data';
+import { Coffee, CalendarCheck2 } from 'lucide-react';
+import { format, parseISO, differenceInHours, differenceInMinutes } from 'date-fns';
 
 export default function MyAttendancePage() {
     const { currentEmployeeId } = useEmployeeAuthStore();
     const { staff } = useStaffStore();
-    const { attendance, markAttendance, isInitialized } = useAttendanceStore();
-    const { toast } = useToast();
+    const { attendance, isInitialized } = useAttendanceStore();
 
     const currentEmployee = staff.find(s => s.id === currentEmployeeId);
     
@@ -27,34 +23,6 @@ export default function MyAttendancePage() {
             .filter(a => a.personId === currentEmployeeId)
             .sort((a,b) => b.date.localeCompare(a.date));
     }, [attendance, currentEmployeeId, isInitialized]);
-
-    const todayString = format(new Date(), 'yyyy-MM-dd');
-    const todayRecord = myAttendance.find(a => a.date === todayString);
-
-    const getClockStatus = () => {
-        if (!todayRecord) return { status: 'NOT_CLOCKED_IN', text: 'Clock In', icon: <Clock /> };
-        if (todayRecord.inTime && !todayRecord.outTime) return { status: 'CLOCKED_IN', text: 'Clock Out', icon: <LogOut /> };
-        if (todayRecord.inTime && todayRecord.outTime) return { status: 'CLOCKED_OUT', text: 'Day Ended', icon: <Check /> };
-        return { status: 'NOT_CLOCKED_IN', text: 'Clock In', icon: <Clock /> };
-    };
-
-    const clockStatus = getClockStatus();
-
-    const handleClockInOut = () => {
-        if (!currentEmployee) return;
-
-        const punchType = markAttendance(currentEmployee);
-        const toastTitle = punchType === 'in' ? 'Clock-In Successful' : 'Clock-Out Successful';
-        const toastDescription = punchType === 'in' ? `Welcome, ${currentEmployee.name}!` : `Have a great evening, ${currentEmployee.name}!`;
-
-        toast({
-            title: toastTitle,
-            description: toastDescription,
-        });
-
-        // Trigger sound notification from layout
-        window.dispatchEvent(new CustomEvent('play-task-notification'));
-    };
     
     const calculateTotalHours = (inTime: string | null, outTime: string | null): string => {
         if (!inTime || !outTime) return 'N/A';
@@ -90,15 +58,9 @@ export default function MyAttendancePage() {
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold font-headline">My Attendance</h1>
-                    <p className="text-muted-foreground">Track your check-ins, check-outs, and working hours.</p>
-                </div>
-                 <Button onClick={handleClockInOut} disabled={clockStatus.status === 'CLOCKED_OUT'} size="lg">
-                    {clockStatus.icon}
-                    {clockStatus.text}
-                 </Button>
+            <div>
+                <h1 className="text-3xl font-bold font-headline">My Attendance</h1>
+                <p className="text-muted-foreground">View your attendance history, recorded via the Face Scan Kiosk.</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
