@@ -1,7 +1,7 @@
 # ✅ Stable Backup Point
 
-**Date:** 2025-06-29
-**Status:** The application is stable and all core features are working as expected. The Employee Dashboard is now fully functional.
+**Date:** 2025-06-30
+**Status:** The application is stable. The unified attendance kiosk is now functional for both staff and students.
 
 This file serves as a marker for a stable, working version of the application code. If any future changes cause critical errors, you can request to restore the project to the state it was in when this marker was created.
 
@@ -17,14 +17,8 @@ This file serves as a marker for a stable, working version of the application co
     - Leave Management (Approve/Reject with Quota updates)
     - Holiday Management
     - Salary Automation (Rule-based Generation, Payslip Viewing)
-    - Face Scan Attendance Kiosk (for Staff & Students)
+    - **Unified** Face Scan Attendance Kiosk (for Staff & Students)
     - Detailed Attendance Reports
-- **Employee:**
-    - Secure Employee Login & Dashboard
-    - View Assigned Tasks & Communicate with Admins/Clients via Comments
-    - Apply for Leave with Quota checks
-    - View Attendance History
-    - View and Print Payslips
 - **System-Wide:**
     - Live Notifications with Sound for important events.
 
