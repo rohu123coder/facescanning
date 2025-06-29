@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, GraduationCap, UserCheck, School } from 'lucide-react';
 import { AddStudentModal } from '@/components/add-student-modal';
 import { EditStudentModal } from '@/components/edit-student-modal';
 import type { Student } from '@/lib/data';
@@ -65,13 +65,23 @@ export default function StudentsPage() {
 
   const filteredStudents = classFilter === 'All' ? students : students.filter(s => s.className === classFilter);
 
+  const totalStudents = students.length;
+  const activeStudents = students.filter(s => s.status === 'Active').length;
+  const totalClasses = new Set(students.map(s => s.className)).size;
+
+  const stats = [
+    { title: 'Total Students', value: totalStudents, icon: <GraduationCap className="text-muted-foreground" /> },
+    { title: 'Active Students', value: activeStudents, icon: <UserCheck className="text-muted-foreground" /> },
+    { title: 'Total Classes', value: totalClasses, icon: <School className="text-muted-foreground" /> },
+  ];
+
   return (
     <>
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold font-headline">Student Management</h1>
-            <p className="text-muted-foreground">Manage students, classes, and attendance reports.</p>
+            <h1 className="text-3xl font-bold font-headline">Student Dashboard</h1>
+            <p className="text-muted-foreground">An overview and management of students and classes.</p>
           </div>
           <Button onClick={() => setIsAddModalOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
@@ -84,12 +94,25 @@ export default function StudentsPage() {
                 <TabsTrigger value="list">Student List</TabsTrigger>
                 <TabsTrigger value="report">Attendance Report</TabsTrigger>
             </TabsList>
-            <TabsContent value="list">
+            <TabsContent value="list" className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-3">
+                    {stats.map(stat => (
+                        <Card key={stat.title}>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                                {stat.icon}
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stat.value}</div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
                 <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div>
-                          <CardTitle>Student List</CardTitle>
+                          <CardTitle>All Students</CardTitle>
                           <CardDescription>A list of all students in your organization.</CardDescription>
                         </div>
                          <Select value={classFilter} onValueChange={setClassFilter}>

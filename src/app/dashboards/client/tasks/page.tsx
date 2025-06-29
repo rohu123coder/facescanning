@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, CheckCircle, ListTodo, CircleEllipsis, LayoutGrid, List, CalendarDays } from 'lucide-react';
+import { PlusCircle, CheckCircle, ListTodo, CircleEllipsis, LayoutGrid, List, CalendarDays, Clock, ListChecks } from 'lucide-react';
 import { AddTaskModal } from '@/components/add-task-modal';
 import { TaskDetailsModal } from '@/components/task-details-modal';
 import { useTaskStore } from '@/hooks/use-task-store';
@@ -12,6 +13,8 @@ import { TaskColumn } from '@/components/task-column';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TaskListView } from '@/components/task-list-view';
 import { TaskCalendarView } from '@/components/task-calendar-view';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { isPast } from 'date-fns';
 
 const statusColumns: { status: TaskStatus; title: string; icon: React.ReactNode }[] = [
   { status: 'To Do', title: 'To Do', icon: <ListTodo /> },
@@ -66,18 +69,45 @@ export default function TasksPage() {
     }
   };
 
+  const totalTasks = tasks.length;
+  const pendingTasks = tasks.filter(t => t.status !== 'Done').length;
+  const completedTasks = totalTasks - pendingTasks;
+  const overdueTasks = tasks.filter(t => t.status !== 'Done' && isPast(new Date(t.dueDate))).length;
+
+  const stats = [
+      { title: 'Total Tasks', value: totalTasks, icon: <ListTodo className="text-muted-foreground" /> },
+      { title: 'Pending', value: pendingTasks, icon: <ListChecks className="text-muted-foreground" /> },
+      { title: 'Completed', value: completedTasks, icon: <CheckCircle className="text-muted-foreground" /> },
+      { title: 'Overdue', value: overdueTasks, icon: <Clock className="text-muted-foreground" /> },
+  ];
+
   return (
     <>
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold font-headline">Task Management</h1>
-            <p className="text-muted-foreground">Organize, assign, and track your team's work.</p>
+            <h1 className="text-3xl font-bold font-headline">Task Dashboard</h1>
+            <p className="text-muted-foreground">An overview to organize, assign, and track your team's work.</p>
           </div>
           <Button onClick={() => setIsAddTaskModalOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Task
           </Button>
+        </div>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {stats.map(stat => (
+                <Card key={stat.title}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                        {stat.icon}
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stat.value}</div>
+                        {stat.title === 'Overdue' && stat.value > 0 && <p className="text-xs text-destructive">{stat.value} task(s) are overdue.</p>}
+                    </CardContent>
+                </Card>
+            ))}
         </div>
 
         <Tabs defaultValue="board" className="w-full">

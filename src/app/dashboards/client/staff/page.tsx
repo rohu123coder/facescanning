@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Users, UserCheck, Building } from 'lucide-react';
 import { AddStaffModal } from '@/components/add-staff-modal';
 import { EditStaffModal } from '@/components/edit-staff-modal';
 import type { Staff } from '@/lib/data';
@@ -59,13 +59,23 @@ export default function StaffPage() {
     });
   };
 
+  const totalStaff = staff.length;
+  const activeStaff = staff.filter(s => s.status === 'Active').length;
+  const departments = new Set(staff.map(s => s.department)).size;
+
+  const stats = [
+    { title: 'Total Staff', value: totalStaff, icon: <Users className="text-muted-foreground" /> },
+    { title: 'Active Staff', value: activeStaff, icon: <UserCheck className="text-muted-foreground" /> },
+    { title: 'Departments', value: departments, icon: <Building className="text-muted-foreground" /> },
+  ];
+
   return (
     <>
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold font-headline">Staff Management</h1>
-            <p className="text-muted-foreground">Manage your organization's staff members.</p>
+            <h1 className="text-3xl font-bold font-headline">Staff Dashboard</h1>
+            <p className="text-muted-foreground">An overview and management of your organization's staff.</p>
           </div>
           <Button onClick={() => setIsAddModalOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
@@ -78,10 +88,23 @@ export default function StaffPage() {
                 <TabsTrigger value="list">Staff List</TabsTrigger>
                 <TabsTrigger value="report">Attendance Report</TabsTrigger>
             </TabsList>
-            <TabsContent value="list">
+            <TabsContent value="list" className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-3">
+                    {stats.map(stat => (
+                        <Card key={stat.title}>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                                {stat.icon}
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stat.value}</div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
                 <Card>
                     <CardHeader>
-                      <CardTitle>Staff List</CardTitle>
+                      <CardTitle>All Staff</CardTitle>
                       <CardDescription>A list of all staff in your organization.</CardDescription>
                     </CardHeader>
                     <CardContent>
