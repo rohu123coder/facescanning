@@ -14,6 +14,7 @@ import { type Student, type Staff } from '@/lib/data';
 
 export default function UnifiedAttendanceKioskPage() {
     const [currentTime, setCurrentTime] = useState('');
+    const [activeTab, setActiveTab] = useState('student');
 
     // Student Stores
     const { students, isInitialized: isStudentInitialized } = useStudentStore();
@@ -38,7 +39,7 @@ export default function UnifiedAttendanceKioskPage() {
                 <p className="text-muted-foreground">{currentTime}</p>
             </div>
 
-            <Tabs defaultValue="student" className="w-full">
+            <Tabs defaultValue="student" value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="student">Student Kiosk</TabsTrigger>
                     <TabsTrigger value="staff">Staff Kiosk</TabsTrigger>
@@ -51,6 +52,7 @@ export default function UnifiedAttendanceKioskPage() {
                         attendance={studentAttendance}
                         isAttendanceInitialized={isStudentAttendanceInitialized}
                         markAttendance={markStudentAttendance}
+                        isActive={activeTab === 'student'}
                     />
                 </TabsContent>
                 <TabsContent value="staff" className="mt-6">
@@ -61,6 +63,7 @@ export default function UnifiedAttendanceKioskPage() {
                         attendance={staffAttendance}
                         isAttendanceInitialized={isStaffAttendanceInitialized}
                         markAttendance={markStaffAttendance}
+                        isActive={activeTab === 'staff'}
                     />
                 </TabsContent>
             </Tabs>

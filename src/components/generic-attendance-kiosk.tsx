@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Camera, UserCheck, UserX, ShieldAlert } from 'lucide-react';
+import { Loader2, Camera, UserCheck, UserX, ShieldAlert, CameraOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { recognizeFace } from '@/ai/flows/face-scan-attendance';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,6 +21,7 @@ interface GenericAttendanceKioskProps<T extends Student | Staff> {
     attendance: Attendance[];
     isAttendanceInitialized: boolean;
     markAttendance: (person: T) => 'in' | 'out';
+    isActive: boolean;
 }
 
 export function GenericAttendanceKiosk<T extends Student | Staff>({
@@ -30,6 +31,7 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
     attendance,
     isAttendanceInitialized,
     markAttendance,
+    isActive,
 }: GenericAttendanceKioskProps<T>) {
     const { toast } = useToast();
     const [status, setStatus] = useState<{
@@ -43,6 +45,7 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const isScanningRef = useRef(false);
     const lastScanTimestampsRef = useRef<Record<string, number>>({});
+    const streamRef = useRef<MediaStream | null>(null);
 
     const getPersonName = (personId: string) => {
         return persons.find(p => p.id === personId)?.name || `Unknown ${personType}`;
@@ -57,16 +60,33 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
 
     // Main camera and scanning loop effect
     useEffect(() => {
-        if (!isPersonsInitialized || !isAttendanceInitialized) return;
-
-        let stream: MediaStream | null = null;
         let scanIntervalId: NodeJS.Timeout | null = null;
+        
+        const stopKiosk = () => {
+             if (scanIntervalId) clearInterval(scanIntervalId);
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
+            }
+            if (videoRef.current) {
+                videoRef.current.srcObject = null;
+            }
+            setIsCameraOn(false);
+            isScanningRef.current = false;
+        }
+
+        if (!isActive) {
+            stopKiosk();
+            return;
+        }
+
+        if (!isPersonsInitialized || !isAttendanceInitialized) return;
 
         const startKiosk = async () => {
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                streamRef.current = await navigator.mediaDevices.getUserMedia({ video: true });
                 if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
+                    videoRef.current.srcObject = streamRef.current;
                 }
                 setIsCameraOn(true);
                 setStatus({ type: 'IDLE', message: `Ready to scan. ${personType}s, please position your face in the frame.` });
@@ -156,16 +176,9 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
         startKiosk();
 
         return () => {
-            if (scanIntervalId) clearInterval(scanIntervalId);
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-            if (videoRef.current) {
-                videoRef.current.srcObject = null;
-            }
-            setIsCameraOn(false);
+           stopKiosk();
         };
-    }, [isPersonsInitialized, isAttendanceInitialized, persons, toast, markAttendance, personType]);
+    }, [isPersonsInitialized, isAttendanceInitialized, persons, toast, markAttendance, personType, isActive]);
 
     const StatusIcon = () => {
         switch (status.type) {
@@ -188,14 +201,23 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
                     <div className="aspect-video bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
                         <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
                         <canvas ref={canvasRef} className="hidden" />
-                        {(!isCameraOn && status.type === 'ERROR') && (
+                        
+                        {!isActive && (
                             <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white p-4 text-center">
-                                <Camera className="h-16 w-16 mb-4" />
+                                <CameraOff className="h-16 w-16 mb-4" />
+                                <h3 className="text-lg font-bold">Kiosk Inactive</h3>
+                                <p>Switch to this tab to activate the camera.</p>
+                            </div>
+                        )}
+
+                        {isActive && !isCameraOn && status.type === 'ERROR' && (
+                            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white p-4 text-center">
+                                <CameraOff className="h-16 w-16 mb-4" />
                                 <h3 className="text-lg font-bold">Camera Access Denied</h3>
                                 <p>Please enable camera permissions in your browser settings to use the kiosk.</p>
                             </div>
                         )}
-                        {(!isCameraOn && status.type !== 'ERROR') && (
+                        {isActive && !isCameraOn && status.type !== 'ERROR' && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
                                 <Loader2 className="h-16 w-16 mb-4 animate-spin text-primary" />
                                 <p className="text-muted-foreground">Starting camera...</p>
@@ -208,7 +230,7 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
                             <StatusIcon />
                             <div className="flex-1">
                                 <p className="font-semibold">{status.type.charAt(0).toUpperCase() + status.type.slice(1).toLowerCase()}</p>
-                                <p className="text-sm text-muted-foreground">{status.message}</p>
+                                <p className="text-sm text-muted-foreground">{isActive ? status.message : 'Kiosk is paused.'}</p>
                             </div>
                         </div>
                     </Card>
