@@ -76,15 +76,44 @@ export function AddStudentModal({ isOpen, onOpenChange }: AddStudentModalProps) 
 
   const photoUrlValue = form.watch('photoUrl');
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUri = e.target?.result as string;
-        form.setValue('photoUrl', dataUri, { shouldValidate: true });
-      };
-      reader.readAsDataURL(file);
+      setIsLoading(true);
+      try {
+        const compressedDataUri = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = (e) => {
+            if (!e.target?.result) return reject(new Error('File reading failed'));
+            const img = document.createElement('img');
+            img.src = e.target.result as string;
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const maxWidth = 400;
+              const scaleSize = maxWidth / img.width;
+              canvas.width = maxWidth;
+              canvas.height = img.height * scaleSize;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) return reject(new Error('Canvas context failed'));
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              resolve(ctx.canvas.toDataURL('image/jpeg', 0.8));
+            };
+            img.onerror = reject;
+          };
+          reader.onerror = reject;
+        });
+        form.setValue('photoUrl', compressedDataUri, { shouldValidate: true });
+      } catch (error) {
+        console.error("Image compression error", error);
+        toast({
+          variant: 'destructive',
+          title: 'Image Error',
+          description: 'Could not process the image. Please try another one.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
   
@@ -154,11 +183,11 @@ export function AddStudentModal({ isOpen, onOpenChange }: AddStudentModalProps) 
                           </div>
                           <div className='space-y-2'>
                               <div className="flex gap-2">
-                                <Button type="button" variant="outline" onClick={() => setIsPhotoModalOpen(true)}>
+                                <Button type="button" variant="outline" onClick={() => setIsPhotoModalOpen(true)} disabled={isLoading}>
                                   <Camera className="mr-2"/> Take Photo
                                 </Button>
-                                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                      <Upload className="mr-2"/> Upload
+                                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+                                      {isLoading ? <Loader2 className="mr-2 animate-spin"/> : <Upload className="mr-2"/>} Upload
                                 </Button>
                               </div>
                               <Input 

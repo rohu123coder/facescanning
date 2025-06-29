@@ -72,7 +72,7 @@ export function PhotoCaptureModal({ isOpen, onOpenChange, onPhotoCaptured }: Pho
       const context = canvas.getContext('2d');
       if (context) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUri = canvas.toDataURL('image/jpeg');
+        const dataUri = canvas.toDataURL('image/jpeg', 0.8);
         onPhotoCaptured(dataUri);
         onOpenChange(false);
       }

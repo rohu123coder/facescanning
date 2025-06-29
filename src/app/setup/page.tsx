@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -6,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '@/hooks/use-auth-store';
-import { useClientStore } from '@/hooks/use-client-store';
+import { useClientStore } from '@/hooks/use-client-store.tsx';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,17 +59,53 @@ export default function SetupPage() {
     }
   }, [isAuthenticated, isAuthInitialized, currentClient, router, form]);
   
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUri = e.target?.result as string;
-        form.setValue('logoUrl', dataUri, { shouldValidate: true });
-      };
-      reader.readAsDataURL(file);
+        setIsLoading(true);
+        try {
+             const compressedDataUri = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    if (!event.target?.result) {
+                        return reject(new Error("FileReader did not return a result."));
+                    }
+                    const img = document.createElement('img');
+                    img.src = event.target.result as string;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const maxWidth = 400; // Max width for the logo
+                        const scaleSize = maxWidth / img.width;
+                        canvas.width = maxWidth;
+                        canvas.height = img.height * scaleSize;
+                        
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            return reject(new Error('Could not get canvas context'));
+                        }
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        resolve(ctx.canvas.toDataURL('image/jpeg', 0.8)); // 80% quality
+                    };
+                    img.onerror = (error) => reject(error);
+                };
+                reader.onerror = (error) => reject(error);
+            });
+            form.setValue('logoUrl', compressedDataUri, { shouldValidate: true });
+        } catch (error) {
+             console.error("Image compression failed", error);
+            toast({
+                variant: 'destructive',
+                title: 'Image Error',
+                description: 'Could not process the image. Please try another one.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
   };
+
 
   const onSubmit = async (values: z.infer<typeof setupFormSchema>) => {
     if (!currentClient) return;
@@ -165,8 +202,9 @@ export default function SetupPage() {
                                 <span className="text-xs text-muted-foreground text-center">Logo Preview</span>
                             )}
                         </div>
-                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                            <Upload className="mr-2"/> Upload Logo
+                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+                            {isLoading ? <Loader2 className="mr-2 animate-spin"/> : <Upload className="mr-2"/>}
+                             Upload Logo
                         </Button>
                     </div>
                     <FormMessage />
