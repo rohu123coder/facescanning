@@ -47,13 +47,13 @@ const prompt = ai.definePrompt({
   name: 'recognizeFacePrompt',
   input: { schema: RecognizeFaceInputSchema },
   output: { schema: RecognizeFaceOutputSchema },
-  prompt: `You are a highly accurate AI facial recognition system. Your ONLY task is to determine if the person in the 'Captured Photo' is one of the people in the 'Registered People' list.
+  prompt: `You are an AI facial recognition system. Your task is to match the person in the 'Live Photo' with a person from the 'Reference List'.
 
-**Captured Photo:**
+**Live Photo:**
 {{media url=capturedPhotoDataUri}}
 
-**Registered People ({{personType}}):**
-This is the complete list of registered {{personType}}s you must check against.
+**Reference List:**
+This is the complete list of registered individuals you must check against.
 {{#each personList}}
 ---
 **Person ID:** \`{{id}}\`
@@ -63,12 +63,12 @@ This is the complete list of registered {{personType}}s you must check against.
 {{/each}}
 
 **CRITICAL INSTRUCTIONS:**
-1.  **Examine the 'Captured Photo' meticulously.**
-2.  **Compare the face in the 'Captured Photo' against EACH 'Reference Photo' from the list.**
-3.  **If you find a clear, confident match, you MUST return their 'Person ID' in the \`matchedPersonId\` field.** The message should be "Match found for [Person's Name]."
-4.  **If there is NO clear match, or if you have ANY doubt, you MUST return \`null\` for the \`matchedPersonId\` field.** The message should be "No match found in the database."
-5.  **Do not invent people or match against anyone not in the provided 'Registered People' list.** Your scope is limited to this list only.
-6.  Accuracy is the highest priority. It is better to fail a match than to make an incorrect one.
+1.  Carefully examine the 'Live Photo'.
+2.  Compare the face in the 'Live Photo' against EACH 'Reference Photo' from the list.
+3.  If you find a clear and confident match, you MUST return their exact 'Person ID' in the \`matchedPersonId\` field. The message should be "Match found for [Person's Name]."
+4.  If there is NO clear match, or if you have ANY doubt, you MUST return \`null\` for the \`matchedPersonId\` field. The message should be "No match found in the database."
+5.  Base your decision ONLY on facial similarity. Do not be influenced by names or other text.
+6.  Accuracy is your highest priority. It is better to fail a match than to make an incorrect one. If in doubt, return \`null\`.
 `,
 });
 
