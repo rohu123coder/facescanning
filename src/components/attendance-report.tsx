@@ -27,9 +27,9 @@ export function AttendanceReport() {
 
   const [reportData, setReportData] = React.useState<Attendance[] | null>(null);
   
-  const getStaffName = (staffId: string) => {
+  const getStaffName = React.useCallback((staffId: string) => {
     return staff.find(s => s.id === staffId)?.name || 'Unknown Staff';
-  };
+  }, [staff]);
 
   const handleGenerateReport = () => {
     if (isInitialized && date?.from && date?.to) {
@@ -57,7 +57,7 @@ export function AttendanceReport() {
     csvContent += "Staff Name,Date,In Time,Out Time,Total Hours\n";
 
     reportData.forEach(record => {
-        const staffName = getStaffName(record.staffId);
+        const staffName = getStaffName(record.personId);
         const inTime = record.inTime ? format(parseISO(record.inTime), 'p') : 'N/A';
         const outTime = record.outTime ? format(parseISO(record.outTime), 'p') : 'N/A';
         const totalHours = calculateTotalHours(record.inTime, record.outTime);
@@ -173,7 +173,7 @@ export function AttendanceReport() {
                 ) : reportData.length > 0 ? (
                   reportData.map(record => (
                     <TableRow key={`${record.staffId}-${record.date}`}>
-                      <TableCell className="font-medium">{getStaffName(record.staffId)}</TableCell>
+                      <TableCell className="font-medium">{getStaffName(record.personId)}</TableCell>
                       <TableCell>{format(parseISO(record.date), 'PP')}</TableCell>
                       <TableCell>{record.inTime ? format(parseISO(record.inTime), 'p') : 'N/A'}</TableCell>
                       <TableCell>{record.outTime ? format(parseISO(record.outTime), 'p') : 'N/A'}</TableCell>
