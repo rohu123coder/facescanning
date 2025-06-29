@@ -107,41 +107,58 @@ function ClientDashboardLayout({ children }: { children: React.ReactNode }) {
       }
     }
   }, [isAuthenticated, isAuthInitialized, router, currentClient, pathname]);
-
-  useEffect(() => {
-    if (!holidaysInitialized) return;
-
-    const checkHolidays = () => {
-        const upcomingHolidays = holidays.filter(h => {
-            const holidayDate = startOfDay(parseISO(h.date));
-            return isToday(holidayDate) || isTomorrow(holidayDate);
-        });
-
-        upcomingHolidays.forEach(holiday => {
-            const notificationKey = `notified_holiday_${holiday.id}`;
-            if (!sessionStorage.getItem(notificationKey)) {
-                toast({
-                    title: 'Upcoming Holiday Reminder',
-                    description: `${holiday.name} on ${format(parseISO(holiday.date), 'PPP')}.`,
-                });
-                audioRef.current?.play().catch(e => console.error("Audio playback failed", e));
-                sessionStorage.setItem(notificationKey, 'true');
-            }
-        });
-    };
-
-    checkHolidays();
-  }, [holidaysInitialized, holidays, toast]);
   
-   useEffect(() => {
+  // Notification listeners
+  useEffect(() => {
     const playSound = () => {
         audioRef.current?.play().catch(e => console.error("Audio playback failed", e));
     };
-    window.addEventListener('play-task-notification', playSound);
-    return () => {
-        window.removeEventListener('play-task-notification', playSound);
+
+    const handleNewTask = () => {
+        playSound();
     };
-  }, []);
+
+    const handleNewLeaveRequest = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        toast({
+            title: "New Leave Request",
+            description: `${customEvent.detail.staffName} has applied for ${customEvent.detail.leaveType} leave.`,
+        });
+        playSound();
+    };
+    
+    // Holiday notifications
+    if (holidaysInitialized) {
+        const checkHolidays = () => {
+            const upcomingHolidays = holidays.filter(h => {
+                const holidayDate = startOfDay(parseISO(h.date));
+                return isToday(holidayDate) || isTomorrow(holidayDate);
+            });
+
+            upcomingHolidays.forEach(holiday => {
+                const notificationKey = `notified_holiday_${holiday.id}`;
+                if (!sessionStorage.getItem(notificationKey)) {
+                    toast({
+                        title: 'Upcoming Holiday Reminder',
+                        description: `${holiday.name} on ${format(parseISO(holiday.date), 'PPP')}.`,
+                    });
+                    playSound();
+                    sessionStorage.setItem(notificationKey, 'true');
+                }
+            });
+        };
+        checkHolidays();
+    }
+    
+    window.addEventListener('play-task-notification', handleNewTask);
+    window.addEventListener('new-leave-request', handleNewLeaveRequest);
+
+    return () => {
+        window.removeEventListener('play-task-notification', handleNewTask);
+        window.removeEventListener('new-leave-request', handleNewLeaveRequest);
+    };
+  }, [holidaysInitialized, holidays, toast]);
+
 
   const handleLogout = () => {
     logout();
@@ -240,6 +257,7 @@ function EmployeeDashboardLayout({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const prevAssignedTaskIdsRef = useRef<string[]>([]);
   const isInitialLoadRef = useRef(true);
+  const audioRef = useRef<HTMLAudioElement>(null);
   
   const currentEmployee = staff.find(s => s.id === currentEmployeeId);
   
@@ -249,33 +267,51 @@ function EmployeeDashboardLayout({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated, isAuthInitialized, router]);
 
-  // Effect for new task notifications
+  // Notification listeners for employee
   useEffect(() => {
     if (!tasksInitialized || !currentEmployeeId) return;
 
+    const playSound = () => audioRef.current?.play().catch(e => console.error("Audio playback failed", e));
+
+    // New Task Notification
     const currentAssignedTasks = tasks.filter(t => t.assignedTo.includes(currentEmployeeId));
     const currentAssignedTaskIds = currentAssignedTasks.map(t => t.id);
     
-    // On initial load, just set the reference and bail.
     if (isInitialLoadRef.current) {
         prevAssignedTaskIdsRef.current = currentAssignedTaskIds;
         isInitialLoadRef.current = false;
-        return;
+    } else {
+      const newTasks = currentAssignedTasks.filter(task => !prevAssignedTaskIdsRef.current.includes(task.id));
+      if (newTasks.length > 0) {
+          const latestNewTask = newTasks[newTasks.length - 1];
+          toast({
+              title: "New Task Assigned!",
+              description: `You have a new task: "${latestNewTask.title}"`,
+          });
+          playSound();
+      }
     }
-
-    const newTasks = currentAssignedTasks.filter(task => !prevAssignedTaskIdsRef.current.includes(task.id));
-    
-    if (newTasks.length > 0) {
-        const latestNewTask = newTasks[newTasks.length - 1];
-        toast({
-            title: "New Task Assigned!",
-            description: `You have a new task: "${latestNewTask.title}"`,
-        });
-        const audioEl = document.getElementById('notification-sound') as HTMLAudioElement;
-        audioEl?.play().catch(e => console.error("Audio playback failed", e));
-    }
-
     prevAssignedTaskIdsRef.current = currentAssignedTaskIds;
+
+
+    // Leave Status Update Notification
+    const handleLeaveStatusUpdate = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        const { staffId, status, leaveType } = customEvent.detail;
+        if (staffId === currentEmployeeId) {
+            toast({
+                title: `Leave Request ${status}`,
+                description: `Your request for ${leaveType} leave has been ${status.toLowerCase()}.`
+            });
+            playSound();
+        }
+    };
+
+    window.addEventListener('leave-status-update', handleLeaveStatusUpdate);
+
+    return () => {
+        window.removeEventListener('leave-status-update', handleLeaveStatusUpdate);
+    };
 
   }, [tasks, tasksInitialized, currentEmployeeId, toast]);
 
@@ -336,7 +372,7 @@ function EmployeeDashboardLayout({ children }: { children: ReactNode }) {
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
             {children}
-            <audio id="notification-sound" src="https://actions.google.com/sounds/v1/alarms/notification_sound.ogg" preload="auto" />
+            <audio ref={audioRef} id="notification-sound" src="https://actions.google.com/sounds/v1/alarms/notification_sound.ogg" preload="auto" />
         </main>
       </div>
   )

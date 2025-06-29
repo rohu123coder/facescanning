@@ -13,6 +13,7 @@ import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth, startOfDa
 import { ApplyLeaveModal } from '@/components/apply-leave-modal';
 import { Check, ThumbsDown, UserCheck, MailQuestion, Plane } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { LeaveRequest } from '@/lib/data';
 
 export default function LeavesPage() {
   const { requests, approveRequest, rejectRequest, isInitialized } = useLeaveStore();
@@ -22,14 +23,24 @@ export default function LeavesPage() {
 
   const getStaffName = (staffId: string) => staff.find(s => s.id === staffId)?.name || 'Unknown';
   
-  const handleApprove = (id: string) => {
-    approveRequest(id);
-    toast({ title: 'Leave Approved', description: 'The leave request has been approved and quota updated.' });
+  const handleApprove = async (req: LeaveRequest) => {
+    const result = await approveRequest(req.id);
+    if (result.success) {
+      toast({ title: 'Leave Approved', description: 'The leave request has been approved and quota updated.' });
+      window.dispatchEvent(new CustomEvent('leave-status-update', { 
+        detail: { staffId: req.staffId, status: 'Approved', leaveType: req.leaveType } 
+      }));
+    } else {
+      toast({ variant: 'destructive', title: 'Approval Failed', description: result.message });
+    }
   }
 
-  const handleReject = (id: string) => {
-    rejectRequest(id);
+  const handleReject = async (req: LeaveRequest) => {
+    await rejectRequest(req.id);
     toast({ title: 'Leave Rejected', description: 'The leave request has been rejected.' });
+    window.dispatchEvent(new CustomEvent('leave-status-update', { 
+        detail: { staffId: req.staffId, status: 'Rejected', leaveType: req.leaveType } 
+    }));
   }
 
   const pendingRequests = requests.filter(r => r.status === 'Pending');
@@ -122,8 +133,8 @@ export default function LeavesPage() {
                           <TableCell>{format(parseISO(req.startDate), 'PP')} - {format(parseISO(req.endDate), 'PP')}</TableCell>
                           <TableCell className="max-w-xs truncate">{req.reason}</TableCell>
                           <TableCell className="text-right space-x-2">
-                            <Button variant="outline" size="sm" onClick={() => handleApprove(req.id)}><Check className="mr-2"/>Approve</Button>
-                            <Button variant="destructive" size="sm" onClick={() => handleReject(req.id)}><ThumbsDown className="mr-2"/>Reject</Button>
+                            <Button variant="outline" size="sm" onClick={() => handleApprove(req)}><Check className="mr-2"/>Approve</Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleReject(req)}><ThumbsDown className="mr-2"/>Reject</Button>
                           </TableCell>
                         </TableRow>
                       ))

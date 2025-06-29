@@ -5,14 +5,15 @@ import React, { createContext, useContext, useState, useEffect, useCallback, typ
 import { type LeaveRequest } from '@/lib/data';
 import { useClientStore } from './use-client-store.tsx';
 import { useStaffStore } from './use-staff-store.tsx';
+import { differenceInDays, parseISO } from 'date-fns';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `leaveRequests_${clientId}` : null;
 
 interface LeaveContextType {
   requests: LeaveRequest[];
   addRequest: (newRequestData: Omit<LeaveRequest, 'id' | 'status' | 'requestDate'>) => void;
-  approveRequest: (requestId: string) => void;
-  rejectRequest: (requestId: string) => void;
+  approveRequest: (requestId: string) => Promise<{success: boolean; message?: string}>;
+  rejectRequest: (requestId: string) => Promise<void>;
   isInitialized: boolean;
 }
 
@@ -29,7 +30,6 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedData = localStorage.getItem(storeKey);
-        // If no data, start with an empty array for a fresh start.
         setRequests(storedData ? JSON.parse(storedData) : []);
       } catch (error) {
         console.error("Failed to load leave requests from localStorage", error);
@@ -55,48 +55,49 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
         status: 'Pending',
         requestDate: new Date().toISOString(),
       };
-      const newList = [...prevRequests, newRequest];
-      return newList;
+      return [...prevRequests, newRequest];
     });
   }, []);
 
-  const approveRequest = useCallback((requestId: string) => {
-    setRequests(prevRequests => {
-        const req = prevRequests.find(r => r.id === requestId);
-        if (!req) return prevRequests;
+  const approveRequest = useCallback(async (requestId: string): Promise<{success: boolean; message?: string}> => {
+    const req = requests.find(r => r.id === requestId);
+    if (!req) return { success: false, message: 'Leave request not found.' };
 
-        const staffMember = staff.find(s => s.id === req.staffId);
-        if (!staffMember) return prevRequests;
-        
-        const leaveDays = 1; // Simplified for now
-        let canApprove = false;
-        let updatedStaffMember = { ...staffMember };
+    const staffMember = staff.find(s => s.id === req.staffId);
+    if (!staffMember) return { success: false, message: 'Staff member not found.' };
 
-        if (req.leaveType === 'Casual' && updatedStaffMember.annualCasualLeaves >= leaveDays) {
-            updatedStaffMember.annualCasualLeaves -= leaveDays;
-            canApprove = true;
-        } else if (req.leaveType === 'Sick' && updatedStaffMember.annualSickLeaves >= leaveDays) {
-            updatedStaffMember.annualSickLeaves -= leaveDays;
-            canApprove = true;
+    const leaveStart = parseISO(req.startDate);
+    const leaveEnd = parseISO(req.endDate);
+    const leaveDays = differenceInDays(leaveEnd, leaveStart) + 1;
+
+    let updatedStaffMember = { ...staffMember };
+
+    if (req.leaveType === 'Casual') {
+        if (updatedStaffMember.annualCasualLeaves < leaveDays) {
+            return { success: false, message: 'Not enough casual leave balance.' };
         }
-
-        if(canApprove) {
-            updateStaff(updatedStaffMember);
-            return prevRequests.map(r => 
-                r.id === requestId ? { ...r, status: 'Approved' as const } : r
-            );
+        updatedStaffMember.annualCasualLeaves -= leaveDays;
+    } else if (req.leaveType === 'Sick') {
+        if (updatedStaffMember.annualSickLeaves < leaveDays) {
+            return { success: false, message: 'Not enough sick leave balance.' };
         }
-        return prevRequests;
-    });
+        updatedStaffMember.annualSickLeaves -= leaveDays;
+    }
+    
+    updateStaff(updatedStaffMember);
+    setRequests(prevRequests => prevRequests.map(r => 
+        r.id === requestId ? { ...r, status: 'Approved' as const } : r
+    ));
+
+    return { success: true };
   }, [requests, staff, updateStaff]);
 
 
-  const rejectRequest = useCallback((requestId: string) => {
+  const rejectRequest = useCallback(async (requestId: string): Promise<void> => {
     setRequests(prevRequests => {
-      const updatedRequests = prevRequests.map(r =>
+      return prevRequests.map(r =>
         r.id === requestId ? { ...r, status: 'Rejected' as const } : r
       );
-      return updatedRequests;
     });
   }, []);
   
