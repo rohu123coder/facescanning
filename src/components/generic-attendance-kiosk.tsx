@@ -93,7 +93,22 @@ export function GenericAttendanceKiosk<T extends Student | Staff>({
                 const capturedPhotoDataUri = canvas.toDataURL('image/jpeg');
 
                 try {
-                    const personListForRecognition = persons.map(p => ({ id: p.id, name: p.name, photoUrl: p.photoUrl }));
+                    const personListForRecognition = persons
+                        .filter(p => p.photoUrl && p.photoUrl.trim() !== '')
+                        .map(p => ({ id: p.id, name: p.name, photoUrl: p.photoUrl }));
+
+                    if (personListForRecognition.length === 0) {
+                        setStatus({ type: 'ERROR', message: `No ${personType}s with registered photos found.` });
+                        isScanningRef.current = false;
+                        if(scanIntervalId) clearInterval(scanIntervalId); // Stop scanning
+                        toast({
+                            variant: 'destructive',
+                            title: 'No Registered Photos',
+                            description: `Please add photos to your ${personType.toLowerCase()} list to enable face scan.`,
+                        });
+                        return;
+                    }
+
                     const result = await recognizeStaffFace({ capturedPhotoDataUri, staffList: personListForRecognition });
 
                     if (result.matchedStaffId) {
