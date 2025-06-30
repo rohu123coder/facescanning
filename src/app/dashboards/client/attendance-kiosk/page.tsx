@@ -1,11 +1,14 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Camera, UserCheck, UserX, ShieldAlert, CameraOff } from 'lucide-react';
+import { Loader2, UserCheck, UserX, ShieldAlert, CameraOff, Fingerprint, Delete, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 import { useStudentStore } from '@/hooks/use-student-store.tsx';
 import { useStudentAttendanceStore } from '@/hooks/use-student-attendance-store.tsx';
@@ -15,10 +18,12 @@ import { useAttendanceStore } from '@/hooks/use-attendance-store.tsx';
 import { type Student, type Staff, type Attendance } from '@/lib/data';
 import { recognizeFace } from '@/ai/flows/face-scan-attendance';
 
-type ScanStatusType = 'IDLE' | 'SCANNING' | 'SUCCESS' | 'NO_MATCH' | 'ERROR';
-const SCAN_INTERVAL_MS = 3000;
-const PERSON_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
-const SUCCESS_PAUSE_MS = 5000; // 5 seconds
+type KioskStep = 'ID_ENTRY' | 'VERIFYING' | 'SUCCESS' | 'ERROR';
+
+type Person = (Student & { personType: 'Student' }) | (Staff & { personType: 'Staff' });
+
+const VERIFICATION_TIMEOUT_MS = 10000; // 10 seconds to verify
+const RESULT_DISPLAY_MS = 4000; // 4 seconds to show success/error message
 
 export default function UnifiedAttendanceKioskPage() {
     const { students, isInitialized: studentsInitialized } = useStudentStore();
@@ -28,18 +33,29 @@ export default function UnifiedAttendanceKioskPage() {
     const { toast } = useToast();
     
     const [currentTime, setCurrentTime] = useState('');
-    const [status, setStatus] = useState<{ type: ScanStatusType; message: string; }>({ type: 'IDLE', message: 'Initializing...' });
+    const [step, setStep] = useState<KioskStep>('ID_ENTRY');
+    const [enteredId, setEnteredId] = useState('');
+    const [message, setMessage] = useState('Please enter your Staff or Student ID.');
     const [todaysLog, setTodaysLog] = useState<Attendance[]>([]);
-    
+    const [currentPerson, setCurrentPerson] = useState<Person | null>(null);
+
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const isScanningRef = useRef(false);
-    const lastScanTimestampsRef = useRef<Record<string, number>>({});
     const streamRef = useRef<MediaStream | null>(null);
-    const isPausedRef = useRef(false); // Using a ref to avoid re-renders and effect re-runs
+    
+    const isVerifyingRef = useRef(false);
 
     const getPersonName = useCallback((personId: string) => {
-        return students.find(p => p.id === personId)?.name || staff.find(p => p.id === personId)?.name || 'Unknown';
+        const student = students.find(p => p.id === personId);
+        if (student) return student.name;
+        const staffMember = staff.find(p => p.id === personId);
+        if (staffMember) return staffMember.name;
+        
+        // Fallback for roll number or partial ID match during entry
+        const genericStudent = students.find(p => p.rollNumber === personId);
+        if (genericStudent) return genericStudent.name;
+
+        return 'Unknown';
     }, [students, staff]);
 
     // Update the live log whenever either attendance store changes
@@ -59,147 +75,155 @@ export default function UnifiedAttendanceKioskPage() {
         }, 1000);
         return () => clearInterval(timer);
     }, []);
-
-    // Main Kiosk Loop
+    
+    // Cleanup camera on unmount
     useEffect(() => {
-        if (!studentsInitialized || !staffInitialized) return;
+        return () => {
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, []);
 
-        let scanIntervalId: NodeJS.Timeout | null = null;
+    const resetKiosk = useCallback(() => {
+        setEnteredId('');
+        setCurrentPerson(null);
+        isVerifyingRef.current = false;
         
-        const startKiosk = async () => {
-            try {
-                // Only request the camera if it's not already running
-                if (!streamRef.current) {
-                    streamRef.current = await navigator.mediaDevices.getUserMedia({ video: true });
-                    if (videoRef.current) videoRef.current.srcObject = streamRef.current;
-                }
-                setStatus({ type: 'IDLE', message: 'Ready to scan. Please position your face in the frame.' });
-            } catch (error) {
-                console.error('Camera Error:', error);
-                setStatus({ type: 'ERROR', message: 'Camera access denied. Please enable it in browser settings.' });
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+        }
+
+        setStep('ID_ENTRY');
+        setMessage('Please enter your Staff or Student ID.');
+    }, []);
+    
+    const handleVerification = useCallback(async (person: Person) => {
+        if (isVerifyingRef.current) return;
+        isVerifyingRef.current = true;
+
+        // Start camera
+        try {
+            streamRef.current = await navigator.mediaDevices.getUserMedia({ video: true });
+            if (videoRef.current) {
+                videoRef.current.srcObject = streamRef.current;
+            }
+        } catch (error) {
+            setStep('ERROR');
+            setMessage('Camera access denied. Please enable it in browser settings.');
+            setTimeout(resetKiosk, RESULT_DISPLAY_MS);
+            return;
+        }
+        
+        // Timeout for verification
+        const verificationTimeout = setTimeout(() => {
+             if (isVerifyingRef.current) {
+                setStep('ERROR');
+                setMessage('Verification timed out. Please try again.');
+                setTimeout(resetKiosk, RESULT_DISPLAY_MS);
+            }
+        }, VERIFICATION_TIMEOUT_MS);
+
+        // Wait for camera to be ready
+        await new Promise(resolve => setTimeout(resolve, 500)); 
+
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        if (!video || !canvas || video.readyState < 2) {
+             setStep('ERROR');
+             setMessage('Camera not ready. Please try again.');
+             setTimeout(resetKiosk, RESULT_DISPLAY_MS);
+             clearTimeout(verificationTimeout);
+             return;
+        }
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const capturedPhotoDataUri = canvas.toDataURL('image/jpeg');
+        
+        try {
+            const personListForRecognition = [{
+                id: person.id,
+                name: person.name,
+                photoUrl: person.photoUrl,
+                personType: person.personType
+            }];
+
+            const result = await recognizeFace({ capturedPhotoDataUri, personList: personListForRecognition });
+
+            clearTimeout(verificationTimeout);
+
+            if (result.matchedPersonId) {
+                 let punchType: 'in' | 'out' = 'in';
+                 if (result.personType === 'Student') {
+                    punchType = studentAttendanceStore.markAttendance(person as Student);
+                 } else if (result.personType === 'Staff') {
+                    punchType = staffAttendanceStore.markAttendance(person as Staff);
+                 }
+                 const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
+                 setStep('SUCCESS');
+                 setMessage(`${welcomeMessage}, ${person.name}! You have clocked ${punchType}.`);
+                 toast({ title: 'Success', description: `${person.name} clocked ${punchType}.` });
+            } else {
+                 setStep('ERROR');
+                 setMessage('Verification Failed. Face does not match ID. Please try again.');
+            }
+        } catch (e) {
+            console.error('AI Error:', e);
+            setStep('ERROR');
+            setMessage('An error occurred during verification.');
+        } finally {
+            setTimeout(resetKiosk, RESULT_DISPLAY_MS);
+        }
+
+    }, [resetKiosk, staffAttendanceStore, studentAttendanceStore, toast]);
+
+
+    const handleSubmitId = useCallback(() => {
+        if (!enteredId) return;
+
+        const allPersons: Person[] = [
+            ...staff.map(s => ({ ...s, personType: 'Staff' as const })),
+            ...students.map(s => ({ ...s, personType: 'Student' as const }))
+        ];
+
+        // Match by Staff ID or Student Roll Number
+        const person = allPersons.find(p => p.id.toLowerCase() === enteredId.toLowerCase() || (p.personType === 'Student' && (p as Student).rollNumber.toLowerCase() === enteredId.toLowerCase()));
+
+        if (person) {
+            const today = format(new Date(), 'yyyy-MM-dd');
+            const attendanceRecord = (person.personType === 'Student' ? studentAttendanceStore.attendance : staffAttendanceStore.attendance)
+                .find(a => a.personId === person.id && a.date === today);
+
+            if (attendanceRecord?.inTime && attendanceRecord?.outTime) {
+                setStep('ERROR');
+                setMessage(`${person.name}, you have already clocked out for the day.`);
+                setTimeout(resetKiosk, RESULT_DISPLAY_MS);
                 return;
             }
+            
+            setCurrentPerson(person);
+            setStep('VERIFYING');
+            setMessage(`Verifying ${person.name}. Please look at the camera.`);
+            handleVerification(person);
 
-            scanIntervalId = setInterval(async () => {
-                // Use isPausedRef.current to check pause state
-                if (isScanningRef.current || isPausedRef.current || !videoRef.current?.srcObject || !canvasRef.current || document.hidden) return;
-                
-                isScanningRef.current = true;
-                // Avoid changing status to 'Scanning' if it's already showing a success message during the pause cooldown
-                setStatus(s => s.type === 'SUCCESS' ? s : { type: 'SCANNING', message: 'Scanning...' });
-
-                const today = format(new Date(), 'yyyy-MM-dd');
-                const currentDayLog = [
-                    ...studentAttendanceStore.attendance,
-                    ...staffAttendanceStore.attendance
-                ].filter(record => record.date === today);
-
-                const clockedOutIds = new Set(
-                    currentDayLog.filter(r => r.inTime && r.outTime).map(r => r.personId)
-                );
-                
-                const personListForRecognition = [
-                    ...students.filter(s => s.photoUrl && !clockedOutIds.has(s.id)).map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl, personType: 'Student' as const })),
-                    ...staff.filter(s => s.photoUrl && !clockedOutIds.has(s.id)).map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl, personType: 'Staff' as const })),
-                ];
-                
-                if (personListForRecognition.length === 0) {
-                     setStatus({ type: 'IDLE', message: 'All registered persons have clocked out for the day.' });
-                     isScanningRef.current = false;
-                     return;
-                }
-                
-                const video = videoRef.current;
-                const canvas = canvasRef.current;
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const capturedPhotoDataUri = canvas.toDataURL('image/jpeg');
-
-                try {
-                    const result = await recognizeFace({ capturedPhotoDataUri, personList: personListForRecognition });
-
-                    if (result.matchedPersonId && result.personType) {
-                        const now = Date.now();
-                        if (now - (lastScanTimestampsRef.current[result.matchedPersonId] || 0) < PERSON_COOLDOWN_MS) {
-                            const personName = getPersonName(result.matchedPersonId);
-                            // Only update status if not already paused with a success message
-                            if (!isPausedRef.current) {
-                                setStatus({ type: 'IDLE', message: `${personName} already scanned recently.` });
-                            }
-                        } else {
-                            let personName = '';
-                            let punchType: 'in' | 'out' = 'in';
-
-                            if (result.personType === 'Student') {
-                                const matchedStudent = students.find(p => p.id === result.matchedPersonId);
-                                if (matchedStudent) {
-                                    personName = matchedStudent.name;
-                                    punchType = studentAttendanceStore.markAttendance(matchedStudent);
-                                }
-                            } else if (result.personType === 'Staff') {
-                                const matchedStaff = staff.find(p => p.id === result.matchedPersonId);
-                                if (matchedStaff) {
-                                    personName = matchedStaff.name;
-                                    punchType = staffAttendanceStore.markAttendance(matchedStaff);
-                                }
-                            }
-                            
-                            if (personName) {
-                                lastScanTimestampsRef.current[result.matchedPersonId] = now; 
-                                const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
-                                toast({ title: `${welcomeMessage}!`, description: `${personName} clocked ${punchType}.` });
-                                setStatus({ type: 'SUCCESS', message: `${personName} clocked ${punchType}.` });
-
-                                // Pause scanning using the ref
-                                isPausedRef.current = true;
-                                setTimeout(() => {
-                                    isPausedRef.current = false;
-                                    setStatus({ type: 'IDLE', message: 'Ready to scan. Please position your face in the frame.' });
-                                }, SUCCESS_PAUSE_MS);
-
-                            } else {
-                                if (!isPausedRef.current) setStatus({ type: 'NO_MATCH', message: 'Match found but person details not available.' });
-                            }
-                        }
-                    } else {
-                        if (!isPausedRef.current) setStatus({ type: 'IDLE', message: 'No match found. Please position your face clearly.' });
-                    }
-                } catch (e) { 
-                    console.error('AI Recognition Error:', e); 
-                    if (!isPausedRef.current) setStatus({ type: 'IDLE', message: 'Scan error. Retrying...' }); 
-                } finally {
-                    isScanningRef.current = false;
-                }
-            }, SCAN_INTERVAL_MS);
-        };
-
-        startKiosk();
-
-        return () => { 
-            if (scanIntervalId) clearInterval(scanIntervalId); 
-        };
-    }, [studentsInitialized, staffInitialized, students, staff, studentAttendanceStore, staffAttendanceStore, toast, getPersonName]);
-
-    // Effect to clean up the camera stream ONLY when the component unmounts
-    useEffect(() => {
-        const stream = streamRef.current;
-        return () => {
-             if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
+        } else {
+            setStep('ERROR');
+            setMessage('ID not found. Please check and try again.');
+            setTimeout(resetKiosk, RESULT_DISPLAY_MS);
         }
-    }, [])
+    }, [enteredId, staff, students, studentAttendanceStore.attendance, staffAttendanceStore.attendance, handleVerification, resetKiosk]);
     
-    const StatusIcon = useCallback(() => {
-        switch (status.type) {
-            case 'SCANNING': return <Loader2 className="h-6 w-6 text-primary animate-spin" />;
-            case 'SUCCESS': return <UserCheck className="h-6 w-6 text-green-500" />;
-            case 'NO_MATCH': return <UserX className="h-6 w-6 text-destructive" />;
-            case 'ERROR': return <ShieldAlert className="h-6 w-6 text-destructive" />;
-            default: return <Camera className="h-6 w-6 text-muted-foreground" />;
+    const handleKeypadClick = (key: string) => {
+        if (enteredId.length < 20) {
+            setEnteredId(prev => prev + key);
         }
-    }, [status.type]);
+    }
 
     return (
         <div className="space-y-8">
@@ -211,30 +235,41 @@ export default function UnifiedAttendanceKioskPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">AI Face Scan</CardTitle>
-                        <CardDescription>The system will automatically detect and record both student and staff attendance.</CardDescription>
+                        <CardTitle className="font-headline">Attendance Terminal</CardTitle>
+                        <CardDescription>Enter your ID and look at the camera for verification.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="aspect-video bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
-                            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                            <canvas ref={canvasRef} className="hidden" />
-                            {status.type === 'ERROR' && (
-                                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white p-4 text-center">
-                                    <CameraOff className="h-16 w-16 mb-4" />
-                                    <h3 className="text-lg font-bold">Camera Access Denied</h3>
-                                    <p>Please enable camera permissions in browser settings.</p>
-                                </div>
-                            )}
-                        </div>
-                        <Card className="p-4">
-                            <div className="flex items-center gap-4">
-                                <StatusIcon />
-                                <div className="flex-1">
-                                    <p className="font-semibold">{status.type.charAt(0).toUpperCase() + status.type.slice(1).toLowerCase()}</p>
-                                    <p className="text-sm text-muted-foreground">{status.message}</p>
+                        {step === 'ID_ENTRY' && (
+                            <div className="flex flex-col items-center gap-4 p-4">
+                               <Fingerprint className="w-16 h-16 text-primary mb-4"/>
+                               <Input 
+                                   readOnly
+                                   value={enteredId}
+                                   placeholder="Your ID will appear here"
+                                   className="text-center text-2xl font-mono h-14"
+                                />
+                               <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
+                                    {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(key => (
+                                        <Button key={key} variant="outline" size="lg" className="text-2xl" onClick={() => handleKeypadClick(key)}>{key}</Button>
+                                    ))}
+                                    <Button variant="outline" size="lg" className="text-2xl" onClick={() => setEnteredId(prev => prev.slice(0, -1))}><Delete /></Button>
+                                    <Button variant="outline" size="lg" className="text-2xl" onClick={() => handleKeypadClick('0')}>0</Button>
+                                    <Button size="lg" className="text-xl" onClick={handleSubmitId} disabled={!enteredId}><CheckCircle /></Button>
+                               </div>
+                            </div>
+                        )}
+                        {step !== 'ID_ENTRY' && (
+                            <div className="aspect-video bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
+                                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                                <canvas ref={canvasRef} className="hidden" />
+                                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white p-4 text-center">
+                                    {step === 'VERIFYING' && <Loader2 className="h-16 w-16 mb-4 animate-spin" />}
+                                    {step === 'SUCCESS' && <UserCheck className="h-16 w-16 mb-4 text-green-500" />}
+                                    {step === 'ERROR' && <ShieldAlert className="h-16 w-16 mb-4 text-destructive" />}
+                                    <p className="text-lg font-semibold">{message}</p>
                                 </div>
                             </div>
-                        </Card>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -276,3 +311,6 @@ export default function UnifiedAttendanceKioskPage() {
         </div>
     );
 }
+
+
+    
