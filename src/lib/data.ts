@@ -44,6 +44,7 @@ export type Staff = {
   name: string;
   email: string;
   mobile: string;
+  password: string;
   whatsapp: string;
   address: string;
   department: 'Sales' | 'Marketing' | 'Engineering' | 'HR' | 'Support';

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -16,8 +17,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, LogOut, Mountain, User, CheckSquare, FileText, HandCoins, Fingerprint } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { useEffect, type ReactNode } from 'react';
-import { useEmployeeAuthStore } from '@/hooks/use-employee-auth-store';
+import React, { useEffect, type ReactNode } from 'react';
+import { useEmployeeAuthStore, EmployeeAuthStoreProvider } from '@/hooks/use-employee-auth-store';
+import { ClientProvider, useClientStore } from '@/hooks/use-client-store.tsx';
+import { StaffProvider } from '@/hooks/use-staff-store.tsx';
+import { StudentProvider } from '@/hooks/use-student-store.tsx';
+import { AttendanceProvider } from '@/hooks/use-attendance-store.tsx';
+import { StudentAttendanceProvider } from '@/hooks/use-student-attendance-store.tsx';
+import { LeaveProvider } from '@/hooks/use-leave-store.tsx';
+import { TaskProvider } from '@/hooks/use-task-store.tsx';
+import { SalaryRulesProvider } from '@/hooks/use-salary-rules-store.tsx';
+import { SalarySlipsProvider } from '@/hooks/use-salary-slips-store.tsx';
+import { HolidayProvider } from '@/hooks/use-holiday-store.tsx';
 
 const navItems = [
     { href: '/dashboards/employee', label: 'Dashboard', icon: <LayoutDashboard /> },
@@ -27,10 +38,35 @@ const navItems = [
     { href: '/dashboards/employee/payslips', label: 'My Payslips', icon: <HandCoins /> },
 ];
 
+function AllAppProviders({ children }: { children: ReactNode }) {
+    return (
+        <StaffProvider>
+            <StudentProvider>
+                <AttendanceProvider>
+                    <StudentAttendanceProvider>
+                        <LeaveProvider>
+                            <TaskProvider>
+                                <SalaryRulesProvider>
+                                    <SalarySlipsProvider>
+                                        <HolidayProvider>
+                                            {children}
+                                        </HolidayProvider>
+                                    </SalarySlipsProvider>
+                                </SalaryRulesProvider>
+                            </TaskProvider>
+                        </LeaveProvider>
+                    </StudentAttendanceProvider>
+                </AttendanceProvider>
+            </StudentProvider>
+        </StaffProvider>
+    );
+}
+
 function EmployeeDashboard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, isAuthInitialized, logout, employee } = useEmployeeAuthStore();
+  const { isInitialized: isClientInitialized } = useClientStore();
 
   useEffect(() => {
     if (isAuthInitialized && !isAuthenticated) {
@@ -38,10 +74,11 @@ function EmployeeDashboard({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isAuthInitialized, router]);
 
-  if (!isAuthInitialized || !isAuthenticated || !employee) {
+  if (!isAuthInitialized || !isAuthenticated || !employee || !isClientInitialized) {
     return (
       <div className="flex items-center justify-center h-screen">
           <Mountain className="h-8 w-8 text-primary animate-pulse" />
+          <span className="ml-2">Loading Employee Dashboard...</span>
       </div>
     );
   }
@@ -88,7 +125,9 @@ function EmployeeDashboard({ children }: { children: React.ReactNode }) {
             </div>
         </header>
         <main className="p-4 sm:p-6 lg:p-8 bg-background flex-1">
-            {children}
+            <AllAppProviders>
+              {children}
+            </AllAppProviders>
         </main>
       </SidebarInset>
     </SidebarProvider>
@@ -96,19 +135,13 @@ function EmployeeDashboard({ children }: { children: React.ReactNode }) {
 }
 
 export default function EmployeeDashboardLayout({ children }: { children: React.ReactNode }) {
-    // This provider is needed for the auth hook to work correctly.
-    // It will be expanded later with other employee-specific providers.
     return (
         <EmployeeAuthStoreProvider>
-            <EmployeeDashboard>
-                {children}
-            </EmployeeDashboard>
+            <ClientProvider>
+                <EmployeeDashboard>
+                    {children}
+                </EmployeeDashboard>
+            </ClientProvider>
         </EmployeeAuthStoreProvider>
     );
-}
-
-// Minimal provider to avoid errors. Will be expanded.
-const EmployeeAuthStoreContext = React.createContext(undefined as any);
-function EmployeeAuthStoreProvider({ children }: { children: React.ReactNode }) {
-    return <EmployeeAuthStoreContext.Provider value={{}}>{children}</EmployeeAuthStoreContext.Provider>;
 }

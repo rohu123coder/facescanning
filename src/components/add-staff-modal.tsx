@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,6 +33,7 @@ const staffFormSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   email: z.string().email('Invalid email address'),
   mobile: z.string().min(10, 'Mobile number must be at least 10 digits'),
+  password: z.string().min(6, 'Password must be at least 6 characters.'),
   whatsapp: z.string().min(10, 'WhatsApp number must be at least 10 digits'),
   address: z.string().min(5, 'Address is required'),
   department: z.enum(['Sales', 'Marketing', 'Engineering', 'HR', 'Support']),
@@ -56,6 +57,7 @@ export function AddStaffModal({ isOpen, onOpenChange }: AddStaffModalProps) {
       name: '',
       email: '',
       mobile: '',
+      password: '',
       whatsapp: '',
       address: '',
       role: '',
@@ -67,6 +69,15 @@ export function AddStaffModal({ isOpen, onOpenChange }: AddStaffModalProps) {
   });
   
   const photoUrlValue = form.watch('photoUrl');
+  const mobileValue = form.watch('mobile');
+
+  // Set password to mobile number by default
+  useEffect(() => {
+    if (mobileValue.length >= 6 && form.getValues('password') === '') {
+      form.setValue('password', mobileValue);
+    }
+  }, [mobileValue, form]);
+
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -194,10 +205,19 @@ export function AddStaffModal({ isOpen, onOpenChange }: AddStaffModalProps) {
                     <FormField control={form.control} name="mobile" render={({ field }) => (
                         <FormItem><FormLabel>Mobile</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    <FormField control={form.control} name="whatsapp" render={({ field }) => (
-                        <FormItem><FormLabel>WhatsApp</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormField control={form.control} name="password" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
                 </div>
+                 <FormField control={form.control} name="whatsapp" render={({ field }) => (
+                    <FormItem><FormLabel>WhatsApp</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
                 <FormField control={form.control} name="address" render={({ field }) => (
                   <FormItem><FormLabel>Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />

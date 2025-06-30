@@ -35,6 +35,7 @@ const staffFormSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   email: z.string().email('Invalid email address'),
   mobile: z.string().min(10, 'Mobile number must be at least 10 digits'),
+  password: z.string().min(6, 'Password must be at least 6 characters.'),
   whatsapp: z.string().min(10, 'WhatsApp number must be at least 10 digits'),
   address: z.string().min(5, 'Address is required'),
   department: z.enum(['Sales', 'Marketing', 'Engineering', 'HR', 'Support']),
@@ -193,10 +194,19 @@ export function EditStaffModal({ isOpen, onOpenChange, staff }: EditStaffModalPr
                     <FormField control={form.control} name="mobile" render={({ field }) => (
                         <FormItem><FormLabel>Mobile</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                    <FormField control={form.control} name="whatsapp" render={({ field }) => (
-                        <FormItem><FormLabel>WhatsApp</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                     <FormField control={form.control} name="password" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
                 </div>
+                <FormField control={form.control} name="whatsapp" render={({ field }) => (
+                  <FormItem><FormLabel>WhatsApp</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
                 <FormField control={form.control} name="address" render={({ field }) => (
                   <FormItem><FormLabel>Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
