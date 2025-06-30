@@ -24,7 +24,7 @@ import { Badge } from './ui/badge';
 import { TaskComments } from './task-comments';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
-import { useStaffStore } from './use-staff-store.tsx';
+import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { Input } from './ui/input';
