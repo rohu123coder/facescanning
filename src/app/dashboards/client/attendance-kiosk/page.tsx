@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -40,6 +41,7 @@ export default function UnifiedAttendanceKioskPage() {
         return students.find(p => p.id === personId)?.name || staff.find(p => p.id === personId)?.name || 'Unknown';
     }, [students, staff]);
 
+    // Update the live log whenever either attendance store changes
     useEffect(() => {
         const today = format(new Date(), 'yyyy-MM-dd');
         const combinedLog = [
@@ -49,6 +51,7 @@ export default function UnifiedAttendanceKioskPage() {
         setTodaysLog(combinedLog);
     }, [studentAttendanceStore.attendance, staffAttendanceStore.attendance]);
 
+    // Clock
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentTime(format(new Date(), 'EEEE, MMMM d, yyyy, h:mm:ss a'));
@@ -56,6 +59,7 @@ export default function UnifiedAttendanceKioskPage() {
         return () => clearInterval(timer);
     }, []);
 
+    // Main Kiosk Loop
     useEffect(() => {
         if (!studentsInitialized || !staffInitialized) return;
 
@@ -63,8 +67,11 @@ export default function UnifiedAttendanceKioskPage() {
         
         const startKiosk = async () => {
             try {
-                streamRef.current = await navigator.mediaDevices.getUserMedia({ video: true });
-                if (videoRef.current) videoRef.current.srcObject = streamRef.current;
+                // Only request the camera if it's not already running
+                if (!streamRef.current) {
+                    streamRef.current = await navigator.mediaDevices.getUserMedia({ video: true });
+                    if (videoRef.current) videoRef.current.srcObject = streamRef.current;
+                }
                 setStatus({ type: 'IDLE', message: 'Ready to scan. Please position your face in the frame.' });
             } catch (error) {
                 console.error('Camera Error:', error);
@@ -75,18 +82,34 @@ export default function UnifiedAttendanceKioskPage() {
             scanIntervalId = setInterval(async () => {
                 if (isScanningRef.current || !videoRef.current?.srcObject || !canvasRef.current || document.hidden) return;
                 
-                const combinedList = [
-                    ...students.filter(s => s.photoUrl).map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl, personType: 'Student' as const })),
-                    ...staff.filter(s => s.photoUrl).map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl, personType: 'Staff' as const })),
-                ];
-
-                if (combinedList.length === 0) {
-                     setStatus({ type: 'IDLE', message: 'No registered people with photos found.' });
-                     return;
-                }
-                
                 isScanningRef.current = true;
                 setStatus(s => s.type !== 'SCANNING' ? { type: 'SCANNING', message: 'Scanning...' } : s);
+
+                // --- SMART FILTERING LOGIC ---
+                // Get a fresh log for today to check who has already clocked out.
+                const today = format(new Date(), 'yyyy-MM-dd');
+                const currentDayLog = [
+                    ...studentAttendanceStore.attendance,
+                    ...staffAttendanceStore.attendance
+                ].filter(record => record.date === today);
+
+                const clockedOutIds = new Set(
+                    currentDayLog.filter(r => r.inTime && r.outTime).map(r => r.personId)
+                );
+                
+                // Only send people to the AI who haven't completed their attendance for the day.
+                // This is the key optimization to reduce costs.
+                const personListForRecognition = [
+                    ...students.filter(s => s.photoUrl && !clockedOutIds.has(s.id)).map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl, personType: 'Student' as const })),
+                    ...staff.filter(s => s.photoUrl && !clockedOutIds.has(s.id)).map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl, personType: 'Staff' as const })),
+                ];
+                
+                if (personListForRecognition.length === 0) {
+                     setStatus({ type: 'IDLE', message: 'All registered persons have clocked out for the day.' });
+                     isScanningRef.current = false;
+                     return;
+                }
+                // --- END OF SMART FILTERING ---
                 
                 const video = videoRef.current;
                 const canvas = canvasRef.current;
@@ -96,10 +119,11 @@ export default function UnifiedAttendanceKioskPage() {
                 const capturedPhotoDataUri = canvas.toDataURL('image/jpeg');
 
                 try {
-                    const result = await recognizeFace({ capturedPhotoDataUri, personList: combinedList });
+                    const result = await recognizeFace({ capturedPhotoDataUri, personList: personListForRecognition });
 
                     if (result.matchedPersonId && result.personType) {
                         const now = Date.now();
+                        // Check if this person was scanned in the last 5 minutes to prevent spamming
                         if (now - (lastScanTimestampsRef.current[result.matchedPersonId] || 0) < PERSON_COOLDOWN_MS) {
                             setStatus({ type: 'IDLE', message: `Recently scanned.` });
                         } else {
@@ -121,7 +145,7 @@ export default function UnifiedAttendanceKioskPage() {
                             }
                             
                             if (personName) {
-                                lastScanTimestampsRef.current[result.matchedPersonId] = now;
+                                lastScanTimestampsRef.current[result.matchedPersonId] = now; // Update cooldown timestamp
                                 const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
                                 toast({ title: `${welcomeMessage}!`, description: `${personName} clocked ${punchType}.` });
                                 setStatus({ type: 'SUCCESS', message: `${personName} clocked ${punchType}.` });
@@ -130,26 +154,35 @@ export default function UnifiedAttendanceKioskPage() {
                             }
                         }
                     } else {
-                        setStatus({ type: 'IDLE', message: 'No match found.' });
+                        setStatus({ type: 'IDLE', message: 'No match found. Please position your face clearly.' });
                     }
                 } catch (e) { 
                     console.error('AI Recognition Error:', e); 
-                    setStatus({ type: 'IDLE', message: 'Scan error.' }); 
+                    setStatus({ type: 'IDLE', message: 'Scan error. Retrying...' }); 
                 } finally {
                     isScanningRef.current = false;
                 }
             }, SCAN_INTERVAL_MS);
         };
+
         startKiosk();
+
         return () => { 
             if (scanIntervalId) clearInterval(scanIntervalId); 
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach(track => track.stop());
-                streamRef.current = null;
-            }
-            if(videoRef.current) videoRef.current.srcObject = null;
+            // Do not stop the camera stream here to prevent flicker on re-renders.
+            // It will be stopped when the component unmounts for real.
         };
     }, [studentsInitialized, staffInitialized, students, staff, studentAttendanceStore, staffAttendanceStore, toast]);
+
+    // Effect to clean up the camera stream ONLY when the component unmounts
+    useEffect(() => {
+        const stream = streamRef.current;
+        return () => {
+             if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        }
+    }, [])
     
     const StatusIcon = useCallback(() => {
         switch (status.type) {
