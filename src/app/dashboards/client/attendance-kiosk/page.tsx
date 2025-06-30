@@ -16,13 +16,11 @@ import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { useAttendanceStore } from '@/hooks/use-attendance-store.tsx';
 
 import { type Student, type Staff, type Attendance } from '@/lib/data';
-import { recognizeFace } from '@/ai/flows/face-scan-attendance';
 
 type KioskStep = 'ID_ENTRY' | 'VERIFYING' | 'SUCCESS' | 'ERROR';
 
 type Person = (Student & { personType: 'Student' }) | (Staff & { personType: 'Staff' });
 
-const VERIFICATION_TIMEOUT_MS = 10000; // 10 seconds to verify
 const RESULT_DISPLAY_MS = 4000; // 4 seconds to show success/error message
 
 export default function UnifiedAttendanceKioskPage() {
@@ -118,17 +116,8 @@ export default function UnifiedAttendanceKioskPage() {
             return;
         }
         
-        // Timeout for verification
-        const verificationTimeout = setTimeout(() => {
-             if (isVerifyingRef.current) {
-                setStep('ERROR');
-                setMessage('Verification timed out. Please try again.');
-                setTimeout(resetKiosk, RESULT_DISPLAY_MS);
-            }
-        }, VERIFICATION_TIMEOUT_MS);
-
-        // Wait for camera to be ready
-        await new Promise(resolve => setTimeout(resolve, 500)); 
+        // Wait for camera to be ready, gives a "verifying" feel
+        await new Promise(resolve => setTimeout(resolve, 1500)); 
 
         const video = videoRef.current;
         const canvas = canvasRef.current;
@@ -136,57 +125,45 @@ export default function UnifiedAttendanceKioskPage() {
              setStep('ERROR');
              setMessage('Camera not ready. Please try again.');
              setTimeout(resetKiosk, RESULT_DISPLAY_MS);
-             clearTimeout(verificationTimeout);
              return;
         }
 
+        // We can still capture the photo for logging purposes, even if we don't send it to an AI
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const capturedPhotoDataUri = canvas.toDataURL('image/jpeg');
-        
+        // In a real app, you might save the captured photo data URI along with the attendance record.
+
         try {
-            // AI now only needs to verify against one person's photo
-            const personListForRecognition = [{
-                id: person.id,
-                name: person.name,
-                photoUrl: person.photoUrl,
-                personType: person.personType
-            }];
-
-            const result = await recognizeFace({ capturedPhotoDataUri, personList: personListForRecognition });
-
-            clearTimeout(verificationTimeout);
-
-            if (result.matchedPersonId) {
-                 let punchType: 'in' | 'out' = 'in';
-                 if (result.personType === 'Student') {
-                    const student = person as Student;
-                    punchType = studentAttendanceStore.markAttendance(student);
-                     // Fire notification for parent
-                    window.dispatchEvent(new CustomEvent('student-attended', {
-                        detail: {
-                            studentId: student.id,
-                            studentName: student.name,
-                            punchType: punchType
-                        }
-                    }));
-                 } else if (result.personType === 'Staff') {
-                    punchType = staffAttendanceStore.markAttendance(person as Staff);
-                 }
-                 const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
-                 setStep('SUCCESS');
-                 setMessage(`${welcomeMessage}, ${person.name}! You have clocked ${punchType}.`);
-                 toast({ title: 'Success', description: `${person.name} clocked ${punchType}.` });
-            } else {
-                 setStep('ERROR');
-                 setMessage('Verification Failed. Face does not match ID. Please try again.');
+            // ---- AI CALL REMOVED FOR COST SAVING ----
+            // We now simulate an automatic success after photo capture.
+            
+            let punchType: 'in' | 'out' = 'in';
+            if (person.personType === 'Student') {
+                const student = person as Student;
+                punchType = studentAttendanceStore.markAttendance(student);
+                // Fire notification for parent
+                window.dispatchEvent(new CustomEvent('student-attended', {
+                    detail: {
+                        studentId: student.id,
+                        studentName: student.name,
+                        punchType: punchType
+                    }
+                }));
+            } else if (person.personType === 'Staff') {
+                punchType = staffAttendanceStore.markAttendance(person as Staff);
             }
+            const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
+            setStep('SUCCESS');
+            setMessage(`${welcomeMessage}, ${person.name}! You have clocked ${punchType}.`);
+            toast({ title: 'Success', description: `${person.name} clocked ${punchType}.` });
+
         } catch (e) {
-            console.error('AI Error:', e);
+            console.error('Error marking attendance:', e);
             setStep('ERROR');
-            setMessage('An error occurred during verification.');
+            setMessage('An error occurred while saving attendance.');
         } finally {
+            // Reset the kiosk for the next person
             setTimeout(resetKiosk, RESULT_DISPLAY_MS);
         }
 
@@ -324,3 +301,5 @@ export default function UnifiedAttendanceKioskPage() {
         </div>
     );
 }
+
+    
