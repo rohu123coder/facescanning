@@ -19,6 +19,7 @@ import { recognizeFace } from '@/ai/flows/face-scan-attendance';
 type ScanStatusType = 'IDLE' | 'SCANNING' | 'SUCCESS' | 'NO_MATCH' | 'ERROR';
 const SCAN_INTERVAL_MS = 3000;
 const PERSON_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const SUCCESS_PAUSE_MS = 5000; // 5 seconds
 
 export default function UnifiedAttendanceKioskPage() {
     const { students, isInitialized: studentsInitialized } = useStudentStore();
@@ -36,6 +37,7 @@ export default function UnifiedAttendanceKioskPage() {
     const isScanningRef = useRef(false);
     const lastScanTimestampsRef = useRef<Record<string, number>>({});
     const streamRef = useRef<MediaStream | null>(null);
+    const [isPaused, setIsPaused] = useState(false);
 
     const getPersonName = useCallback((personId: string) => {
         return students.find(p => p.id === personId)?.name || staff.find(p => p.id === personId)?.name || 'Unknown';
@@ -80,10 +82,13 @@ export default function UnifiedAttendanceKioskPage() {
             }
 
             scanIntervalId = setInterval(async () => {
-                if (isScanningRef.current || !videoRef.current?.srcObject || !canvasRef.current || document.hidden) return;
+                if (isScanningRef.current || isPaused || !videoRef.current?.srcObject || !canvasRef.current || document.hidden) return;
                 
                 isScanningRef.current = true;
-                setStatus(s => s.type !== 'SCANNING' ? { type: 'SCANNING', message: 'Scanning...' } : s);
+                if (status.type !== 'SUCCESS') {
+                    setStatus(s => s.type !== 'SCANNING' ? { type: 'SCANNING', message: 'Scanning...' } : s);
+                }
+
 
                 const today = format(new Date(), 'yyyy-MM-dd');
                 const currentDayLog = [
@@ -151,6 +156,14 @@ export default function UnifiedAttendanceKioskPage() {
                                 const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
                                 toast({ title: `${welcomeMessage}!`, description: `${personName} clocked ${punchType}.` });
                                 setStatus({ type: 'SUCCESS', message: `${personName} clocked ${punchType}.` });
+
+                                // Pause scanning for a few seconds to show success and prevent immediate rescan
+                                setIsPaused(true);
+                                setTimeout(() => {
+                                    setIsPaused(false);
+                                    setStatus({ type: 'IDLE', message: 'Ready to scan. Please position your face in the frame.' });
+                                }, SUCCESS_PAUSE_MS);
+
                             } else {
                                 setStatus({ type: 'NO_MATCH', message: 'Match found but person details not available.' });
                             }
@@ -162,7 +175,9 @@ export default function UnifiedAttendanceKioskPage() {
                     console.error('AI Recognition Error:', e); 
                     setStatus({ type: 'IDLE', message: 'Scan error. Retrying...' }); 
                 } finally {
-                    isScanningRef.current = false;
+                    if (!isPaused) {
+                      isScanningRef.current = false;
+                    }
                 }
             }, SCAN_INTERVAL_MS);
         };
@@ -173,7 +188,7 @@ export default function UnifiedAttendanceKioskPage() {
             if (scanIntervalId) clearInterval(scanIntervalId); 
             // Do not stop the camera stream here to prevent flicker on re-renders.
         };
-    }, [studentsInitialized, staffInitialized, students, staff, studentAttendanceStore, staffAttendanceStore, toast]);
+    }, [studentsInitialized, staffInitialized, students, staff, studentAttendanceStore, staffAttendanceStore, toast, isPaused]);
 
     // Effect to clean up the camera stream ONLY when the component unmounts
     useEffect(() => {
