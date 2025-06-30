@@ -28,7 +28,37 @@ export function StaffProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedStaff = localStorage.getItem(storeKey);
-        setStaff(storedStaff ? JSON.parse(storedStaff) : []);
+        let staffData = storedStaff ? JSON.parse(storedStaff) : [];
+        
+        // --- MIGRATION LOGIC START ---
+        // One-time migration to convert old string IDs (e.g., "S-001") to numeric strings.
+        let needsUpdate = false;
+        let lastNumericId = 5000;
+        
+        const numericStaffIds = staffData
+            .map((s: Staff) => parseInt(s.id, 10))
+            .filter((id: number) => !isNaN(id));
+            
+        if (numericStaffIds.length > 0) {
+            lastNumericId = Math.max(...numericStaffIds);
+        }
+
+        staffData = staffData.map((staffMember: Staff) => {
+            if (isNaN(parseInt(staffMember.id, 10))) {
+                needsUpdate = true;
+                lastNumericId++;
+                return { ...staffMember, id: String(lastNumericId) };
+            }
+            return staffMember;
+        });
+
+        if (needsUpdate) {
+            localStorage.setItem(storeKey, JSON.stringify(staffData));
+        }
+        // --- MIGRATION LOGIC END ---
+
+        setStaff(staffData);
+
       } catch (error) {
         console.error("Failed to load staff from localStorage", error);
         setStaff([]);
@@ -52,8 +82,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
 
   const addStaff = useCallback((newStaffData: Omit<Staff, 'id'>) => {
     setStaff((prevStaff) => {
-        // Use a purely numeric ID, starting from a high number to avoid collisions with student roll numbers.
-        const numericStaffIds = prevStaff.map(s => parseInt(s.id)).filter(id => !isNaN(id));
+        const numericStaffIds = prevStaff.map(s => parseInt(s.id, 10)).filter(id => !isNaN(id));
         const highestId = numericStaffIds.length > 0 ? Math.max(...numericStaffIds) : 5000;
         const newId = String(highestId + 1);
 
@@ -72,7 +101,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
   
   const deleteStaff = useCallback((staffId: string) => {
     setStaff((prevStaff) => {
-        return prevStaff.filter(member => member.id !== staffId);
+      return prevStaff.filter(member => member.id !== staffId);
     });
   }, []);
 
