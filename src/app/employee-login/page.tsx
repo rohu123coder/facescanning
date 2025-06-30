@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEmployeeAuthStore } from '@/hooks/use-employee-auth-store';
+import { useEmployeeAuthStore } from '@/hooks/use-employee-auth-store.tsx';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ import { Loader2, Mountain } from 'lucide-react';
 import Link from 'next/link';
 import { ClientProvider } from '@/hooks/use-client-store.tsx';
 import { StaffProvider } from '@/hooks/use-staff-store.tsx';
-import { EmployeeAuthStoreProvider } from '@/hooks/use-employee-auth-store';
+import { EmployeeAuthStoreProvider } from '@/hooks/use-employee-auth-store.tsx';
 
 const loginFormSchema = z.object({
   employeeId: z.string().min(1, { message: 'Employee ID is required.' }),

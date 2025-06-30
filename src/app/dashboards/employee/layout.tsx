@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { LayoutDashboard, LogOut, Mountain, User, CheckSquare, FileText, HandCoins, Fingerprint } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import React, { useEffect, type ReactNode } from 'react';
-import { useEmployeeAuthStore, EmployeeAuthStoreProvider } from '@/hooks/use-employee-auth-store';
+import { useEmployeeAuthStore, EmployeeAuthStoreProvider } from '@/hooks/use-employee-auth-store.tsx';
 import { ClientProvider, useClientStore } from '@/hooks/use-client-store.tsx';
 import { StaffProvider } from '@/hooks/use-staff-store.tsx';
 import { StudentProvider } from '@/hooks/use-student-store.tsx';
