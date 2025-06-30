@@ -133,12 +133,8 @@ export default function MyAttendancePage() {
 
     }, [employee, markAttendance, toast]);
 
-
-    if (!isAuthInitialized || !isInitialized || !isClientInitialized || !employee) {
-        return <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin" /></div>
-    }
-
     const filteredAttendance = useMemo(() => {
+        if (!employee) return [];
         return attendance
             .filter(record => 
                 record.personId === employee.id &&
@@ -146,7 +142,7 @@ export default function MyAttendancePage() {
                 getYear(parseISO(record.date)) === parseInt(selectedYear)
             )
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [attendance, employee.id, selectedMonth, selectedYear]);
+    }, [attendance, employee, selectedMonth, selectedYear]);
 
     const calculateTotalHours = (inTime: string | null, outTime: string | null): string => {
         if (!inTime || !outTime) return 'N/A';
@@ -170,6 +166,10 @@ export default function MyAttendancePage() {
         }));
     }, []);
     
+    if (!isAuthInitialized || !isInitialized || !isClientInitialized || !employee) {
+        return <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin" /></div>
+    }
+
     const punchType = (todaysRecord?.inTime && !todaysRecord?.outTime) ? 'out' : 'in';
     const isGpsConfigured = currentClient && currentClient.officeLatitude && currentClient.officeLongitude;
 
