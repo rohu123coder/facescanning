@@ -48,23 +48,21 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
   }, [requests, storeKey, isInitialized]);
 
   const addRequest = useCallback((newRequestData: Omit<LeaveRequest, 'id' | 'status' | 'requestDate'>) => {
-    setRequests(prevRequests => {
-      const newRequest: LeaveRequest = {
-        ...newRequestData,
-        id: `L-${Date.now()}`,
-        status: 'Pending',
-        requestDate: new Date().toISOString(),
-      };
-      
-      const staffMember = staff.find(s => s.id === newRequest.staffId);
-      if (staffMember) {
-          window.dispatchEvent(new CustomEvent('new-leave-request', { 
-            detail: { staffName: staffMember.name, leaveType: newRequest.leaveType } 
-          }));
-      }
-
-      return [...prevRequests, newRequest];
-    });
+    const newRequest: LeaveRequest = {
+      ...newRequestData,
+      id: `L-${Date.now()}`,
+      status: 'Pending',
+      requestDate: new Date().toISOString(),
+    };
+    
+    setRequests(prevRequests => [...prevRequests, newRequest]);
+    
+    const staffMember = staff.find(s => s.id === newRequest.staffId);
+    if (staffMember) {
+        window.dispatchEvent(new CustomEvent('new-leave-request', { 
+          detail: { staffName: staffMember.name, leaveType: newRequest.leaveType } 
+        }));
+    }
   }, [staff]);
 
   const approveRequest = useCallback(async (requestId: string): Promise<{success: boolean; message?: string}> => {
@@ -97,16 +95,34 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
         r.id === requestId ? { ...r, status: 'Approved' as const } : r
     ));
 
+    window.dispatchEvent(new CustomEvent('leave-status-update', { 
+        detail: { staffId: req.staffId, status: 'Approved', leaveType: req.leaveType } 
+    }));
     return { success: true };
   }, [requests, staff, updateStaff]);
 
 
   const rejectRequest = useCallback(async (requestId: string): Promise<void> => {
+    let staffId: string | undefined;
+    let leaveType: 'Casual' | 'Sick' | undefined;
+    
     setRequests(prevRequests => {
-      return prevRequests.map(r =>
-        r.id === requestId ? { ...r, status: 'Rejected' as const } : r
-      );
+      const updatedRequests = prevRequests.map(r => {
+        if (r.id === requestId) {
+            staffId = r.staffId;
+            leaveType = r.leaveType;
+            return { ...r, status: 'Rejected' as const };
+        }
+        return r;
+      });
+      return updatedRequests;
     });
+
+    if (staffId && leaveType) {
+        window.dispatchEvent(new CustomEvent('leave-status-update', { 
+            detail: { staffId: staffId, status: 'Rejected', leaveType: leaveType } 
+        }));
+    }
   }, []);
   
   return (
