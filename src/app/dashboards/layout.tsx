@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -14,7 +15,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Briefcase, LogOut, Mountain, Users, ScanFace, Star, CheckSquare, GraduationCap, FileText, HandCoins, CalendarDays, UserCheck } from 'lucide-react';
+import { Briefcase, LogOut, Mountain, Users, ScanFace, Star, CheckSquare, GraduationCap, FileText, HandCoins, CalendarDays, UserCheck, Settings } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/hooks/use-auth-store';
 import { ClientProvider, useClientStore } from '@/hooks/use-client-store.tsx';
@@ -189,6 +190,12 @@ function MainDashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-4">
                 <span className="font-semibold">{currentClient.plan} Plan</span>
                 <ThemeToggle />
+                <Button variant="outline" size="icon" asChild>
+                    <Link href="/dashboards/client/settings">
+                        <Settings className="h-4 w-4" />
+                        <span className="sr-only">Settings</span>
+                    </Link>
+                </Button>
             </div>
         </header>
         <main className="p-4 sm:p-6 lg:p-8 bg-background flex-1">
