@@ -1,15 +1,19 @@
+
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Fingerprint, Loader2, MapPin, CheckCircle, AlertTriangle, Clock, Ban } from 'lucide-react';
 import { useEmployeeAuthStore } from '@/hooks/use-employee-auth-store.tsx';
 import { useAttendanceStore } from '@/hooks/use-attendance-store.tsx';
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, getMonth, getYear, differenceInHours } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useClientStore } from '@/hooks/use-client-store.tsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 type AttendanceStep = 'IDLE' | 'GETTING_GPS' | 'READY' | 'SAVING';
 
@@ -39,6 +43,9 @@ export default function MyAttendancePage() {
     const [currentTime, setCurrentTime] = useState('');
     const [statusMessage, setStatusMessage] = useState('Click below to start the attendance process.');
     const [todaysRecord, setTodaysRecord] = useState<{inTime: string | null; outTime: string | null} | null>(null);
+
+    const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth()));
+    const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
 
     // Live clock
     useEffect(() => {
@@ -127,9 +134,41 @@ export default function MyAttendancePage() {
     }, [employee, markAttendance, toast]);
 
 
-    if (!isAuthInitialized || !isInitialized || !isClientInitialized) {
+    if (!isAuthInitialized || !isInitialized || !isClientInitialized || !employee) {
         return <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin" /></div>
     }
+
+    const filteredAttendance = useMemo(() => {
+        return attendance
+            .filter(record => 
+                record.personId === employee.id &&
+                getMonth(parseISO(record.date)) === parseInt(selectedMonth) &&
+                getYear(parseISO(record.date)) === parseInt(selectedYear)
+            )
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [attendance, employee.id, selectedMonth, selectedYear]);
+
+    const calculateTotalHours = (inTime: string | null, outTime: string | null): string => {
+        if (!inTime || !outTime) return 'N/A';
+        try {
+            const hours = differenceInHours(parseISO(outTime), parseISO(inTime));
+            return `${hours} hour(s)`;
+        } catch (error) {
+            return 'Invalid';
+        }
+    };
+    
+    const years = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        return Array.from({ length: 5 }, (_, i) => String(currentYear - i));
+    }, []);
+
+    const months = useMemo(() => {
+        return Array.from({ length: 12 }, (_, i) => ({
+        value: String(i),
+        label: format(new Date(2000, i), 'MMMM'),
+        }));
+    }, []);
     
     const punchType = (todaysRecord?.inTime && !todaysRecord?.outTime) ? 'out' : 'in';
     const isGpsConfigured = currentClient && currentClient.officeLatitude && currentClient.officeLongitude;
@@ -138,7 +177,7 @@ export default function MyAttendancePage() {
         <div className="space-y-8">
             <div>
                 <h1 className="text-3xl font-bold font-headline">My Attendance</h1>
-                <p className="text-muted-foreground">Mark your daily presence using your mobile.</p>
+                <p className="text-muted-foreground">Mark your daily presence and view your history.</p>
             </div>
             
             <Card className="max-w-md mx-auto">
@@ -204,6 +243,64 @@ export default function MyAttendancePage() {
                          )}
                     </div>
 
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Attendance History</CardTitle>
+                    <CardDescription>View your attendance log for a selected period.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select Month" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={selectedYear} onValueChange={setSelectedYear}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select Year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="border rounded-lg">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>In Time</TableHead>
+                                    <TableHead>Out Time</TableHead>
+                                    <TableHead>Total Hours</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredAttendance.length > 0 ? (
+                                    filteredAttendance.map(record => (
+                                        <TableRow key={record.date}>
+                                            <TableCell>{format(parseISO(record.date), 'PPP')}</TableCell>
+                                            <TableCell>{record.inTime ? format(parseISO(record.inTime), 'p') : 'N/A'}</TableCell>
+                                            <TableCell>{record.outTime ? format(parseISO(record.outTime), 'p') : 'N/A'}</TableCell>
+                                            <TableCell>{calculateTotalHours(record.inTime, record.outTime)}</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="h-24 text-center">
+                                            No attendance records found for the selected period.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>
