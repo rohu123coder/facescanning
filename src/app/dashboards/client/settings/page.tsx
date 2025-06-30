@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Upload, LocateFixed } from 'lucide-react';
+import { Loader2, Upload, LocateFixed, CheckCircle, Link as LinkIcon } from 'lucide-react';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 
@@ -24,6 +24,7 @@ const settingsFormSchema = z.object({
   officeLatitude: z.number().nullable(),
   officeLongitude: z.number().nullable(),
   gpsRadius: z.coerce.number().min(10, 'Radius must be at least 10 meters.'),
+  isGbpConnected: z.boolean(),
 });
 
 export default function SettingsPage() {
@@ -41,10 +42,12 @@ export default function SettingsPage() {
       officeLatitude: null,
       officeLongitude: null,
       gpsRadius: 50,
+      isGbpConnected: false,
     },
   });
   
   const logoValue = form.watch('logoUrl');
+  const gbpConnectedValue = form.watch('isGbpConnected');
 
   useEffect(() => {
     if (isInitialized && currentClient) {
@@ -54,7 +57,8 @@ export default function SettingsPage() {
         logoUrl: currentClient.logoUrl,
         officeLatitude: currentClient.officeLatitude,
         officeLongitude: currentClient.officeLongitude,
-        gpsRadius: currentClient.gpsRadius
+        gpsRadius: currentClient.gpsRadius,
+        isGbpConnected: currentClient.isGbpConnected,
       });
     }
   }, [isInitialized, currentClient, form]);
@@ -125,7 +129,6 @@ export default function SettingsPage() {
     }
   }
 
-
   const onSubmit = async (values: z.infer<typeof settingsFormSchema>) => {
     if (!currentClient) return;
 
@@ -164,12 +167,16 @@ export default function SettingsPage() {
      <div className="space-y-8">
        <div>
         <h1 className="text-3xl font-bold font-headline">Organization Settings</h1>
-        <p className="text-muted-foreground">Update your company details, logo, and GPS settings.</p>
+        <p className="text-muted-foreground">Update your company details, logo, and integration settings.</p>
       </div>
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div>
+                  <h3 className="text-lg font-medium">Basic Information</h3>
+                  <p className="text-sm text-muted-foreground">Update your organization's public details.</p>
+               </div>
               <FormField
                 control={form.control}
                 name="organizationName"
@@ -233,12 +240,10 @@ export default function SettingsPage() {
                   <h3 className="text-lg font-medium">GPS Attendance Settings</h3>
                   <p className="text-sm text-muted-foreground">Set your primary office location for GPS-based attendance.</p>
                </div>
-
                 <Button type="button" variant="outline" onClick={handleSetLocation} disabled={isLoading} className="w-full">
                     <LocateFixed className="mr-2"/>
                     {isLoading ? 'Getting Location...' : 'Get & Set Current Office Location'}
                 </Button>
-
                 <div className="grid grid-cols-2 gap-4">
                      <FormField
                         control={form.control}
@@ -275,6 +280,36 @@ export default function SettingsPage() {
                     )}
                 />
 
+                <Separator />
+                 <div>
+                    <h3 className="text-lg font-medium">Integrations</h3>
+                    <p className="text-sm text-muted-foreground">Connect to third-party services.</p>
+                 </div>
+                 <FormField
+                    control={form.control}
+                    name="isGbpConnected"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Google Business Profile</FormLabel>
+                            <Card>
+                                <CardContent className="p-4 flex items-center justify-between">
+                                    { gbpConnectedValue ? (
+                                        <div className="flex items-center gap-2 text-green-600">
+                                            <CheckCircle />
+                                            <p className="font-semibold">Connected</p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-muted-foreground">Not Connected</p>
+                                    )}
+                                    <Button type="button" variant={gbpConnectedValue ? "destructive" : "default"} onClick={() => field.onChange(!field.value)}>
+                                        <LinkIcon className="mr-2" />
+                                        {gbpConnectedValue ? 'Disconnect' : 'Connect'}
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </FormItem>
+                    )}
+                 />
 
               <Button type="submit" className="w-full !mt-8" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Changes'}

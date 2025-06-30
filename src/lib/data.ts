@@ -140,14 +140,59 @@ export type SalarySlipData = {
     netSalary: number;
 }
 
+export type Review = {
+    id: string;
+    reviewerName: string;
+    reviewerImageUrl: string;
+    rating: number; // 1 to 5
+    text: string;
+    relativeTimeDescription: string;
+};
+
 
 export const initialClients: Client[] = [
     { id: 'C-101', organizationName: 'Innovatech Solutions', organizationDetails: 'Leading the charge in AI-driven business solutions and cloud computing.', logoUrl: '', contactName: 'Rohan Mehra', email: 'contact@innovatech.com', mobile: '9876543210', whatsapp: '9876543210', plan: 'Enterprise', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: false, officeLatitude: null, officeLongitude: null, gpsRadius: 50 },
     { id: 'C-102', organizationName: 'Creative Minds Inc.', organizationDetails: 'A digital marketing agency specializing in branding and creative content.', logoUrl: '', contactName: 'Priya Sharma', email: 'hello@creativeminds.co', mobile: '9876543211', whatsapp: '9876543211', plan: 'Basic', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: false, officeLatitude: null, officeLongitude: null, gpsRadius: 50 },
-    { id: 'C-103', organizationName: 'TechForward', organizationDetails: 'Enterprise-level software development and IT consulting services.', logoUrl: '', contactName: 'Amit Singh', email: 'support@techforward.io', mobile: '9876543212', whatsapp: '9876543212', plan: 'Enterprise', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: false, officeLatitude: null, officeLongitude: null, gpsRadius: 50 },
+    { id: 'C-103', organizationName: 'TechForward', organizationDetails: 'Enterprise-level software development and IT consulting services.', logoUrl: '', contactName: 'Amit Singh', email: 'support@techforward.io', mobile: '9876543212', whatsapp: '9876543212', plan: 'Enterprise', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: true, officeLatitude: null, officeLongitude: null, gpsRadius: 50 },
     { id: 'C-104', organizationName: 'NextGen Systems', organizationDetails: 'Hardware and software solutions for the next generation of computing.', logoUrl: '', contactName: 'Sunita Patil', email: 'admin@nextgen.com', mobile: '9876543213', whatsapp: '9876543213', plan: 'Premium', status: 'Inactive', staffCount: 0, isSetupComplete: false, isGbpConnected: false, officeLatitude: null, officeLongitude: null, gpsRadius: 50 },
-    { id: 'C-105', organizationName: 'egyan solutions', organizationDetails: 'Innovative e-learning and educational technology provider.', logoUrl: '', contactName: 'Rohit Jha', email: 'rohit.1702jha@gmail.com', mobile: '9876543214', whatsapp: '9876543214', plan: 'Enterprise', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: false, officeLatitude: null, officeLongitude: null, gpsRadius: 50 },
+    { id: 'C-105', organizationName: 'egyan solutions', organizationDetails: 'Innovative e-learning and educational technology provider.', logoUrl: '', contactName: 'Rohit Jha', email: 'rohit.1702jha@gmail.com', mobile: '9876543214', whatsapp: '9876543214', plan: 'Enterprise', status: 'Active', staffCount: 0, isSetupComplete: false, isGbpConnected: true, officeLatitude: null, officeLongitude: null, gpsRadius: 50 },
 ];
+
+export const initialReviews: Review[] = [
+    {
+        id: 'R-001',
+        reviewerName: 'Aakash Gupta',
+        reviewerImageUrl: 'https://placehold.co/100x100.png',
+        rating: 5,
+        text: 'An absolutely wonderful experience from start to finish. The staff was incredibly welcoming, and the service was impeccable. Highly recommended!',
+        relativeTimeDescription: '2 days ago',
+    },
+    {
+        id: 'R-002',
+        reviewerName: 'Neha Singh',
+        reviewerImageUrl: 'https://placehold.co/100x100.png',
+        rating: 2,
+        text: 'I was really disappointed with my visit. The waiting time was too long, and the main course was cold when it arrived. I expected much better for the price.',
+        relativeTimeDescription: '5 days ago',
+    },
+    {
+        id: 'R-003',
+        reviewerName: 'Vikram Choudhary',
+        reviewerImageUrl: 'https://placehold.co/100x100.png',
+        rating: 4,
+        text: 'A great place! The atmosphere is lovely and the food is quite good. The service could be a little faster during peak hours, but overall, a very positive experience.',
+        relativeTimeDescription: 'a week ago',
+    },
+    {
+        id: 'R-004',
+        reviewerName: 'Sunita Patel',
+        reviewerImageUrl: 'https://placehold.co/100x100.png',
+        rating: 1,
+        text: 'Terrible. Just terrible. The order was completely wrong, and the staff was rude when I pointed it out. Will not be returning.',
+        relativeTimeDescription: '2 weeks ago',
+    },
+];
+
 
 // All initial data arrays are now empty to ensure a fresh start for every client.
 export const initialHolidays: Holiday[] = [];

@@ -1,7 +1,7 @@
 # ✅ Stable Backup Point
 
-**Date:** 2025-06-30
-**Status:** The application is stable. The unified attendance kiosk is now functional for both staff and students.
+**Date:** 2025-07-01
+**Status:** The application is stable. All core features including Employee, Parent, and Client portals are functional. Reputation management with AI replies has been added.
 
 This file serves as a marker for a stable, working version of the application code. If any future changes cause critical errors, you can request to restore the project to the state it was in when this marker was created.
 
@@ -16,11 +16,22 @@ This file serves as a marker for a stable, working version of the application co
     - Task Management (Board, List, Calendar, AI Suggestions, Attachments, Comments)
     - Leave Management (Approve/Reject with Quota updates)
     - Holiday Management
-    - Salary Automation (Rule-based Generation, Payslip Viewing)
-    - **Unified** Face Scan Attendance Kiosk (for Staff & Students)
-    - Detailed Attendance Reports
+    - Salary Automation (Rule-based Generation, Payslip Viewing & Export)
+    - Unified Face Scan Attendance Kiosk (for Staff & Students)
+    - Detailed Attendance Reports (for Staff & Students)
+    - **New:** Reputation Management (View Reviews, AI-Generated Replies)
+    - Settings page with GPS and Integration toggles.
+- **Employee Portal:**
+    - Dashboard
+    - GPS Attendance
+    - View/Manage assigned tasks with two-way communication
+    - Apply for and view leave status
+    - View/Download payslips
+- **Parent Portal:**
+    - View child's attendance history
+    - Real-time attendance notifications
 - **System-Wide:**
-    - Live Notifications with Sound for important events.
+    - Live Notifications with Sound for important events (new tasks, comments, leave requests).
 
 ---
 

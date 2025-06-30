@@ -33,6 +33,7 @@ import { LeaveProvider } from '@/hooks/use-leave-store.tsx';
 import { TaskProvider } from '@/hooks/use-task-store.tsx';
 import { SalaryRulesProvider } from '@/hooks/use-salary-rules-store.tsx';
 import { SalarySlipsProvider } from '@/hooks/use-salary-slips-store.tsx';
+import { ReputationProvider } from '@/hooks/use-reputation-store.tsx';
 
 
 const navItems = [
@@ -59,7 +60,9 @@ function AllAppProviders({ children }: { children: ReactNode }) {
                                 <SalaryRulesProvider>
                                     <SalarySlipsProvider>
                                         <HolidayProvider>
+                                          <ReputationProvider>
                                             {children}
+                                          </ReputationProvider>
                                         </HolidayProvider>
                                     </SalarySlipsProvider>
                                 </SalaryRulesProvider>
