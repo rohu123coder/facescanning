@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { LogOut, Mountain, Shield } from 'lucide-react';
+import { LogOut, Mountain, Shield, CalendarDays } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useEffect, type ReactNode, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -12,12 +12,15 @@ import { ClientProvider, useClientStore } from '@/hooks/use-client-store.tsx';
 import { StudentProvider } from '@/hooks/use-student-store.tsx';
 import { StudentAttendanceProvider } from '@/hooks/use-student-attendance-store.tsx';
 import { ParentAuthStoreProvider, useParentAuthStore } from '@/hooks/use-parent-auth-store.tsx';
+import { HolidayProvider } from '@/hooks/use-holiday-store.tsx';
 
 function AllAppProviders({ children }: { children: ReactNode }) {
     return (
         <StudentProvider>
             <StudentAttendanceProvider>
-                {children}
+                <HolidayProvider>
+                    {children}
+                </HolidayProvider>
             </StudentAttendanceProvider>
         </StudentProvider>
     );
@@ -83,6 +86,9 @@ function ParentDashboard({ children }: { children: React.ReactNode }) {
             </div>
             </Link>
             <div className="flex flex-1 items-center justify-end space-x-2">
+            <Button variant="ghost" size="sm" asChild>
+                <Link href="/dashboards/parent/holidays"><CalendarDays className="mr-2" /> Holidays</Link>
+            </Button>
             <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={logout}>
                 <LogOut className="mr-2" /> Logout

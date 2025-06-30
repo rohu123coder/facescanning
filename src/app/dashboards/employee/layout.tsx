@@ -15,7 +15,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, LogOut, Mountain, User, CheckSquare, FileText, HandCoins, Fingerprint } from 'lucide-react';
+import { LayoutDashboard, LogOut, Mountain, User, CheckSquare, FileText, HandCoins, Fingerprint, CalendarDays } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import React, { useEffect, type ReactNode, useRef } from 'react';
 import { useEmployeeAuthStore, EmployeeAuthStoreProvider } from '@/hooks/use-employee-auth-store.tsx';
@@ -37,6 +37,7 @@ const navItems = [
     { href: '/dashboards/employee/tasks', label: 'My Tasks', icon: <CheckSquare /> },
     { href: '/dashboards/employee/leaves', label: 'My Leaves', icon: <FileText /> },
     { href: '/dashboards/employee/payslips', label: 'My Payslips', icon: <HandCoins /> },
+    { href: '/dashboards/employee/holidays', label: 'Holidays', icon: <CalendarDays /> },
 ];
 
 function AllAppProviders({ children }: { children: ReactNode }) {
