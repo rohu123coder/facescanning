@@ -55,9 +55,17 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
         status: 'Pending',
         requestDate: new Date().toISOString(),
       };
+      
+      const staffMember = staff.find(s => s.id === newRequest.staffId);
+      if (staffMember) {
+          window.dispatchEvent(new CustomEvent('new-leave-request', { 
+            detail: { staffName: staffMember.name, leaveType: newRequest.leaveType } 
+          }));
+      }
+
       return [...prevRequests, newRequest];
     });
-  }, []);
+  }, [staff]);
 
   const approveRequest = useCallback(async (requestId: string): Promise<{success: boolean; message?: string}> => {
     const req = requests.find(r => r.id === requestId);
