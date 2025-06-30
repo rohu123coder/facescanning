@@ -116,6 +116,7 @@ export default function StaffPage() {
                         <Table>
                         <TableHeader>
                             <TableRow>
+                            <TableHead>Staff ID</TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead>Department</TableHead>
@@ -127,14 +128,15 @@ export default function StaffPage() {
                         <TableBody>
                             {!isInitialized ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">
+                                <TableCell colSpan={7} className="h-24 text-center">
                                 Loading staff...
                                 </TableCell>
                             </TableRow>
                             ) : staff.length > 0 ? (
                             staff.map((staffMember) => (
                                 <TableRow key={staffMember.id}>
-                                <TableCell className="font-medium">{staffMember.name}</TableCell>
+                                <TableCell className="font-medium">{staffMember.id}</TableCell>
+                                <TableCell>{staffMember.name}</TableCell>
                                 <TableCell>{staffMember.role}</TableCell>
                                 <TableCell>{staffMember.department}</TableCell>
                                 <TableCell>{staffMember.mobile}</TableCell>
@@ -187,7 +189,7 @@ export default function StaffPage() {
                             ))
                             ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">
+                                <TableCell colSpan={7} className="h-24 text-center">
                                 No staff found. Get started by adding new staff.
                                 </TableCell>
                             </TableRow>
