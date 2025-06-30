@@ -8,7 +8,7 @@ import { useClientStore } from './use-client-store.tsx';
 const getStoreKey = (clientId: string | undefined) => clientId ? `salaryRules_${clientId}` : null;
 
 const defaultRules: SalaryRules = {
-  offDays: ['0', '6'], // Sunday, Saturday
+  offDays: ['0'], // Sunday
   basic: 40,
   hra: 20,
   standardDeduction: 5,
