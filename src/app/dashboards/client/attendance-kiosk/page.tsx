@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -37,7 +36,7 @@ export default function UnifiedAttendanceKioskPage() {
     const isScanningRef = useRef(false);
     const lastScanTimestampsRef = useRef<Record<string, number>>({});
     const streamRef = useRef<MediaStream | null>(null);
-    const [isPaused, setIsPaused] = useState(false);
+    const isPausedRef = useRef(false); // Using a ref to avoid re-renders and effect re-runs
 
     const getPersonName = useCallback((personId: string) => {
         return students.find(p => p.id === personId)?.name || staff.find(p => p.id === personId)?.name || 'Unknown';
@@ -82,13 +81,12 @@ export default function UnifiedAttendanceKioskPage() {
             }
 
             scanIntervalId = setInterval(async () => {
-                if (isScanningRef.current || isPaused || !videoRef.current?.srcObject || !canvasRef.current || document.hidden) return;
+                // Use isPausedRef.current to check pause state
+                if (isScanningRef.current || isPausedRef.current || !videoRef.current?.srcObject || !canvasRef.current || document.hidden) return;
                 
                 isScanningRef.current = true;
-                if (status.type !== 'SUCCESS') {
-                    setStatus(s => s.type !== 'SCANNING' ? { type: 'SCANNING', message: 'Scanning...' } : s);
-                }
-
+                // Avoid changing status to 'Scanning' if it's already showing a success message during the pause cooldown
+                setStatus(s => s.type === 'SUCCESS' ? s : { type: 'SCANNING', message: 'Scanning...' });
 
                 const today = format(new Date(), 'yyyy-MM-dd');
                 const currentDayLog = [
@@ -123,16 +121,13 @@ export default function UnifiedAttendanceKioskPage() {
 
                     if (result.matchedPersonId && result.personType) {
                         const now = Date.now();
-                        // Check if this person was scanned in the last 5 minutes to prevent spamming
                         if (now - (lastScanTimestampsRef.current[result.matchedPersonId] || 0) < PERSON_COOLDOWN_MS) {
                             const personName = getPersonName(result.matchedPersonId);
-                            setStatus({ type: 'SUCCESS', message: `Already punched successfully.` });
-                            toast({
-                                title: `Duplicate Scan`,
-                                description: `${personName}, you have already been scanned recently. Please wait before scanning again.`,
-                            });
+                            // Only update status if not already paused with a success message
+                            if (!isPausedRef.current) {
+                                setStatus({ type: 'IDLE', message: `${personName} already scanned recently.` });
+                            }
                         } else {
-                            // It's a valid scan, proceed to mark attendance.
                             let personName = '';
                             let punchType: 'in' | 'out' = 'in';
 
@@ -151,33 +146,30 @@ export default function UnifiedAttendanceKioskPage() {
                             }
                             
                             if (personName) {
-                                // A valid punch occurred, so update the timestamp for the cooldown.
                                 lastScanTimestampsRef.current[result.matchedPersonId] = now; 
                                 const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
                                 toast({ title: `${welcomeMessage}!`, description: `${personName} clocked ${punchType}.` });
                                 setStatus({ type: 'SUCCESS', message: `${personName} clocked ${punchType}.` });
 
-                                // Pause scanning for a few seconds to show success and prevent immediate rescan
-                                setIsPaused(true);
+                                // Pause scanning using the ref
+                                isPausedRef.current = true;
                                 setTimeout(() => {
-                                    setIsPaused(false);
+                                    isPausedRef.current = false;
                                     setStatus({ type: 'IDLE', message: 'Ready to scan. Please position your face in the frame.' });
                                 }, SUCCESS_PAUSE_MS);
 
                             } else {
-                                setStatus({ type: 'NO_MATCH', message: 'Match found but person details not available.' });
+                                if (!isPausedRef.current) setStatus({ type: 'NO_MATCH', message: 'Match found but person details not available.' });
                             }
                         }
                     } else {
-                        setStatus({ type: 'IDLE', message: 'No match found. Please position your face clearly.' });
+                        if (!isPausedRef.current) setStatus({ type: 'IDLE', message: 'No match found. Please position your face clearly.' });
                     }
                 } catch (e) { 
                     console.error('AI Recognition Error:', e); 
-                    setStatus({ type: 'IDLE', message: 'Scan error. Retrying...' }); 
+                    if (!isPausedRef.current) setStatus({ type: 'IDLE', message: 'Scan error. Retrying...' }); 
                 } finally {
-                    if (!isPaused) {
-                      isScanningRef.current = false;
-                    }
+                    isScanningRef.current = false;
                 }
             }, SCAN_INTERVAL_MS);
         };
@@ -186,9 +178,8 @@ export default function UnifiedAttendanceKioskPage() {
 
         return () => { 
             if (scanIntervalId) clearInterval(scanIntervalId); 
-            // Do not stop the camera stream here to prevent flicker on re-renders.
         };
-    }, [studentsInitialized, staffInitialized, students, staff, studentAttendanceStore, staffAttendanceStore, toast, isPaused]);
+    }, [studentsInitialized, staffInitialized, students, staff, studentAttendanceStore, staffAttendanceStore, toast, getPersonName]);
 
     // Effect to clean up the camera stream ONLY when the component unmounts
     useEffect(() => {
