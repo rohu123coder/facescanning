@@ -19,6 +19,12 @@ const playfairDisplay = Playfair_Display({
 export const metadata: Metadata = {
   title: 'Karma Manager',
   description: 'An intelligent staff management and salary automation platform.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Karma Manager',
+  },
 };
 
 export default function RootLayout({
