@@ -1,16 +1,17 @@
 
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmployeeAuthStore } from '@/hooks/use-employee-auth-store.tsx';
 import { useTaskStore } from '@/hooks/use-task-store.tsx';
 import { useLeaveStore } from '@/hooks/use-leave-store.tsx';
 import { useAttendanceStore } from '@/hooks/use-attendance-store.tsx';
 import { useSalarySlipsStore } from '@/hooks/use-salary-slips-store.tsx';
-import { CheckSquare, FileText, HandCoins, Fingerprint, CalendarCheck2, Briefcase } from 'lucide-react';
+import { CheckSquare, FileText, HandCoins, Fingerprint, CalendarCheck2, Briefcase, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { format, parseISO, isWithinInterval, startOfDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import React from 'react';
 
 export default function EmployeeDashboardPage() {
     const { employee } = useEmployeeAuthStore();
@@ -57,34 +58,26 @@ export default function EmployeeDashboardPage() {
         {
             title: 'My Attendance',
             value: attendanceStatus,
-            icon: <Fingerprint className="text-muted-foreground" />,
-            description: onLeaveToday ? 'Enjoy your day off!' : 'Mark your presence',
+            icon: <Fingerprint />,
             href: '/dashboards/employee/attendance',
-            cta: 'Mark Attendance'
         },
         {
             title: 'Pending Tasks',
             value: `${pendingTasksCount} Task(s)`,
-            icon: <CheckSquare className="text-muted-foreground" />,
-            description: 'Stay on top of your work',
+            icon: <CheckSquare />,
             href: '/dashboards/employee/tasks',
-            cta: 'View My Tasks'
         },
         {
             title: 'Leave Balances',
             value: `${employee.annualCasualLeaves} Casual | ${employee.annualSickLeaves} Sick`,
-            icon: <CalendarCheck2 className="text-muted-foreground" />,
-            description: 'Plan your time off',
+            icon: <CalendarCheck2 />,
             href: '/dashboards/employee/leaves',
-            cta: 'Apply for Leave'
         },
         {
             title: 'My Payslips',
             value: latestSlip ? `Latest: ${latestSlip.month}` : 'No slips generated',
-            icon: <HandCoins className="text-muted-foreground" />,
-            description: 'View your salary details',
+            icon: <HandCoins />,
             href: '/dashboards/employee/payslips',
-            cta: 'View Payslips'
         },
     ];
 
@@ -95,22 +88,19 @@ export default function EmployeeDashboardPage() {
                 <p className="text-muted-foreground">Here's your personal overview for today.</p>
             </div>
             
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                {stats.map(stat => (
-                    <Card key={stat.title} className="flex flex-col">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                            {stat.icon}
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                            <div className="text-2xl font-bold">{stat.value}</div>
-                            <p className="text-xs text-muted-foreground">{stat.description}</p>
-                        </CardContent>
-                        <CardFooter>
-                           <Button asChild className="w-full">
-                                <Link href={stat.href}>{stat.cta}</Link>
-                            </Button>
-                        </CardFooter>
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+                 {stats.map(stat => (
+                    <Card key={stat.title} className="hover:bg-muted/50 transition-colors">
+                        <Link href={stat.href} className="flex flex-row items-center p-4 gap-4">
+                            <div className="p-3 bg-primary/10 rounded-lg text-primary">
+                                {React.cloneElement(stat.icon, { className: 'h-6 w-6' })}
+                            </div>
+                            <div className="flex-grow">
+                                <p className="font-semibold">{stat.title}</p>
+                                <p className="text-sm text-muted-foreground truncate" title={stat.value}>{stat.value}</p>
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        </Link>
                     </Card>
                 ))}
             </div>
