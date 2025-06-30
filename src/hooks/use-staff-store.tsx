@@ -52,8 +52,11 @@ export function StaffProvider({ children }: { children: ReactNode }) {
 
   const addStaff = useCallback((newStaffData: Omit<Staff, 'id'>) => {
     setStaff((prevStaff) => {
-        const newIdNumber = prevStaff.length > 0 ? Math.max(0, ...prevStaff.map(s => parseInt(s.id.split('-')[1], 10))) + 1 : 1;
-        const newId = `S-${String(newIdNumber).padStart(3, '0')}`;
+        // Use a purely numeric ID, starting from a high number to avoid collisions with student roll numbers.
+        const numericStaffIds = prevStaff.map(s => parseInt(s.id)).filter(id => !isNaN(id));
+        const highestId = numericStaffIds.length > 0 ? Math.max(...numericStaffIds) : 5000;
+        const newId = String(highestId + 1);
+
         const staffToAdd: Staff = { ...newStaffData, id: newId };
         return [...prevStaff, staffToAdd];
     });

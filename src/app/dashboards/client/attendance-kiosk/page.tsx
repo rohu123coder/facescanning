@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, UserCheck, UserX, ShieldAlert, CameraOff, Fingerprint, Delete, CheckCircle } from 'lucide-react';
+import { Loader2, UserCheck, UserX, ShieldAlert, Fingerprint, Delete, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,8 +26,8 @@ const VERIFICATION_TIMEOUT_MS = 10000; // 10 seconds to verify
 const RESULT_DISPLAY_MS = 4000; // 4 seconds to show success/error message
 
 export default function UnifiedAttendanceKioskPage() {
-    const { students, isInitialized: studentsInitialized } = useStudentStore();
-    const { staff, isInitialized: staffInitialized } = useStaffStore();
+    const { students } = useStudentStore();
+    const { staff } = useStaffStore();
     const studentAttendanceStore = useStudentAttendanceStore();
     const staffAttendanceStore = useAttendanceStore();
     const { toast } = useToast();
@@ -46,15 +46,14 @@ export default function UnifiedAttendanceKioskPage() {
     const isVerifyingRef = useRef(false);
 
     const getPersonName = useCallback((personId: string) => {
-        const student = students.find(p => p.id === personId);
-        if (student) return student.name;
+        // Prioritize staff ID match
         const staffMember = staff.find(p => p.id === personId);
         if (staffMember) return staffMember.name;
         
-        // Fallback for roll number or partial ID match during entry
-        const genericStudent = students.find(p => p.rollNumber === personId);
-        if (genericStudent) return genericStudent.name;
-
+        // Then student ID match
+        const student = students.find(p => p.id === personId);
+        if (student) return student.name;
+        
         return 'Unknown';
     }, [students, staff]);
 
@@ -147,6 +146,7 @@ export default function UnifiedAttendanceKioskPage() {
         const capturedPhotoDataUri = canvas.toDataURL('image/jpeg');
         
         try {
+            // AI now only needs to verify against one person's photo
             const personListForRecognition = [{
                 id: person.id,
                 name: person.name,
@@ -187,13 +187,17 @@ export default function UnifiedAttendanceKioskPage() {
     const handleSubmitId = useCallback(() => {
         if (!enteredId) return;
 
-        const allPersons: Person[] = [
-            ...staff.map(s => ({ ...s, personType: 'Staff' as const })),
-            ...students.map(s => ({ ...s, personType: 'Student' as const }))
-        ];
+        const foundStaff = staff.find(p => p.id === enteredId);
+        const foundStudent = students.find(p => p.rollNumber === enteredId);
+        
+        if (foundStaff && foundStudent) {
+            setStep('ERROR');
+            setMessage('Duplicate ID detected. Please contact administrator.');
+            setTimeout(resetKiosk, RESULT_DISPLAY_MS);
+            return;
+        }
 
-        // Match by Staff ID or Student Roll Number
-        const person = allPersons.find(p => p.id.toLowerCase() === enteredId.toLowerCase() || (p.personType === 'Student' && (p as Student).rollNumber.toLowerCase() === enteredId.toLowerCase()));
+        const person: Person | null = foundStaff ? { ...foundStaff, personType: 'Staff' } : (foundStudent ? { ...foundStudent, personType: 'Student'} : null);
 
         if (person) {
             const today = format(new Date(), 'yyyy-MM-dd');
@@ -311,6 +315,3 @@ export default function UnifiedAttendanceKioskPage() {
         </div>
     );
 }
-
-
-    
