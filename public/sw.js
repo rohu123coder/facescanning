@@ -1,45 +1,56 @@
+// A basic service worker for offline functionality
+
 const CACHE_NAME = 'karma-manager-cache-v1';
 const urlsToCache = [
   '/',
+  '/dashboards/client',
+  '/dashboards/employee',
+  '/dashboards/parent',
   '/login',
   '/employee-login',
   '/parent-login',
+  '/manifest.json'
 ];
 
-// Install a service worker
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
   // Perform install steps
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(function(cache) {
+      .then((cache) => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        // Add all core URLs to the cache. Ignore failures for now.
+        return cache.addAll(urlsToCache).catch(err => console.warn('Failed to cache some resources during install', err));
       })
   );
 });
 
-// Cache and return requests
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
+  // We only want to cache GET requests.
+  if (event.request.method !== 'GET') {
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
-      .then(function(response) {
+      .then((response) => {
         // Cache hit - return response
         if (response) {
           return response;
         }
+
         const fetchRequest = event.request.clone();
 
         return fetch(fetchRequest).then(
-          function(response) {
+          (response) => {
             // Check if we received a valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
+            if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
             }
-
+            
             const responseToCache = response.clone();
 
             caches.open(CACHE_NAME)
-              .then(function(cache) {
+              .then((cache) => {
                 cache.put(event.request, responseToCache);
               });
 
@@ -50,13 +61,12 @@ self.addEventListener('fetch', event => {
     );
 });
 
-// Update a service worker
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then(cacheNames => {
+    caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map(cacheName => {
+        cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
             return caches.delete(cacheName);
           }
