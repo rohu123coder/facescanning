@@ -85,8 +85,6 @@ export default function UnifiedAttendanceKioskPage() {
                 isScanningRef.current = true;
                 setStatus(s => s.type !== 'SCANNING' ? { type: 'SCANNING', message: 'Scanning...' } : s);
 
-                // --- SMART FILTERING LOGIC ---
-                // Get a fresh log for today to check who has already clocked out.
                 const today = format(new Date(), 'yyyy-MM-dd');
                 const currentDayLog = [
                     ...studentAttendanceStore.attendance,
@@ -97,8 +95,6 @@ export default function UnifiedAttendanceKioskPage() {
                     currentDayLog.filter(r => r.inTime && r.outTime).map(r => r.personId)
                 );
                 
-                // Only send people to the AI who haven't completed their attendance for the day.
-                // This is the key optimization to reduce costs.
                 const personListForRecognition = [
                     ...students.filter(s => s.photoUrl && !clockedOutIds.has(s.id)).map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl, personType: 'Student' as const })),
                     ...staff.filter(s => s.photoUrl && !clockedOutIds.has(s.id)).map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl, personType: 'Staff' as const })),
@@ -109,7 +105,6 @@ export default function UnifiedAttendanceKioskPage() {
                      isScanningRef.current = false;
                      return;
                 }
-                // --- END OF SMART FILTERING ---
                 
                 const video = videoRef.current;
                 const canvas = canvasRef.current;
@@ -125,8 +120,14 @@ export default function UnifiedAttendanceKioskPage() {
                         const now = Date.now();
                         // Check if this person was scanned in the last 5 minutes to prevent spamming
                         if (now - (lastScanTimestampsRef.current[result.matchedPersonId] || 0) < PERSON_COOLDOWN_MS) {
-                            setStatus({ type: 'IDLE', message: `Recently scanned.` });
+                            const personName = getPersonName(result.matchedPersonId);
+                            setStatus({ type: 'SUCCESS', message: `Already punched successfully.` });
+                            toast({
+                                title: `Duplicate Scan`,
+                                description: `${personName}, you have already been scanned recently. Please wait before scanning again.`,
+                            });
                         } else {
+                            // It's a valid scan, proceed to mark attendance.
                             let personName = '';
                             let punchType: 'in' | 'out' = 'in';
 
@@ -145,7 +146,8 @@ export default function UnifiedAttendanceKioskPage() {
                             }
                             
                             if (personName) {
-                                lastScanTimestampsRef.current[result.matchedPersonId] = now; // Update cooldown timestamp
+                                // A valid punch occurred, so update the timestamp for the cooldown.
+                                lastScanTimestampsRef.current[result.matchedPersonId] = now; 
                                 const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
                                 toast({ title: `${welcomeMessage}!`, description: `${personName} clocked ${punchType}.` });
                                 setStatus({ type: 'SUCCESS', message: `${personName} clocked ${punchType}.` });
@@ -170,7 +172,6 @@ export default function UnifiedAttendanceKioskPage() {
         return () => { 
             if (scanIntervalId) clearInterval(scanIntervalId); 
             // Do not stop the camera stream here to prevent flicker on re-renders.
-            // It will be stopped when the component unmounts for real.
         };
     }, [studentsInitialized, staffInitialized, students, staff, studentAttendanceStore, staffAttendanceStore, toast]);
 
