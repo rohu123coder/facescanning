@@ -2,11 +2,9 @@
 'use server';
 /**
  * @fileOverview An AI flow for generating replies to customer reviews.
- *
- * This flow is temporarily modified to prevent a build issue with its dependencies.
- * The core AI logic will be restored once the build is stable.
  */
 
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 export const GenerateReviewReplyInputSchema = z.object({
@@ -21,17 +19,8 @@ export const GenerateReviewReplyOutputSchema = z.object({
 export type GenerateReviewReplyOutput = z.infer<typeof GenerateReviewReplyOutputSchema>;
 
 export async function generateReviewReply(input: GenerateReviewReplyInput): Promise<GenerateReviewReplyOutput> {
-  console.warn("AI feature 'generateReviewReply' is running in a disabled state to prevent a build error.");
-  // Return a placeholder response
-  if (input.rating >= 4) {
-    return { reply: "Thank you for the positive feedback! We're glad you had a great experience." };
-  }
-  return { reply: "Thank you for your feedback. We are sorry to hear about your experience and will look into the matter." };
+  return generateReviewReplyFlow(input);
 }
-
-// The original genkit flow is commented out below to resolve the build issue.
-/*
-import { ai } from '@/ai/genkit';
 
 const prompt = ai.definePrompt({
   name: 'generateReviewReplyPrompt',
@@ -63,4 +52,3 @@ const generateReviewReplyFlow = ai.defineFlow(
     return output!;
   }
 );
-*/

@@ -14,6 +14,7 @@ import { useStudentStore } from '@/hooks/use-student-store.tsx';
 import { useStudentAttendanceStore } from '@/hooks/use-student-attendance-store.tsx';
 import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { useAttendanceStore } from '@/hooks/use-attendance-store.tsx';
+import { recognizeFace } from '@/ai/flows/face-scan-attendance';
 
 import { type Student, type Staff, type Attendance } from '@/lib/data';
 
@@ -128,40 +129,64 @@ export default function UnifiedAttendanceKioskPage() {
              return;
         }
 
-        // We can still capture the photo for logging purposes, even if we don't send it to an AI
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        // In a real app, you might save the captured photo data URI along with the attendance record.
+        const capturedPhotoDataUri = canvas.toDataURL('image/jpeg');
 
         try {
-            // ---- AI CALL REMOVED FOR COST SAVING ----
-            // We now simulate an automatic success after photo capture.
-            
             let punchType: 'in' | 'out' = 'in';
-            if (person.personType === 'Student') {
-                const student = person as Student;
-                punchType = studentAttendanceStore.markAttendance(student);
-                // Fire notification for parent
-                window.dispatchEvent(new CustomEvent('student-attended', {
-                    detail: {
-                        studentId: student.id,
-                        studentName: student.name,
-                        punchType: punchType
-                    }
-                }));
-            } else if (person.personType === 'Staff') {
-                punchType = staffAttendanceStore.markAttendance(person as Staff);
+            let verificationSuccess = true;
+
+            // Perform AI check randomly (10% of the time)
+            if (Math.random() <= 0.1) {
+                setMessage(`Performing security check for ${person.name}...`);
+                const aiResult = await recognizeFace({
+                    capturedPhotoDataUri: capturedPhotoDataUri,
+                    personList: [{
+                        id: person.id,
+                        name: person.name,
+                        photoUrl: person.photoUrl,
+                        personType: person.personType
+                    }]
+                });
+
+                if (aiResult.matchedPersonId !== person.id) {
+                    verificationSuccess = false;
+                    setStep('ERROR');
+                    setMessage(`Verification Failed for ${person.name}. Face does not match ID.`);
+                    toast({ variant: 'destructive', title: 'Security Alert', description: `Face mismatch detected for ID ${person.id}.` });
+                } else {
+                     setMessage(`Security check passed for ${person.name}.`);
+                     // Brief pause to show the message
+                     await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             }
-            const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
-            setStep('SUCCESS');
-            setMessage(`${welcomeMessage}, ${person.name}! You have clocked ${punchType}.`);
-            toast({ title: 'Success', description: `${person.name} clocked ${punchType}.` });
+
+            if (verificationSuccess) {
+                if (person.personType === 'Student') {
+                    const student = person as Student;
+                    punchType = studentAttendanceStore.markAttendance(student);
+                    window.dispatchEvent(new CustomEvent('student-attended', {
+                        detail: {
+                            studentId: student.id,
+                            studentName: student.name,
+                            punchType: punchType
+                        }
+                    }));
+                } else if (person.personType === 'Staff') {
+                    punchType = staffAttendanceStore.markAttendance(person as Staff);
+                }
+                const welcomeMessage = punchType === 'in' ? 'Welcome' : 'Goodbye';
+                setStep('SUCCESS');
+                setMessage(`${welcomeMessage}, ${person.name}! You have clocked ${punchType}.`);
+                toast({ title: 'Success', description: `${person.name} clocked ${punchType}.` });
+            }
 
         } catch (e) {
             console.error('Error marking attendance:', e);
             setStep('ERROR');
-            setMessage('An error occurred while saving attendance.');
+            setMessage('An error occurred while marking attendance.');
         } finally {
             // Reset the kiosk for the next person
             setTimeout(resetKiosk, RESULT_DISPLAY_MS);
@@ -301,5 +326,3 @@ export default function UnifiedAttendanceKioskPage() {
         </div>
     );
 }
-
-    
