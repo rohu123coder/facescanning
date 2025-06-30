@@ -161,7 +161,16 @@ export default function UnifiedAttendanceKioskPage() {
             if (result.matchedPersonId) {
                  let punchType: 'in' | 'out' = 'in';
                  if (result.personType === 'Student') {
-                    punchType = studentAttendanceStore.markAttendance(person as Student);
+                    const student = person as Student;
+                    punchType = studentAttendanceStore.markAttendance(student);
+                     // Fire notification for parent
+                    window.dispatchEvent(new CustomEvent('student-attended', {
+                        detail: {
+                            studentId: student.id,
+                            studentName: student.name,
+                            punchType: punchType
+                        }
+                    }));
                  } else if (result.personType === 'Staff') {
                     punchType = staffAttendanceStore.markAttendance(person as Staff);
                  }

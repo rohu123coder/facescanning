@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Gem, Briefcase, User } from 'lucide-react';
+import { ArrowRight, Gem, Briefcase, User, Shield } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const roles = [
@@ -18,6 +18,12 @@ const roles = [
     description: 'Mark attendance, view your tasks, and check your salary slips on the go.',
     href: '/employee-login',
     icon: <User className="h-8 w-8 text-primary" />,
+  },
+  {
+    name: 'Parent Login',
+    description: 'Check your child\'s attendance and get instant notifications on their arrival.',
+    href: '/parent-login',
+    icon: <Shield className="h-8 w-8 text-primary" />,
   },
   {
     name: 'Super Admin',
@@ -45,7 +51,7 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-7xl">
         {roles.map((role) => (
           <Card key={role.name} className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-in-out group bg-card flex flex-col">
             <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">

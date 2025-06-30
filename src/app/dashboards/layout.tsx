@@ -250,11 +250,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  // Employee dashboard has its own self-contained layout.
-  // We return the children directly, and Next.js will use the layout defined in /dashboards/employee/layout.tsx.
-  if (pathname && pathname.startsWith('/dashboards/employee')) {
+  // Employee and Parent dashboards have their own self-contained layout.
+  // We return the children directly, and Next.js will use the layout defined in their respective directories.
+  if (pathname && (pathname.startsWith('/dashboards/employee') || pathname.startsWith('/dashboards/parent'))) {
     return <>{children}</>;
   }
+
 
   // All other dashboards (Client) use this layout
   return (
