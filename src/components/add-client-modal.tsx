@@ -71,6 +71,9 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded }: AddClien
           logoUrl: '',
           organizationDetails: '',
           isGbpConnected: false,
+          officeLatitude: null,
+          officeLongitude: null,
+          gpsRadius: 50,
       });
       toast({
         title: 'Client Added & Credentials Generated',

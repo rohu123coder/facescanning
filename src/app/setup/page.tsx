@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -14,14 +15,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Mountain, Upload } from 'lucide-react';
+import { Loader2, Mountain, Upload, LocateFixed } from 'lucide-react';
 import Image from 'next/image';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 
 const setupFormSchema = z.object({
   organizationName: z.string().min(2, 'Organization name is required.'),
   organizationDetails: z.string().min(10, 'Please provide a brief description of your organization.'),
   logoUrl: z.string().min(1, 'A logo is required.'),
+  officeLatitude: z.number().nullable(),
+  officeLongitude: z.number().nullable(),
+  gpsRadius: z.coerce.number().min(10, 'Radius must be at least 10 meters.'),
 });
 
 export default function SetupPage() {
@@ -38,6 +43,9 @@ export default function SetupPage() {
       organizationName: '',
       organizationDetails: '',
       logoUrl: '',
+      officeLatitude: null,
+      officeLongitude: null,
+      gpsRadius: 50,
     },
   });
   
@@ -53,7 +61,10 @@ export default function SetupPage() {
         form.reset({
             organizationName: currentClient.organizationName,
             organizationDetails: currentClient.organizationDetails,
-            logoUrl: currentClient.logoUrl
+            logoUrl: currentClient.logoUrl,
+            officeLatitude: currentClient.officeLatitude,
+            officeLongitude: currentClient.officeLongitude,
+            gpsRadius: currentClient.gpsRadius
         });
       }
     }
@@ -105,6 +116,25 @@ export default function SetupPage() {
         }
     }
   };
+
+  const handleSetLocation = () => {
+    setIsLoading(true);
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+            form.setValue('officeLatitude', position.coords.latitude);
+            form.setValue('officeLongitude', position.coords.longitude);
+            toast({ title: 'Location Set!', description: 'Office GPS coordinates have been captured.' });
+            setIsLoading(false);
+        }, (error) => {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'GPS Error', description: 'Could not get location. Please enable permissions.' });
+            setIsLoading(false);
+        });
+    } else {
+        toast({ variant: 'destructive', title: 'GPS Not Supported', description: 'Your browser does not support geolocation.' });
+        setIsLoading(false);
+    }
+  }
 
 
   const onSubmit = async (values: z.infer<typeof setupFormSchema>) => {
@@ -197,7 +227,7 @@ export default function SetupPage() {
                     <div className="flex items-center gap-4">
                         <div className="w-24 h-24 rounded-md border bg-muted flex items-center justify-center">
                             {logoValue ? (
-                                <Image src={logoValue} alt="Logo Preview" width={96} height={96} className="object-contain rounded-md" />
+                                <Image src={logoValue} alt="Logo Preview" width={96} height={96} className="object-contain rounded-md" data-ai-hint="logo"/>
                             ) : (
                                 <span className="text-xs text-muted-foreground text-center">Logo Preview</span>
                             )}
@@ -211,8 +241,55 @@ export default function SetupPage() {
                   </FormItem>
                 )}
               />
+              <Separator />
+               <div>
+                  <h3 className="text-lg font-medium">GPS Attendance Settings</h3>
+                  <p className="text-sm text-muted-foreground">Set your primary office location for GPS-based attendance.</p>
+               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="button" variant="outline" onClick={handleSetLocation} disabled={isLoading} className="w-full">
+                    <LocateFixed className="mr-2"/>
+                    {isLoading ? 'Getting Location...' : 'Get & Set Current Office Location'}
+                </Button>
+
+                <div className="grid grid-cols-2 gap-4">
+                     <FormField
+                        control={form.control}
+                        name="officeLatitude"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Office Latitude</FormLabel>
+                            <FormControl><Input disabled {...field} value={field.value ?? ''} /></FormControl>
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="officeLongitude"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Office Longitude</FormLabel>
+                            <FormControl><Input disabled {...field} value={field.value ?? ''} /></FormControl>
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                 <FormField
+                    control={form.control}
+                    name="gpsRadius"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Allowed Radius (in meters)</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+
+
+              <Button type="submit" className="w-full !mt-8" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Complete Setup & Go to Dashboard'}
               </Button>
             </form>

@@ -3,17 +3,35 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Fingerprint, Loader2, MapPin, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
+import { Fingerprint, Loader2, MapPin, CheckCircle, AlertTriangle, Clock, Ban } from 'lucide-react';
 import { useEmployeeAuthStore } from '@/hooks/use-employee-auth-store.tsx';
 import { useAttendanceStore } from '@/hooks/use-attendance-store.tsx';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useClientStore } from '@/hooks/use-client-store.tsx';
 
 type AttendanceStep = 'IDLE' | 'GETTING_GPS' | 'READY' | 'SAVING';
 
+// Haversine formula to calculate distance between two lat/lon points in meters
+const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI/180; // φ, λ in radians
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // in metres
+}
+
 export default function MyAttendancePage() {
     const { employee, isAuthInitialized } = useEmployeeAuthStore();
+    const { currentClient, isInitialized: isClientInitialized } = useClientStore();
     const { attendance, markAttendance, isInitialized } = useAttendanceStore();
     const { toast } = useToast();
 
@@ -40,11 +58,15 @@ export default function MyAttendancePage() {
     }, [attendance, employee, isInitialized]);
 
     const handleMarkAttendance = useCallback(() => {
-        if (!employee) return;
+        if (!employee || !currentClient) return;
         
-        // Prevent marking if already clocked out for the day
         if (todaysRecord?.outTime) {
             toast({ variant: 'destructive', title: 'Already Clocked Out', description: 'You have already completed your attendance for today.'});
+            return;
+        }
+
+        if (!currentClient.officeLatitude || !currentClient.officeLongitude) {
+            toast({ variant: 'destructive', title: 'GPS Not Configured', description: 'Your employer has not set the office location. Please contact your admin.' });
             return;
         }
 
@@ -53,19 +75,29 @@ export default function MyAttendancePage() {
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                // In a real app, you would validate position.coords against office coordinates.
-                // For this prototype, we'll assume any successful GPS fix is valid.
-                console.log('GPS Coords:', position.coords);
-                toast({ title: 'GPS Location Acquired', description: 'Ready to mark attendance.' });
-                setStep('READY');
-                setStatusMessage('GPS Verified. Please confirm with your fingerprint.');
+                const distance = getDistance(
+                    position.coords.latitude, 
+                    position.coords.longitude,
+                    currentClient.officeLatitude!,
+                    currentClient.officeLongitude!
+                );
+
+                if (distance <= currentClient.gpsRadius) {
+                    toast({ title: 'GPS Location Verified', description: 'You are at the office. Ready to mark attendance.' });
+                    setStep('READY');
+                    setStatusMessage('GPS Verified. Please confirm with your fingerprint.');
+                } else {
+                     toast({ variant: 'destructive', title: 'Location Mismatch', description: `You are approximately ${Math.round(distance)} meters away from the office.` });
+                     setStep('IDLE');
+                     setStatusMessage('Verification failed. You are not at the office location.');
+                }
             },
             (error) => {
                 console.error("GPS Error:", error);
                 toast({
                     variant: 'destructive',
                     title: 'GPS Error',
-                    description: 'Could not get your location. Please ensure location services are enabled and you have a clear view of the sky.',
+                    description: 'Could not get your location. Please ensure location services are enabled.',
                     duration: 7000
                 });
                 setStep('IDLE');
@@ -73,7 +105,7 @@ export default function MyAttendancePage() {
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
-    }, [employee, toast, todaysRecord]);
+    }, [employee, toast, todaysRecord, currentClient]);
 
     const handleFingerprintConfirm = useCallback(() => {
         if (!employee) return;
@@ -95,11 +127,12 @@ export default function MyAttendancePage() {
     }, [employee, markAttendance, toast]);
 
 
-    if (!isAuthInitialized || !isInitialized) {
+    if (!isAuthInitialized || !isInitialized || !isClientInitialized) {
         return <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin" /></div>
     }
     
     const punchType = (todaysRecord?.inTime && !todaysRecord?.outTime) ? 'out' : 'in';
+    const isGpsConfigured = currentClient && currentClient.officeLatitude && currentClient.officeLongitude;
 
     return (
         <div className="space-y-8">
@@ -114,7 +147,7 @@ export default function MyAttendancePage() {
                     <CardDescription>Live time: {currentTime}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6 flex flex-col items-center">
-                   {step === 'IDLE' && <Button size="lg" className="h-24 w-24 rounded-full" onClick={handleMarkAttendance} disabled={!!todaysRecord?.outTime}><Fingerprint className="h-12 w-12"/></Button>}
+                   {step === 'IDLE' && <Button size="lg" className="h-24 w-24 rounded-full" onClick={handleMarkAttendance} disabled={!!todaysRecord?.outTime || !isGpsConfigured}><Fingerprint className="h-12 w-12"/></Button>}
                    {step === 'GETTING_GPS' && <Loader2 className="h-24 w-24 text-primary animate-spin" />}
                    {step === 'READY' && <Button size="lg" className="h-24 w-24 rounded-full bg-green-500 hover:bg-green-600" onClick={handleFingerprintConfirm}><CheckCircle className="h-12 w-12"/></Button>}
                    {step === 'SAVING' && <Loader2 className="h-24 w-24 text-primary animate-spin" />}
@@ -140,6 +173,16 @@ export default function MyAttendancePage() {
                              </div>
                         </div>
 
+                         {!isGpsConfigured && (
+                           <Alert variant="destructive">
+                                <Ban className="h-4 w-4"/>
+                                <AlertTitle>GPS Location Not Set</AlertTitle>
+                                <AlertDescription>
+                                Your employer has not configured the office GPS location. Attendance cannot be marked.
+                                </AlertDescription>
+                            </Alert>
+                         )}
+
                          {todaysRecord?.outTime && (
                            <Alert variant="default" className="bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800">
                                 <CheckCircle className="h-4 w-4 !text-green-600"/>
@@ -150,7 +193,7 @@ export default function MyAttendancePage() {
                             </Alert>
                          )}
 
-                         {step === 'IDLE' && !todaysRecord?.outTime && (
+                         {step === 'IDLE' && !todaysRecord?.outTime && isGpsConfigured && (
                             <Alert variant="default">
                                 <Clock className="h-4 w-4"/>
                                 <AlertTitle>Ready to Clock {punchType.charAt(0).toUpperCase() + punchType.slice(1)}</AlertTitle>
