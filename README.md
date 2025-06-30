@@ -35,4 +35,31 @@ This file serves as a marker for a stable, working version of the application co
 
 ---
 
+## Deployment to App Stores
+
+This application has been configured as a Progressive Web App (PWA), which allows it to be installed on devices and published to app stores.
+
+### Google Play Store (Android)
+
+The process for publishing to the Google Play Store is straightforward.
+
+1.  **Get a Google Play Developer Account:** You will need to register for a developer account on the [Google Play Console](https://play.google.com/console/u/0/signup). This requires a one-time registration fee.
+2.  **Use PWABuilder:** Go to [PWABuilder.com](https://www.pwabuilder.com/), a free tool from Microsoft.
+    *   Enter the URL of your deployed web application.
+    *   Follow the steps to package your PWA. PWABuilder will generate an Android App Bundle (`.aab` file) using a technology called a **Trusted Web Activity (TWA)**. This makes your web app feel like a native app.
+3.  **Upload to Play Console:** Upload the generated `.aab` file to your Google Play Console. You will also need to provide app details like a description, screenshots, an icon, and a privacy policy.
+
+### Apple App Store (iOS)
+
+Publishing to the Apple App Store is more complex due to Apple's stricter policies.
+
+1.  **Join the Apple Developer Program:** You must enroll in the [Apple Developer Program](https://developer.apple.com/programs/enroll/), which has an annual fee.
+2.  **Use Xcode on a Mac:** You will need a Mac computer with Xcode (Apple's free IDE) installed.
+3.  **Create a WebView Wrapper:** The standard approach is to create a simple native iOS app that contains a `WKWebView` component. This component will load your web application's URL.
+4.  **Submit for Review:** Build your app in Xcode and upload it to App Store Connect. From there, you can submit it for review. Apple may require your app to have some native functionality beyond just wrapping a website to be approved.
+
+**Recommendation:** Start with the Google Play Store as it's a much simpler and more PWA-friendly process.
+
+---
+
 **Note for the future:** For professional projects, it is highly recommended to use a version control system like **Git** to manage code changes and create robust backups.
