@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TaskListView } from '@/components/task-list-view';
 import { TaskCalendarView } from '@/components/task-calendar-view';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { isPast } from 'date-fns';
+import { isPast, parseISO } from 'date-fns';
 
 const statusColumns: { status: TaskStatus; title: string; icon: React.ReactNode }[] = [
   { status: 'To Do', title: 'To Do', icon: <ListTodo /> },
@@ -72,7 +72,7 @@ export default function TasksPage() {
   const totalTasks = tasks.length;
   const pendingTasks = tasks.filter(t => t.status !== 'Done').length;
   const completedTasks = totalTasks - pendingTasks;
-  const overdueTasks = tasks.filter(t => t.status !== 'Done' && isPast(new Date(t.dueDate))).length;
+  const overdueTasks = tasks.filter(t => t.status !== 'Done' && isPast(parseISO(t.dueDate))).length;
 
   const stats = [
       { title: 'Total Tasks', value: totalTasks, icon: <ListTodo className="text-muted-foreground" /> },

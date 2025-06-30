@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, LogOut, Mountain, User, CheckSquare, FileText, HandCoins, Fingerprint } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
-import React, { useEffect, type ReactNode } from 'react';
+import React, { useEffect, type ReactNode, useRef } from 'react';
 import { useEmployeeAuthStore, EmployeeAuthStoreProvider } from '@/hooks/use-employee-auth-store.tsx';
 import { ClientProvider, useClientStore } from '@/hooks/use-client-store.tsx';
 import { StaffProvider } from '@/hooks/use-staff-store.tsx';
@@ -29,6 +29,7 @@ import { TaskProvider } from '@/hooks/use-task-store.tsx';
 import { SalaryRulesProvider } from '@/hooks/use-salary-rules-store.tsx';
 import { SalarySlipsProvider } from '@/hooks/use-salary-slips-store.tsx';
 import { HolidayProvider } from '@/hooks/use-holiday-store.tsx';
+import { useToast } from '@/hooks/use-toast';
 
 const navItems = [
     { href: '/dashboards/employee', label: 'Dashboard', icon: <LayoutDashboard /> },
@@ -67,12 +68,61 @@ function EmployeeDashboard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, isAuthInitialized, logout, employee } = useEmployeeAuthStore();
   const { isInitialized: isClientInitialized } = useClientStore();
+  const { toast } = useToast();
+  const audioRef = useRef<HTMLAudioElement>(null);
+
 
   useEffect(() => {
     if (isAuthInitialized && !isAuthenticated) {
       router.push('/employee-login');
     }
   }, [isAuthenticated, isAuthInitialized, router]);
+  
+  useEffect(() => {
+    const playSound = () => audioRef.current?.play().catch(e => console.error("Audio playback failed", e));
+    
+    const handleNewTask = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        // Only notify if this employee is one of the assignees
+        if(employee && customEvent.detail.assigneeIds.includes(employee.id)) {
+            toast({
+                title: "New Task Assigned!",
+                description: `Task "${customEvent.detail.taskTitle}" has been assigned to you.`,
+            });
+            playSound();
+        }
+    };
+    
+    const handleNewComment = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        
+        // Prevent self-notification
+        if(employee && customEvent.detail.authorId === employee.id) return;
+
+        // Check if I am an assignee on the task.
+        const isRecipient = employee && customEvent.detail.recipientIds.includes(employee.id);
+
+        // Check if the comment is from the client-admin and I'm assigned
+        const isClientCommentOnMyTask = employee && customEvent.detail.authorId === 'client-admin' && customEvent.detail.recipientIds.includes(employee.id);
+        
+        if (isRecipient || isClientCommentOnMyTask) {
+            toast({
+                title: `New Comment on "${customEvent.detail.taskTitle}"`,
+                description: `${customEvent.detail.authorName} left a comment.`,
+            });
+            playSound();
+        }
+    };
+    
+    window.addEventListener('new-task-assigned', handleNewTask);
+    window.addEventListener('new-task-comment', handleNewComment);
+
+    return () => {
+        window.removeEventListener('new-task-assigned', handleNewTask);
+        window.removeEventListener('new-task-comment', handleNewComment);
+    };
+  }, [employee, toast]);
+
 
   if (!isAuthInitialized || !isAuthenticated || !employee || !isClientInitialized) {
     return (
@@ -128,6 +178,7 @@ function EmployeeDashboard({ children }: { children: React.ReactNode }) {
             <AllAppProviders>
               {children}
             </AllAppProviders>
+            <audio ref={audioRef} src="https://actions.google.com/sounds/v1/alarms/notification_sound.ogg" preload="auto" />
         </main>
       </SidebarInset>
     </SidebarProvider>

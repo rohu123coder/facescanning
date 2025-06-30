@@ -56,6 +56,15 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         attachments: newTaskData.attachments || [],
         comments: [],
       };
+       // Dispatch notification for new task assignment
+      if (newTask.assignedTo && newTask.assignedTo.length > 0) {
+        window.dispatchEvent(new CustomEvent('new-task-assigned', {
+            detail: {
+                taskTitle: newTask.title,
+                assigneeIds: newTask.assignedTo,
+            }
+        }));
+      }
       return [...prevTasks, newTask];
     });
   }, []);
@@ -84,6 +93,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                     timestamp: new Date().toISOString(),
                 };
                 const updatedComments = [...(task.comments || []), newComment];
+                
+                window.dispatchEvent(new CustomEvent('new-task-comment', { 
+                    detail: { 
+                        taskId: taskId,
+                        taskTitle: task.title,
+                        authorId: newCommentData.authorId,
+                        authorName: newCommentData.authorName,
+                        recipientIds: [...task.assignedTo, 'client-admin']
+                    } 
+                }));
+
                 return { ...task, comments: updatedComments };
             }
             return task;

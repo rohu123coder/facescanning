@@ -94,7 +94,7 @@ function MainDashboardLayout({ children }: { children: React.ReactNode }) {
   
   useEffect(() => {
     const playSound = () => audioRef.current?.play().catch(e => console.error("Audio playback failed", e));
-    const handleNewTask = () => playSound();
+    
     const handleNewLeaveRequest = (event: Event) => {
         const customEvent = event as CustomEvent;
         toast({
@@ -125,12 +125,25 @@ function MainDashboardLayout({ children }: { children: React.ReactNode }) {
         checkHolidays();
     }
     
-    window.addEventListener('play-task-notification', handleNewTask);
+    const handleNewComment = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        // Only notify the client if the author is not the client themselves
+        if (customEvent.detail.authorId !== 'client-admin') {
+            toast({
+                title: `New Comment on "${customEvent.detail.taskTitle}"`,
+                description: `${customEvent.detail.authorName} left a comment.`,
+            });
+            playSound();
+        }
+    };
+
     window.addEventListener('new-leave-request', handleNewLeaveRequest);
+    window.addEventListener('new-task-comment', handleNewComment);
+
 
     return () => {
-        window.removeEventListener('play-task-notification', handleNewTask);
         window.removeEventListener('new-leave-request', handleNewLeaveRequest);
+        window.removeEventListener('new-task-comment', handleNewComment);
     };
   }, [holidaysInitialized, holidays, toast]);
 
