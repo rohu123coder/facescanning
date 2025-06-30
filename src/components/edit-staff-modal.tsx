@@ -56,6 +56,21 @@ export function EditStaffModal({ isOpen, onOpenChange, staff }: EditStaffModalPr
 
   const form = useForm<z.infer<typeof staffFormSchema>>({
     resolver: zodResolver(staffFormSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      mobile: '',
+      password: '',
+      whatsapp: '',
+      address: '',
+      department: 'Engineering',
+      role: '',
+      salary: 0,
+      annualCasualLeaves: 0,
+      annualSickLeaves: 0,
+      photoUrl: '',
+      status: 'Active',
+    },
   });
   
   useEffect(() => {
