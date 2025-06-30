@@ -14,6 +14,10 @@ import { Separator } from './ui/separator';
 import { useClientStore } from '@/hooks/use-client-store.tsx';
 import { type SalarySlipData } from '@/lib/data';
 import Image from 'next/image';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { Download } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface PayslipModalProps {
   isOpen: boolean;
@@ -26,14 +30,43 @@ export function PayslipModal({ isOpen, onOpenChange, slipData }: PayslipModalPro
 
   if (!slipData || !currentClient) return null;
 
-  const handlePrint = () => {
-    window.print();
+  const handleDownloadPDF = () => {
+    const input = document.getElementById('payslip-content');
+    if (input) {
+        const originalTitle = document.title;
+        document.title = `Payslip_${slipData.staffName}_${slipData.month}_${slipData.year}`;
+        
+        const printHideElements = document.querySelectorAll('.print-hide');
+        printHideElements.forEach(el => el.classList.add('hidden-for-print'));
+        
+        html2canvas(input, { 
+            scale: 2, // Higher scale for better quality
+            useCORS: true 
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const ratio = canvasWidth / canvasHeight;
+            const width = pdfWidth; // Use full width
+            const height = width / ratio;
+            const pdfHeight = (height * pdfWidth) / width;
+
+
+            pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+            pdf.save(`Payslip_${slipData.staffName}_${slipData.month}_${slipData.year}.pdf`);
+
+            printHideElements.forEach(el => el.classList.remove('hidden-for-print'));
+            document.title = originalTitle;
+        });
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl">
-        <div id="payslip-content" className="p-8">
+        <div id="payslip-content" className="p-8 bg-background text-foreground">
             <DialogHeader className="print-hide">
                 <DialogTitle>Salary Slip</DialogTitle>
                 <DialogDescription>
@@ -121,7 +154,10 @@ export function PayslipModal({ isOpen, onOpenChange, slipData }: PayslipModalPro
 
         </div>
         <DialogFooter className="print-hide">
-            <Button variant="outline" onClick={handlePrint}>Print Payslip</Button>
+            <Button variant="outline" onClick={handleDownloadPDF}>
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+            </Button>
             <Button onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>

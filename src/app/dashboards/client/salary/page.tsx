@@ -17,6 +17,7 @@ import { PayslipModal } from '@/components/payslip-modal';
 import { type Staff, type SalarySlipData } from '@/lib/data';
 import { useSalarySlipsStore } from '@/hooks/use-salary-slips-store.tsx';
 import { useToast } from '@/hooks/use-toast';
+import { FileSpreadsheet } from 'lucide-react';
 
 export default function SalaryPage() {
   const { staff } = useStaffStore();
@@ -160,6 +161,41 @@ export default function SalaryPage() {
     setSelectedSlip(slip);
     setIsPayslipModalOpen(true);
   };
+  
+  const handleExportCSV = () => {
+    if (!generatedSlipsForPeriod) return;
+
+    const headers = [
+        "Staff ID", "Staff Name", "Role", "Month", "Year",
+        "Gross Salary", "Net Salary", "Working Days", "Paid Days", "LOP Days",
+        "Total Earnings", "Total Deductions"
+    ];
+
+    const rows = generatedSlipsForPeriod.map(slip => [
+        slip.staffId,
+        `"${slip.staffName}"`, // Encapsulate names in quotes
+        `"${slip.staffRole}"`,
+        slip.month,
+        slip.year,
+        slip.grossSalary.toFixed(2),
+        slip.netSalary.toFixed(2),
+        slip.workingDays,
+        slip.paidDays,
+        slip.lopDays,
+        slip.totalEarnings.toFixed(2),
+        slip.totalDeductions.toFixed(2)
+    ].join(','));
+
+    let csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + "\n" + rows.join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `salary_report_${months[parseInt(selectedMonth)].label}_${selectedYear}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <>
@@ -201,8 +237,15 @@ export default function SalaryPage() {
         {generatedSlipsForPeriod && (
           <Card>
             <CardHeader>
-                <CardTitle>Salary Report for {months[parseInt(selectedMonth)].label}, {selectedYear}</CardTitle>
-                <CardDescription>Below is the summary of generated salaries.</CardDescription>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>Salary Report for {months[parseInt(selectedMonth)].label}, {selectedYear}</CardTitle>
+                        <CardDescription>Below is the summary of generated salaries.</CardDescription>
+                    </div>
+                    <Button variant="outline" onClick={handleExportCSV} disabled={!generatedSlipsForPeriod || generatedSlipsForPeriod.length === 0}>
+                        <FileSpreadsheet className="mr-2 h-4 w-4" /> Export CSV
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent>
                 <Table>
