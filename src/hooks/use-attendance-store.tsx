@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { type Staff, type Attendance } from '@/lib/data';
+import { type Staff, type Attendance, initialAttendance } from '@/lib/data';
 import { useClientStore } from './use-client-store.tsx';
 import { format } from 'date-fns';
 
@@ -28,8 +28,11 @@ export function AttendanceProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedData = localStorage.getItem(storeKey);
-        // If no data, start with an empty array for a fresh start.
-        setAttendance(storedData ? JSON.parse(storedData) : []);
+        const data = storedData ? JSON.parse(storedData) : initialAttendance;
+        setAttendance(data);
+        if (!storedData) {
+          localStorage.setItem(storeKey, JSON.stringify(data));
+        }
       } catch (error) {
         console.error("Failed to load attendance from localStorage", error);
         setAttendance([]);

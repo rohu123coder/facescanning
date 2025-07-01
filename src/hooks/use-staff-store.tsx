@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { type Staff } from '@/lib/data';
+import { type Staff, initialStaff } from '@/lib/data';
 import { useClientStore } from './use-client-store.tsx';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `staffList_${clientId}` : null;
@@ -28,7 +28,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedStaff = localStorage.getItem(storeKey);
-        let staffData = storedStaff ? JSON.parse(storedStaff) : [];
+        let staffData = storedStaff ? JSON.parse(storedStaff) : initialStaff; // Use initialStaff as default
         
         // --- MIGRATION LOGIC START ---
         // One-time migration to convert old string IDs (e.g., "S-001") to numeric strings.
@@ -52,7 +52,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
             return staffMember;
         });
 
-        if (needsUpdate) {
+        if (needsUpdate || !storedStaff) { // Also save if it was the first time
             localStorage.setItem(storeKey, JSON.stringify(staffData));
         }
         // --- MIGRATION LOGIC END ---

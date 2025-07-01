@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { type LeaveRequest } from '@/lib/data';
+import { type LeaveRequest, initialLeaves } from '@/lib/data';
 import { useClientStore } from './use-client-store.tsx';
 import { useStaffStore } from './use-staff-store.tsx';
 import { differenceInDays, parseISO } from 'date-fns';
@@ -30,7 +30,11 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedData = localStorage.getItem(storeKey);
-        setRequests(storedData ? JSON.parse(storedData) : []);
+        const data = storedData ? JSON.parse(storedData) : initialLeaves;
+        setRequests(data);
+        if (!storedData) {
+          localStorage.setItem(storeKey, JSON.stringify(data));
+        }
       } catch (error) {
         console.error("Failed to load leave requests from localStorage", error);
         setRequests([]);

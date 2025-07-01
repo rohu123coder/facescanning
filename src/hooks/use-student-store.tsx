@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { type Student } from '@/lib/data';
+import { type Student, initialStudents } from '@/lib/data';
 import { useClientStore } from './use-client-store.tsx';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `studentList_${clientId}` : null;
@@ -28,7 +28,11 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedStudents = localStorage.getItem(storeKey);
-        setStudents(storedStudents ? JSON.parse(storedStudents) : []);
+        const data = storedStudents ? JSON.parse(storedStudents) : initialStudents;
+        setStudents(data);
+        if (!storedStudents) {
+          localStorage.setItem(storeKey, JSON.stringify(data));
+        }
       } catch (error) {
         console.error("Failed to load students from localStorage", error);
         setStudents([]);

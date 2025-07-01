@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { type Task, type Comment } from '@/lib/data';
+import { type Task, type Comment, initialTasks } from '@/lib/data';
 import { useClientStore } from './use-client-store.tsx';
 
 const getStoreKey = (clientId: string | undefined) => clientId ? `taskList_${clientId}` : null;
@@ -28,8 +28,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     if (storeKey) {
       try {
         const storedTasks = localStorage.getItem(storeKey);
-        // If no data, start with an empty array for a fresh start.
-        setTasks(storedTasks ? JSON.parse(storedTasks) : []);
+        const data = storedTasks ? JSON.parse(storedTasks) : initialTasks;
+        setTasks(data);
+        if (!storedTasks) {
+          localStorage.setItem(storeKey, JSON.stringify(data));
+        }
       } catch (error) {
         console.error("Failed to load tasks from localStorage", error);
         setTasks([]);
