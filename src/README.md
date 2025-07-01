@@ -80,10 +80,15 @@ This application has been configured as a Progressive Web App (PWA), which allow
 The process for publishing to the Google Play Store is straightforward.
 
 1.  **Get a Google Play Developer Account:** You will need to register for a developer account on the [Google Play Console](https://play.google.com/console/u/0/signup). This requires a one-time registration fee.
-2.  **Use PWABuilder:** Go to [PWABuilder.com](https://www.pwabuilder.com/), a free tool from Microsoft.
-    *   Enter the URL of your deployed web application.
-    *   Follow the steps to package your PWA. PWABuilder will generate an Android App Bundle (`.aab` file) using a technology called a **Trusted Web Activity (TWA)**. This makes your web app feel like a native app.
-3.  **Upload to Play Console:** Upload the generated `.aab` file to your Google Play Console. You will also need to provide app details like a description, screenshots, an icon, and a privacy policy.
+2.  **Use PWABuilder (Step-by-Step):**
+    *   **Go to PWABuilder:** Open your browser and navigate to [www.pwabuilder.com](https://www.pwabuilder.com/).
+    *   **Enter URL:** In the textbox on the homepage, enter the full URL of your deployed web application (e.g., `https://your-app-name.web.app`) and click **Start**.
+    *   **Package for Stores:** PWABuilder will analyze your PWA. Once it's done, click on **"Package for Stores"**.
+    *   **Select Android:** You will see different platform options. Click on the **Android** option.
+    *   **Download Package:** Click the **"Download"** button. This will download a `.zip` file containing everything needed to publish.
+3.  **Upload to Play Console:**
+    *   Unzip the downloaded file. Inside, you will find a file named **`app-release.aab`** (or similar). This is your Android App Bundle.
+    *   Log in to your Google Play Console, create a new app, and follow the steps to upload this `.aab` file. You will also need to provide app details like a description, screenshots, an icon, and a privacy policy.
 
 ### Apple App Store (iOS)
 
