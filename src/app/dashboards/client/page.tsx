@@ -1,16 +1,16 @@
-
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStaffStore } from '@/hooks/use-staff-store.tsx';
 import { useStudentStore } from '@/hooks/use-student-store.tsx';
 import { useTaskStore } from '@/hooks/use-task-store.tsx';
 import { useLeaveStore } from '@/hooks/use-leave-store.tsx';
 import { useHolidayStore } from '@/hooks/use-holiday-store.tsx';
-import { Users, GraduationCap, ListTodo, MailQuestion, Calendar, Mountain } from 'lucide-react';
+import { Users, GraduationCap, ListTodo, MailQuestion, Calendar, Mountain, Briefcase, ArrowRight } from 'lucide-react';
 import { format, isFuture, parseISO } from 'date-fns';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function ClientDashboard() {
   const { staff, isInitialized: staffInitialized } = useStaffStore();
@@ -23,7 +23,8 @@ export default function ClientDashboard() {
 
   const totalStaff = staff.length;
   const totalStudents = students.length;
-  const pendingTasks = tasks.filter(t => t.status !== 'Done').length;
+  const pendingTasks = tasks.filter(t => t.status !== 'Done');
+  const pendingTasksCount = pendingTasks.length;
   const pendingLeaves = requests.filter(r => r.status === 'Pending').length;
   
   const upcomingHolidays = holidays
@@ -34,7 +35,7 @@ export default function ClientDashboard() {
   const statCards = [
     { title: 'Total Staff', value: totalStaff, icon: <Users className="h-4 w-4 text-muted-foreground" />, href: '/dashboards/client/staff' },
     { title: 'Total Students', value: totalStudents, icon: <GraduationCap className="h-4 w-4 text-muted-foreground" />, href: '/dashboards/client/students' },
-    { title: 'Pending Tasks', value: pendingTasks, icon: <ListTodo className="h-4 w-4 text-muted-foreground" />, href: '/dashboards/client/tasks' },
+    { title: 'Pending Tasks', value: pendingTasksCount, icon: <ListTodo className="h-4 w-4 text-muted-foreground" />, href: '/dashboards/client/tasks' },
     { title: 'Leave Requests', value: pendingLeaves, icon: <MailQuestion className="h-4 w-4 text-muted-foreground" />, href: '/dashboards/client/leaves' },
   ];
 
@@ -63,8 +64,8 @@ export default function ClientDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{card.value}</div>
-              <Link href={card.href} className="text-xs text-muted-foreground hover:underline">
-                View Details &rarr;
+              <Link href={card.href} className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
+                View Details <ArrowRight className="h-4 w-4" />
               </Link>
             </CardContent>
           </Card>
@@ -98,11 +99,32 @@ export default function ClientDashboard() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Welcome!</CardTitle>
-            <CardDescription>This is your main control panel.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Briefcase /> Priority Tasks</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>Your application is ready. You can use the sidebar to navigate to different sections of the application.</p>
+             {pendingTasks.length > 0 ? (
+              <div className="space-y-3">
+                {pendingTasks
+                    .sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+                    .slice(0, 4)
+                    .map(task => (
+                        <Link href="/dashboards/client/tasks" key={task.id} className="block p-3 rounded-md hover:bg-muted transition-colors">
+                           <div className="flex justify-between items-start">
+                               <p className="font-semibold text-sm">{task.title}</p>
+                               <Badge variant={task.priority === 'High' || task.priority === 'Urgent' ? 'destructive' : 'secondary'}>{task.priority}</Badge>
+                           </div>
+                           <p className="text-xs text-muted-foreground">Due: {format(parseISO(task.dueDate), 'PP')}</p>
+                        </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center p-4">No pending tasks. Great job!</p>
+            )}
+             <Button variant="outline" className="mt-4 w-full" asChild>
+              <Link href="/dashboards/client/tasks">
+                View All Tasks
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
