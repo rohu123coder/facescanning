@@ -54,7 +54,7 @@ To connect this project to your GitHub repository, open the Terminal inside this
 
 3.  **Save your first version (commit):** This creates the first snapshot of your code.
     ```bash
-    git commit -m "feat: Configure PWA for Play Store submission"
+    git commit -m "docs: Finalize Play Store submission assets"
     ```
 
 4.  **Connect to your GitHub repository:** **IMPORTANT:** Replace `[YOUR_REPOSITORY_URL]` with the actual URL of the new repository you created on GitHub.
