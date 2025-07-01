@@ -82,7 +82,7 @@ The process for publishing to the Google Play Store is straightforward.
 1.  **Get a Google Play Developer Account:** You will need to register for a developer account on the [Google Play Console](https://play.google.com/console/u/0/signup). This requires a one-time registration fee.
 2.  **Use PWABuilder (Step-by-Step):**
     *   **Go to PWABuilder:** Open your browser and navigate to [www.pwabuilder.com](https://www.pwabuilder.com/).
-    *   **Enter URL:** In the textbox on the homepage, enter the full URL of your deployed web application (e.g., `https://your-app-name.web.app`) and click **Start**.
+    *   **Enter URL:** In the textbox on the homepage, enter the full URL of your deployed web application (e.g., `https://karma.clickfox.in`) and click **Start**.
     *   **Package for Stores:** PWABuilder will analyze your PWA. Once it's done, click on **"Package for Stores"**.
     *   **Select Android:** You will see different platform options. Click on the **Android** option.
     *   **Download Package:** Click the **"Download"** button. This will download a `.zip` file containing everything needed to publish.
