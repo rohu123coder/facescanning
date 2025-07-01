@@ -63,12 +63,52 @@ export default function MyAttendancePage() {
             setTodaysRecord(record ? { inTime: record.inTime, outTime: record.outTime } : null);
         }
     }, [attendance, employee, isInitialized]);
+    
+    const verifyLocationWithRetries = useCallback((officeLat: number, officeLon: number, radius: number, retries: number = 3, delay: number = 1500): Promise<{ success: boolean; distance?: number; error?: GeolocationPositionError }> => {
+        return new Promise((resolve) => {
+            let attempt = 0;
+            const tryVerify = () => {
+                attempt++;
+                setStatusMessage(`Verifying your location (attempt ${attempt} of ${retries})...`);
 
-    const handleMarkAttendance = useCallback(() => {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const distance = getDistance(
+                            position.coords.latitude,
+                            position.coords.longitude,
+                            officeLat,
+                            officeLon
+                        );
+
+                        if (distance <= radius) {
+                            resolve({ success: true, distance });
+                        } else if (attempt < retries) {
+                            setTimeout(tryVerify, delay);
+                        } else {
+                            resolve({ success: false, distance });
+                        }
+                    },
+                    (error) => {
+                        console.warn(`GPS attempt ${attempt} failed:`, error.message);
+                        if (attempt < retries) {
+                            setTimeout(tryVerify, delay);
+                        } else {
+                            resolve({ success: false, error: error });
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            };
+            tryVerify();
+        });
+    }, [setStatusMessage]);
+
+
+    const handleMarkAttendance = useCallback(async () => {
         if (!employee || !currentClient) return;
-        
+
         if (todaysRecord?.outTime) {
-            toast({ variant: 'destructive', title: 'Already Clocked Out', description: 'You have already completed your attendance for today.'});
+            toast({ variant: 'destructive', title: 'Already Clocked Out', description: 'You have already completed your attendance for today.' });
             return;
         }
 
@@ -78,41 +118,34 @@ export default function MyAttendancePage() {
         }
 
         setStep('GETTING_GPS');
-        setStatusMessage('Getting your location...');
 
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const distance = getDistance(
-                    position.coords.latitude, 
-                    position.coords.longitude,
-                    currentClient.officeLatitude!,
-                    currentClient.officeLongitude!
-                );
+        const result = await verifyLocationWithRetries(
+            currentClient.officeLatitude,
+            currentClient.officeLongitude,
+            currentClient.gpsRadius
+        );
 
-                if (distance <= currentClient.gpsRadius) {
-                    toast({ title: 'GPS Location Verified', description: 'You are at the office. Ready to mark attendance.' });
-                    setStep('READY');
-                    setStatusMessage('GPS Verified. Please confirm with your fingerprint.');
-                } else {
-                     toast({ variant: 'destructive', title: 'Location Mismatch', description: `You are approximately ${Math.round(distance)} meters away from the office.` });
-                     setStep('IDLE');
-                     setStatusMessage('Verification failed. You are not at the office location.');
-                }
-            },
-            (error) => {
-                console.error("GPS Error:", error);
+        if (result.success) {
+            toast({ title: 'GPS Location Verified', description: 'You are at the office. Ready to mark attendance.' });
+            setStep('READY');
+            setStatusMessage('GPS Verified. Please confirm with your fingerprint.');
+        } else {
+            if (result.error) {
                 toast({
                     variant: 'destructive',
                     title: 'GPS Error',
                     description: 'Could not get your location. Please ensure location services are enabled.',
                     duration: 7000
                 });
-                setStep('IDLE');
                 setStatusMessage('GPS failed. Please try again.');
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-    }, [employee, toast, todaysRecord, currentClient]);
+            } else {
+                toast({ variant: 'destructive', title: 'Location Mismatch', description: `You are approximately ${Math.round(result.distance!)} meters away from the office.` });
+                setStatusMessage('Verification failed. You are not at the office location.');
+            }
+            setStep('IDLE');
+        }
+    }, [employee, currentClient, todaysRecord, toast, verifyLocationWithRetries]);
+
 
     const handleFingerprintConfirm = useCallback(() => {
         if (!employee) return;
