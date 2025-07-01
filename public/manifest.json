@@ -1,25 +1,22 @@
-
 {
   "name": "Karma Manager",
   "short_name": "Karma",
   "description": "An intelligent staff management and salary automation platform.",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ],
-  "theme_color": "#8566D6",
+  "theme_color": "#8a6fcf",
   "background_color": "#ffffff",
   "start_url": "/",
-  "display": "standalone",
-  "orientation": "portrait"
+  "scope": "/",
+  "display": "standalone"
 }
